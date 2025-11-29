@@ -415,7 +415,8 @@ function checkout_asset_to_user(int $assetId, int $userId, string $note = ''): v
 
     $payload = [
         'checkout_to_type' => 'user',
-        'checkout_to_id'   => $userId,
+        'checkout_to_id'   => $userId,    // some versions accept this
+        'assigned_to'      => $userId,    // documented field for user checkout
     ];
 
     if ($note !== '') {
@@ -424,5 +425,11 @@ function checkout_asset_to_user(int $assetId, int $userId, string $note = ''): v
 
     // Snipe-IT may also support expected_checkin, etc., but we
     // keep it simple here.
-    snipeit_request('POST', 'hardware/' . $assetId . '/checkout', $payload);
+    $resp = snipeit_request('POST', 'hardware/' . $assetId . '/checkout', $payload);
+
+    // Basic sanity check: API should report success
+    if (isset($resp['status']) && $resp['status'] !== 'success') {
+        $msg = $resp['messages'][0] ?? ($resp['message'] ?? 'Unknown API response');
+        throw new Exception('Snipe-IT checkout did not succeed: ' . $msg);
+    }
 }
