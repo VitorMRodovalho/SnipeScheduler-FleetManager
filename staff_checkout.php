@@ -226,6 +226,9 @@ if ($selectedReservationId) {
                     $assetsRaw = list_assets_by_model($mid, 300);
                     $filtered  = [];
                     foreach ($assetsRaw as $a) {
+                        if (empty($a['requestable'])) {
+                            continue; // skip non-requestable assets
+                        }
                         $assigned = $a['assigned_to'] ?? ($a['assigned_to_fullname'] ?? '');
                         $statusRaw = $a['status_label'] ?? '';
                         if (is_array($statusRaw)) {
