@@ -81,17 +81,18 @@ if ($isStaff && ($_GET['ajax'] ?? '') === 'ldap_user_search') {
 
 // Handle staff override selection
 if ($isStaff && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['mode'] ?? '') === 'set_booking_user') {
+    $revert   = isset($_POST['booking_user_revert']) && $_POST['booking_user_revert'] === '1';
     $selEmail = trim($_POST['booking_user_email'] ?? '');
     $selName  = trim($_POST['booking_user_name'] ?? '');
-    if ($selEmail !== '') {
+    if ($revert || $selEmail === '') {
+        unset($_SESSION['booking_user_override']);
+    } else {
         $_SESSION['booking_user_override'] = [
             'email'      => $selEmail,
             'first_name' => $selName,
             'last_name'  => '',
             'id'         => 0,
         ];
-    } else {
-        unset($_SESSION['booking_user_override']);
     }
     header('Location: catalogue.php');
     exit;
@@ -290,6 +291,7 @@ if (!empty($categories)) {
                     <input type="hidden" name="mode" value="set_booking_user">
                     <input type="hidden" name="booking_user_email" id="booking_user_email">
                     <input type="hidden" name="booking_user_name" id="booking_user_name">
+                    <input type="hidden" name="booking_user_revert" id="booking_user_revert" value="0">
                     <div class="position-relative">
                         <input type="text"
                                id="booking_user_input"
@@ -301,7 +303,7 @@ if (!empty($categories)) {
                              style="z-index: 1050; max-height: 220px; overflow-y: auto; display: none;"></div>
                     </div>
                     <button class="btn btn-sm btn-primary" type="submit">Use</button>
-                    <button class="btn btn-sm btn-outline-secondary" type="button" onclick="revertToLoggedIn()">Revert to logged in user</button>
+                    <button class="btn btn-sm btn-outline-secondary" type="button" onclick="revertToLoggedIn(event)">Revert to logged in user</button>
                 </form>
             </div>
         <?php endif; ?>
@@ -640,14 +642,17 @@ function clearBookingUser() {
     if (input) input.value = '';
 }
 
-function revertToLoggedIn() {
+function revertToLoggedIn(e) {
+    if (e) e.preventDefault();
     const email = document.getElementById('booking_user_email');
     const name  = document.getElementById('booking_user_name');
     const input = document.getElementById('booking_user_input');
+    const revert = document.getElementById('booking_user_revert');
     const form  = document.getElementById('booking_user_form');
     if (email) email.value = '';
     if (name) name.value = '';
     if (input) input.value = '';
+    if (revert) revert.value = '1';
     if (form) form.submit();
 }
 });
