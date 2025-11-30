@@ -69,6 +69,7 @@ $modelErr      = '';
 $totalModels   = 0;
 $totalPages    = 1;
 $categoriesUsed = [];
+$nowIso        = date('Y-m-d H:i:s');
 
 try {
     $data = get_bookable_models($page, $search ?? '', $category, $sort, $perPage);
@@ -244,13 +245,46 @@ if (!empty($categories)) {
                     $catName    = $model['category']['name'] ?? '';
                     $imagePath  = $model['image'] ?? '';
                     $assetCount = null;
+                    $freeNow     = 0;
+                    $maxQty      = 0;
+                    $isRequestable = false;
                     try {
                         $assetCount = count_requestable_assets_by_model($modelId);
+
+                        // Active reservations overlapping "now"
+                        $stmt = $pdo->prepare("
+                            SELECT
+                                COALESCE(SUM(CASE WHEN r.status IN ('pending','confirmed') THEN ri.quantity END), 0) AS pending_qty,
+                                COALESCE(SUM(CASE WHEN r.status = 'completed' THEN ri.quantity END), 0) AS completed_qty
+                            FROM reservation_items ri
+                            JOIN reservations r ON r.id = ri.reservation_id
+                            WHERE ri.model_id = :mid
+                              AND r.status IN ('pending','confirmed','completed')
+                              AND r.start_datetime <= :now
+                              AND r.end_datetime   > :now
+                        ");
+                        $stmt->execute([
+                            ':mid' => $modelId,
+                            ':now' => $nowIso,
+                        ]);
+                        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                        $pendingQty   = $row ? (int)$row['pending_qty'] : 0;
+                        $completedQty = $row ? (int)$row['completed_qty'] : 0;
+
+                        // How many are actually still checked out in Snipe-IT
+                        $activeCheckedOut = count_checked_out_assets_by_model($modelId);
+                        $bookedFromCompleted = min($completedQty, $activeCheckedOut);
+
+                        $booked = $pendingQty + $bookedFromCompleted;
+                        $freeNow = max(0, $assetCount - $booked);
+                        $maxQty = $freeNow;
+                        $isRequestable = $assetCount > 0;
                     } catch (Throwable $e) {
-                        $assetCount = null;
+                        $assetCount = $assetCount ?? 0;
+                        $freeNow    = 0;
+                        $maxQty     = 0;
+                        $isRequestable = $assetCount > 0;
                     }
-                    $maxQty       = ($assetCount && $assetCount > 0) ? $assetCount : 0;
-                    $isRequestable = $maxQty > 0;
                     $notes      = $model['notes'] ?? '';
                     if (is_array($notes)) {
                         $notes = $notes['text'] ?? '';
@@ -289,8 +323,9 @@ if (!empty($categories)) {
                                         <span><strong>Category:</strong> <?= label_safe($catName) ?></span><br>
                                     <?php endif; ?>
                                     <?php if ($assetCount !== null): ?>
-                                        <span><strong>Requestable units:</strong> <?= $assetCount ?></span>
+                                        <span><strong>Requestable units:</strong> <?= $assetCount ?></span><br>
                                     <?php endif; ?>
+                                    <span><strong>Available now:</strong> <?= $freeNow ?></span>
                                     <?php if (!empty($notes)): ?>
                                         <div class="mt-2 text-muted clamp-3">
                                             <?= label_safe($notes) ?>
