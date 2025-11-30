@@ -15,6 +15,9 @@ $config   = require __DIR__ . '/config.php';
 $timezone = $config['app']['timezone'] ?? 'Europe/Jersey';
 $active   = basename($_SERVER['PHP_SELF']);
 $isStaff  = !empty($currentUser['is_admin']);
+$tz       = new DateTimeZone($timezone);
+$now      = new DateTime('now', $tz);
+$todayStr = $now->format('Y-m-d');
 
 // Only staff/admin allowed
 if (empty($currentUser['is_admin'])) {
@@ -75,6 +78,82 @@ function uk_datetime_display(?string $iso): string
     return $dt->format('d/m/Y H:i');
 }
 
+/**
+ * Check if a model is booked in another reservation overlapping the window.
+ */
+function model_booked_elsewhere(PDO $pdo, int $modelId, string $start, string $end, ?int $excludeReservationId = null): bool
+{
+    if ($modelId <= 0 || $start === '' || $end === '') {
+        return false;
+    }
+
+    $sql = "
+        SELECT COALESCE(SUM(ri.quantity), 0) AS booked_qty
+        FROM reservation_items ri
+        JOIN reservations r ON r.id = ri.reservation_id
+        WHERE ri.model_id = :model_id
+          AND r.start_datetime < :end
+          AND r.end_datetime > :start
+          AND r.status IN ('pending', 'confirmed', 'completed')
+    ";
+
+    $params = [
+        ':model_id' => $modelId,
+        ':start'    => $start,
+        ':end'      => $end,
+    ];
+
+    if ($excludeReservationId) {
+        $sql .= " AND r.id <> :exclude_id";
+        $params[':exclude_id'] = $excludeReservationId;
+    }
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    return ((int)($row['booked_qty'] ?? 0)) > 0;
+}
+
+// ---------------------------------------------------------------------
+// Selected reservation details (today only)
+// ---------------------------------------------------------------------
+$selectedReservation = null;
+$selectedItems       = [];
+$modelLimits         = [];
+$selectedStart       = '';
+$selectedEnd         = '';
+
+if ($selectedReservationId) {
+    $stmt = $pdo->prepare("
+        SELECT *
+        FROM reservations
+        WHERE id = :id
+          AND DATE(start_datetime) = :today
+    ");
+    $stmt->execute([
+        ':id'    => $selectedReservationId,
+        ':today' => $todayStr,
+    ]);
+    $selectedReservation = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+
+    if ($selectedReservation) {
+        $selectedStart = $selectedReservation['start_datetime'] ?? '';
+        $selectedEnd   = $selectedReservation['end_datetime'] ?? '';
+        $selectedItems = get_reservation_items_with_names($pdo, $selectedReservationId);
+        foreach ($selectedItems as $item) {
+            $mid          = (int)($item['model_id'] ?? 0);
+            $qty          = (int)($item['qty'] ?? 0);
+            if ($mid > 0 && $qty > 0) {
+                $modelLimits[$mid] = $qty;
+            }
+        }
+    } else {
+        unset($_SESSION['selected_reservation_id']);
+        $selectedReservationId = null;
+    }
+}
+
 // ---------------------------------------------------------------------
 // Load today's bookings from reservations table
 // ---------------------------------------------------------------------
@@ -82,10 +161,6 @@ $todayBookings = [];
 $todayError    = '';
 
 try {
-    $tz = new DateTimeZone($timezone);
-    $now = new DateTime('now', $tz);
-    $todayStr = $now->format('Y-m-d');
-
     $sql = "
         SELECT *
         FROM reservations
@@ -108,9 +183,38 @@ if (!isset($_SESSION['bulk_checkout_assets'])) {
 }
 $checkoutAssets = &$_SESSION['bulk_checkout_assets'];
 
+// Selected reservation for checkout (today only)
+$selectedReservationId = isset($_SESSION['selected_reservation_id'])
+    ? (int)$_SESSION['selected_reservation_id']
+    : null;
+
 // Messages
 $checkoutMessages = [];
 $checkoutErrors   = [];
+
+// Current counts per model already in checkout list (for quota enforcement)
+$currentModelCounts = [];
+foreach ($checkoutAssets as $existing) {
+    $mid = isset($existing['model_id']) ? (int)$existing['model_id'] : 0;
+    if ($mid > 0) {
+        $currentModelCounts[$mid] = ($currentModelCounts[$mid] ?? 0) + 1;
+    }
+}
+
+// Handle reservation selection (POST)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['mode'] ?? '') === 'select_reservation') {
+    $selectedReservationId = (int)($_POST['reservation_id'] ?? 0);
+    if ($selectedReservationId > 0) {
+        $_SESSION['selected_reservation_id'] = $selectedReservationId;
+    } else {
+        unset($_SESSION['selected_reservation_id']);
+        $selectedReservationId = null;
+    }
+    // Reset checkout basket when changing reservation
+    $checkoutAssets = [];
+    header('Location: staff_checkout.php');
+    exit;
+}
 
 // Remove single asset from checkout list via GET ?remove=ID
 if (isset($_GET['remove'])) {
@@ -130,7 +234,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($mode === 'add_asset') {
         $tag = trim($_POST['asset_tag'] ?? '');
-        if ($tag === '') {
+        if (!$selectedReservation) {
+            $checkoutErrors[] = 'Please select a reservation for today before adding assets.';
+        } elseif ($tag === '') {
             $checkoutErrors[] = 'Please scan or enter an asset tag.';
         } else {
             try {
@@ -140,6 +246,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $assetTag  = $asset['asset_tag'] ?? '';
                 $assetName = $asset['name'] ?? '';
                 $modelName = $asset['model']['name'] ?? '';
+                $modelId   = (int)($asset['model']['id'] ?? 0);
                 $status    = $asset['status_label'] ?? '';
 
                 // Normalise status label to a string (API may return array/object)
@@ -150,6 +257,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($assetId <= 0 || $assetTag === '') {
                     throw new Exception('Asset record from Snipe-IT is missing id/asset_tag.');
                 }
+                if ($modelId <= 0) {
+                    throw new Exception('Asset record from Snipe-IT is missing model information.');
+                }
+
+                // Enforce that the asset's model is in the selected reservation and within quantity.
+                $allowedQty   = $modelLimits[$modelId] ?? 0;
+                $alreadyAdded = $currentModelCounts[$modelId] ?? 0;
+
+                if ($allowedQty > 0 && $alreadyAdded >= $allowedQty) {
+                    throw new Exception("Reservation allows {$allowedQty} of this model; you already added {$alreadyAdded}.");
+                }
+
+                if ($allowedQty === 0 && $selectedStart && $selectedEnd) {
+                    // Not part of reservation: only allow if model isn't booked elsewhere for this window
+                    $bookedElsewhere = model_booked_elsewhere($pdo, $modelId, $selectedStart, $selectedEnd, $selectedReservationId);
+                    if ($bookedElsewhere) {
+                        throw new Exception('This model is booked in another reservation for this time window.');
+                    }
+                }
 
                 // Avoid duplicates: overwrite existing entry for same asset id
                 $checkoutAssets[$assetId] = [
@@ -157,8 +283,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'asset_tag'  => $assetTag,
                     'name'       => $assetName,
                     'model'      => $modelName,
+                    'model_id'   => $modelId,
                     'status'     => $status,
                 ];
+                $currentModelCounts[$modelId] = ($currentModelCounts[$modelId] ?? 0) + 1;
 
                 $checkoutMessages[] = "Added asset {$assetTag} ({$assetName}) to checkout list.";
             } catch (Throwable $e) {
@@ -169,7 +297,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $checkoutTo = trim($_POST['checkout_to'] ?? '');
         $note       = trim($_POST['note'] ?? '');
 
-        if ($checkoutTo === '') {
+        if (!$selectedReservation) {
+            $checkoutErrors[] = 'Please select a reservation for today before checking out.';
+        } elseif ($checkoutTo === '') {
             $checkoutErrors[] = 'Please enter the Snipe-IT user (email or name) to check out to.';
         } elseif (empty($checkoutAssets)) {
             $checkoutErrors[] = 'There are no assets in the checkout list.';
@@ -188,6 +318,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 foreach ($checkoutAssets as $asset) {
                     $assetId  = (int)$asset['id'];
                     $assetTag = $asset['asset_tag'] ?? '';
+                    $modelId  = isset($asset['model_id']) ? (int)$asset['model_id'] : 0;
+
+                    // Re-check quotas before checkout
+                    if ($modelId > 0 && isset($modelLimits[$modelId])) {
+                        $allowed = $modelLimits[$modelId];
+                        $countForModel = 0;
+                        foreach ($checkoutAssets as $a2) {
+                            if ((int)($a2['model_id'] ?? 0) === $modelId) {
+                                $countForModel++;
+                            }
+                        }
+                        if ($countForModel > $allowed) {
+                            throw new Exception("Too many assets of model {$asset['model']} for this reservation (allowed {$allowed}).");
+                        }
+                    } elseif ($modelId > 0 && $selectedStart && $selectedEnd) {
+                        if (model_booked_elsewhere($pdo, $modelId, $selectedStart, $selectedEnd, $selectedReservationId)) {
+                            throw new Exception("Model {$asset['model']} is booked in another reservation for this window.");
+                        }
+                    }
+
                     try {
                         checkout_asset_to_user($assetId, $userId, $note);
                         $checkoutMessages[] = "Checked out asset {$assetTag} to {$userName}.";
@@ -256,6 +406,49 @@ $isStaff = !empty($currentUser['is_admin']);
             </div>
             <div class="top-bar-actions">
                 <a href="logout.php" class="btn btn-link btn-sm">Log out</a>
+            </div>
+        </div>
+
+        <!-- Reservation selector (today only) -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <form method="post" class="row g-3 align-items-end">
+                    <input type="hidden" name="mode" value="select_reservation">
+                    <div class="col-md-8">
+                        <label class="form-label">Select today’s reservation to check out</label>
+                        <select name="reservation_id" class="form-select">
+                            <option value="0">-- No reservation selected --</option>
+                            <?php foreach ($todayBookings as $res): ?>
+                                <?php
+                                $resId   = (int)$res['id'];
+                                $items   = get_reservation_items_with_names($pdo, $resId);
+                                $summary = build_items_summary_text($items);
+                                $start   = uk_datetime_display($res['start_datetime'] ?? '');
+                                $end     = uk_datetime_display($res['end_datetime'] ?? '');
+                                ?>
+                                <option value="<?= $resId ?>" <?= $resId === $selectedReservationId ? 'selected' : '' ?>>
+                                    #<?= $resId ?> – <?= h($res['student_name'] ?? '') ?> (<?= h($start) ?> → <?= h($end) ?>): <?= h($summary) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Use reservation</button>
+                        <button type="submit" name="reservation_id" value="0" class="btn btn-outline-secondary">Clear</button>
+                    </div>
+                </form>
+
+                <?php if ($selectedReservation): ?>
+                    <div class="mt-3 alert alert-info mb-0">
+                        <div><strong>Selected:</strong> #<?= (int)$selectedReservation['id'] ?> – <?= h($selectedReservation['student_name'] ?? '') ?></div>
+                        <div>When: <?= h(uk_datetime_display($selectedReservation['start_datetime'] ?? '')) ?> → <?= h(uk_datetime_display($selectedReservation['end_datetime'] ?? '')) ?></div>
+                        <?php if (!empty($selectedItems)): ?>
+                            <div>Models &amp; quantities: <?= h(build_items_summary_text($selectedItems)) ?></div>
+                        <?php else: ?>
+                            <div>This reservation has no items recorded.</div>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
 
