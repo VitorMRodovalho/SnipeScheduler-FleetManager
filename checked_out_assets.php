@@ -32,9 +32,30 @@ if (!$isStaff) {
 $tab = ($_GET['tab'] ?? 'all') === 'overdue' ? 'overdue' : 'all';
 $error = '';
 $assets = [];
+$search = trim($_GET['q'] ?? '');
 
 try {
     $assets = list_checked_out_assets($tab === 'overdue');
+    if ($search !== '') {
+        $q = mb_strtolower($search);
+        $assets = array_values(array_filter($assets, function ($row) use ($q) {
+            $fields = [
+                $row['asset_tag'] ?? '',
+                $row['name'] ?? '',
+                $row['model']['name'] ?? '',
+                $row['assigned_to'] ?? ($row['assigned_to_fullname'] ?? ''),
+            ];
+            foreach ($fields as $f) {
+                if (is_array($f)) {
+                    $f = implode(' ', $f);
+                }
+                if (mb_stripos((string)$f, $q) !== false) {
+                    return true;
+                }
+            }
+            return false;
+        }));
+    }
 } catch (Throwable $e) {
     $error = $e->getMessage();
 }
@@ -81,13 +102,27 @@ try {
         <ul class="nav nav-tabs mb-3">
             <li class="nav-item">
                 <a class="nav-link <?= $tab === 'all' ? 'active' : '' ?>"
-                   href="?tab=all">All checked out</a>
+                   href="?tab=all<?= $search !== '' ? '&q=' . urlencode($search) : '' ?>">All checked out</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link <?= $tab === 'overdue' ? 'active' : '' ?>"
-                   href="?tab=overdue">Overdue</a>
+                   href="?tab=overdue<?= $search !== '' ? '&q=' . urlencode($search) : '' ?>">Overdue</a>
             </li>
         </ul>
+
+        <form method="get" class="row g-2 mb-3">
+            <input type="hidden" name="tab" value="<?= htmlspecialchars($tab) ?>">
+            <div class="col-md-6">
+                <input type="text"
+                       name="q"
+                       value="<?= htmlspecialchars($search) ?>"
+                       class="form-control"
+                       placeholder="Filter by asset tag, name, model, or user">
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary">Filter</button>
+            </div>
+        </form>
 
         <?php if ($error): ?>
             <div class="alert alert-danger">
