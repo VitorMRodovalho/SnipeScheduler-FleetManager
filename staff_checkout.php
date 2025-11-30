@@ -274,6 +274,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $modelName = $asset['model']['name'] ?? '';
                 $modelId   = (int)($asset['model']['id'] ?? 0);
                 $status    = $asset['status_label'] ?? '';
+                $isRequestable = !empty($asset['requestable']);
 
                 // Normalise status label to a string (API may return array/object)
                 if (is_array($status)) {
@@ -285,6 +286,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 if ($modelId <= 0) {
                     throw new Exception('Asset record from Snipe-IT is missing model information.');
+                }
+                if (!$isRequestable) {
+                    throw new Exception('This asset is not requestable in Snipe-IT.');
                 }
 
                 // Enforce that the asset's model is in the selected reservation and within quantity.
@@ -333,14 +337,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $assetsToCheckout    = [];
 
             // Validate selections against required quantities
-            foreach ($selectedItems as $item) {
-                $mid    = (int)$item['model_id'];
-                $qty    = (int)$item['qty'];
-                $choices = $modelAssets[$mid] ?? [];
-                $choicesById = [];
-                foreach ($choices as $c) {
+        foreach ($selectedItems as $item) {
+            $mid    = (int)$item['model_id'];
+            $qty    = (int)$item['qty'];
+            $choices = $modelAssets[$mid] ?? [];
+            $choicesById = [];
+            foreach ($choices as $c) {
+                if (!empty($c['requestable'])) {
                     $choicesById[(int)($c['id'] ?? 0)] = $c;
                 }
+            }
 
                 $selectedForModel = isset($selectedAssetsInput[$mid]) && is_array($selectedAssetsInput[$mid])
                     ? array_values($selectedAssetsInput[$mid])
