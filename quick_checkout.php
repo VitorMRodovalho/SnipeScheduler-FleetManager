@@ -49,12 +49,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $assetName = $asset['name'] ?? '';
                 $modelName = $asset['model']['name'] ?? '';
                 $status    = $asset['status_label'] ?? '';
+                $isRequestable = !empty($asset['requestable']);
                 if (is_array($status)) {
                     $status = $status['name'] ?? $status['status_meta'] ?? $status['label'] ?? '';
                 }
 
                 if ($assetId <= 0 || $assetTag === '') {
                     throw new Exception('Asset record from Snipe-IT is missing id/asset_tag.');
+                }
+                if (!$isRequestable) {
+                    throw new Exception('This asset is not requestable in Snipe-IT.');
                 }
 
                 $checkoutAssets[$assetId] = [
