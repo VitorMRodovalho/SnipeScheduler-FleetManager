@@ -632,13 +632,9 @@ function list_checked_out_assets(bool $overdueOnly = false): array
             continue;
         }
 
-        // Require checked-out status
-        $statusRaw = $row['status_label'] ?? '';
-        if (is_array($statusRaw)) {
-            $statusRaw = $statusRaw['name'] ?? ($statusRaw['status_meta'] ?? '');
-        }
-        $status = strtolower((string)$statusRaw);
-        if (strpos($status, 'checked') === false) {
+        // Consider "checked out" if assigned_to/user is present
+        $assigned = $row['assigned_to'] ?? ($row['assigned_to_fullname'] ?? '');
+        if ($assigned === '') {
             continue;
         }
 
