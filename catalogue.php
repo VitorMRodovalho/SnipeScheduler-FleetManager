@@ -645,8 +645,8 @@ function revertToLoggedIn() {
     const name  = document.getElementById('booking_user_name');
     const input = document.getElementById('booking_user_input');
     const form  = document.getElementById('booking_user_form');
-    if (email) email.value = <?= json_encode($currentUser['email'] ?? '') ?>;
-    if (name) name.value = <?= json_encode(trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''))) ?>;
+    if (email) email.value = '';
+    if (name) name.value = '';
     if (input) input.value = '';
     if (form) form.submit();
 }
