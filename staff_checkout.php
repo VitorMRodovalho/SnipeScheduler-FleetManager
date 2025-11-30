@@ -388,7 +388,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $assetTags = array_map(function ($a) {
                         return $a['asset_tag'];
                     }, $assetsToCheckout);
-                    $assetsText = 'Assets checked out: ' . implode(', ', $assetTags);
+                    $assetsText = implode(', ', $assetTags);
 
                     $upd = $pdo->prepare("
                         UPDATE reservations
