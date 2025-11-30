@@ -42,6 +42,8 @@ $isStaff = !empty($currentUser['is_admin']);
                class="app-nav-link <?= $active === 'quick_checkout.php' ? 'active' : '' ?>">Quick Checkout</a>
             <a href="quick_checkin.php"
                class="app-nav-link <?= $active === 'quick_checkin.php' ? 'active' : '' ?>">Quick Checkin</a>
+            <a href="checked_out_assets.php"
+               class="app-nav-link <?= $active === 'checked_out_assets.php' ? 'active' : '' ?>">Checked Out Assets</a>
         <?php endif; ?>
     </nav>
 

@@ -605,3 +605,45 @@ function checkin_asset(int $assetId, string $note = ''): void
         throw new Exception('Snipe-IT checkin did not succeed: ' . $message);
     }
 }
+
+/**
+ * Fetch checked-out assets (requestable only).
+ *
+ * @param bool $overdueOnly
+ * @return array
+ * @throws Exception
+ */
+function list_checked_out_assets(bool $overdueOnly = false): array
+{
+    $params = [
+        'status' => 'checkedout',
+        'limit'  => 500,
+    ];
+
+    $data = snipeit_request('GET', 'hardware', $params);
+    if (!isset($data['rows']) || !is_array($data['rows'])) {
+        return [];
+    }
+
+    $now = time();
+    $filtered = [];
+    foreach ($data['rows'] as $row) {
+        // Only requestable assets
+        if (empty($row['requestable'])) {
+            continue;
+        }
+
+        // Overdue check
+        if ($overdueOnly) {
+            $exp = $row['expected_checkin'] ?? '';
+            $expTs = $exp ? strtotime($exp) : null;
+            if (!$expTs || $expTs > $now) {
+                continue;
+            }
+        }
+
+        $filtered[] = $row;
+    }
+
+    return $filtered;
+}
