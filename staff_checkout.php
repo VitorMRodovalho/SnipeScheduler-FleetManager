@@ -10,6 +10,7 @@ require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/booking_helpers.php';
 require_once __DIR__ . '/snipeit_client.php';
+require_once __DIR__ . '/footer.php';
 
 $config   = require __DIR__ . '/config.php';
 $timezone = $config['app']['timezone'] ?? 'Europe/Jersey';
@@ -884,5 +885,6 @@ $isStaff = !empty($currentUser['is_admin']);
     Object.keys(groups).forEach(syncGroup);
 })();
 </script>
+<?php reserveit_footer(); ?>
 </body>
 </html>

@@ -1,6 +1,7 @@
 <?php
 // login.php
 session_start();
+require_once __DIR__ . '/footer.php';
 
 // Show any previous error
 $loginError = $_SESSION['login_error'] ?? '';
@@ -64,5 +65,6 @@ if (!empty($_SESSION['user']['email'])) {
         </form>
     </div>
 </div>
+<?php reserveit_footer(); ?>
 </body>
 </html>

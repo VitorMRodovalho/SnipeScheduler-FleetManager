@@ -2,6 +2,7 @@
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/booking_helpers.php';
+require_once __DIR__ . '/footer.php';
 
 $active  = basename($_SERVER['PHP_SELF']);
 $isStaff = !empty($currentUser['is_admin']);
@@ -243,5 +244,6 @@ try {
 
     </div>
 </div>
+<?php reserveit_footer(); ?>
 </body>
 </html>

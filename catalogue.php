@@ -2,6 +2,7 @@
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/snipeit_client.php';
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/footer.php';
 
 $config = require __DIR__ . '/config.php';
 
@@ -356,5 +357,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
+<?php reserveit_footer(); ?>
 </body>
 </html>

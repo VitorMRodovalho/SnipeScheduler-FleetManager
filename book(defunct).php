@@ -1,6 +1,7 @@
 <?php
 require 'auth.php';
 require 'snipeit_client.php';
+require_once __DIR__ . '/footer.php';
 
 $assetId = (int)($_GET['asset_id'] ?? 0);
 if (!$assetId) {
@@ -59,5 +60,6 @@ $fullName = trim($user['first_name'] . ' ' . $user['last_name']);
         <button class="btn btn-primary">Submit booking</button>
     </form>
 </div>
+<?php reserveit_footer(); ?>
 </body>
 </html>

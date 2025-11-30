@@ -2,6 +2,7 @@
 require 'auth.php';
 require 'snipeit_client.php';
 require 'db.php';
+require_once __DIR__ . '/footer.php';
 
 $active  = basename($_SERVER['PHP_SELF']);
 $isStaff = !empty($currentUser['is_admin']);
@@ -293,5 +294,6 @@ $isStaff = !empty($currentUser['is_admin']);
         <?php endif; ?>
     </div>
 </div>
+<?php reserveit_footer(); ?>
 </body>
 </html>

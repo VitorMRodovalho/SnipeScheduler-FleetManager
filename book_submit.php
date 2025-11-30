@@ -2,6 +2,7 @@
 require 'auth.php';
 require 'db.php';
 require 'snipeit_client.php';
+require_once __DIR__ . '/footer.php';
 
 $user = $currentUser;
 
@@ -106,5 +107,6 @@ $insert->execute([
         <a href="my_bookings.php" class="btn btn-secondary">View my bookings</a>
     </p>
 </div>
+<?php reserveit_footer(); ?>
 </body>
 </html>

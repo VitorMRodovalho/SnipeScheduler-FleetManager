@@ -1,6 +1,7 @@
 <?php
 require 'auth.php';
 require 'db.php';
+require_once __DIR__ . '/footer.php';
 
 $active  = basename($_SERVER['PHP_SELF']);
 $isStaff = !empty($currentUser['is_admin']);
@@ -109,5 +110,6 @@ $isStaff = !empty($currentUser['is_admin']);
         </div>
     </div>
 </div>
+<?php reserveit_footer(); ?>
 </body>
 </html>

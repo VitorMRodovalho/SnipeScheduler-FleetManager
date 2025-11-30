@@ -2,6 +2,7 @@
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/booking_helpers.php';
+require_once __DIR__ . '/footer.php';
 
 /**
  * Convert YYYY-MM-DD → DD/MM/YYYY.
@@ -170,5 +171,6 @@ try {
 
     </div>
 </div>
+<?php reserveit_footer(); ?>
 </body>
 </html>
