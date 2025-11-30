@@ -224,9 +224,10 @@ try {
                     try {
                         $assetCount = count_requestable_assets_by_model($modelId);
                     } catch (Throwable $e) {
-                        $assetCount = isset($model['assets_count']) ? (int)$model['assets_count'] : null;
+                        $assetCount = null;
                     }
-                    $maxQty     = ($assetCount && $assetCount > 0) ? $assetCount : 10;
+                    $maxQty       = ($assetCount && $assetCount > 0) ? $assetCount : 0;
+                    $isRequestable = $maxQty > 0;
                     $notes      = $model['notes'] ?? '';
                     if (is_array($notes)) {
                         $notes = $notes['text'] ?? '';
@@ -265,7 +266,7 @@ try {
                                         <span><strong>Category:</strong> <?= label_safe($catName) ?></span><br>
                                     <?php endif; ?>
                                     <?php if ($assetCount !== null): ?>
-                                        <span><strong>Units in total:</strong> <?= $assetCount ?></span>
+                                        <span><strong>Requestable units:</strong> <?= $assetCount ?></span>
                                     <?php endif; ?>
                                     <?php if (!empty($notes)): ?>
                                         <div class="mt-2 text-muted">
@@ -279,22 +280,33 @@ try {
                                       class="mt-auto add-to-basket-form">
                                     <input type="hidden" name="model_id" value="<?= $modelId ?>">
 
-                                    <div class="row g-2 align-items-center mb-2">
-                                        <div class="col-6">
-                                            <label class="form-label mb-0 small">Quantity</label>
-                                            <input type="number"
-                                                   name="quantity"
-                                                   class="form-control form-control-sm"
-                                                   value="1"
-                                                   min="1"
-                                                   max="<?= $maxQty ?>">
+                                    <?php if ($isRequestable): ?>
+                                        <div class="row g-2 align-items-center mb-2">
+                                            <div class="col-6">
+                                                <label class="form-label mb-0 small">Quantity</label>
+                                                <input type="number"
+                                                       name="quantity"
+                                                       class="form-control form-control-sm"
+                                                       value="1"
+                                                       min="1"
+                                                       max="<?= $maxQty ?>">
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <button type="submit"
-                                            class="btn btn-sm btn-success w-100">
-                                        Add to basket
-                                    </button>
+                                        <button type="submit"
+                                                class="btn btn-sm btn-success w-100">
+                                            Add to basket
+                                        </button>
+                                    <?php else: ?>
+                                        <div class="alert alert-secondary small mb-0">
+                                            No requestable units available.
+                                        </div>
+                                        <button type="button"
+                                                class="btn btn-sm btn-secondary w-100 mt-2"
+                                                disabled>
+                                            Add to basket
+                                        </button>
+                                    <?php endif; ?>
                                 </form>
                             </div>
                         </div>
