@@ -91,13 +91,40 @@ $isStaff = !empty($currentUser['is_admin']);
                 <div class="col-md-6">
                     <div class="card h-100">
                         <div class="card-body d-flex flex-column">
-                            <h5 class="card-title">Admin – reservations overview</h5>
+                            <h5 class="card-title">Booking History</h5>
                             <p class="card-text">
-                                View all student reservations, see what’s coming up today and this week,
-                                and coordinate which physical assets to hand out.
+                                See all past and current bookings, and coordinate which assets to hand out.
                             </p>
                             <a href="staff_reservations.php" class="btn btn-outline-primary mt-auto">
-                                Open admin view
+                                View booking history
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">Reservation Checkout</h5>
+                            <p class="card-text">
+                                Select a booking for today and check out specific assets against its models.
+                            </p>
+                            <a href="staff_checkout.php" class="btn btn-outline-primary mt-auto">
+                                Go to reservation checkout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">Quick Checkout</h5>
+                            <p class="card-text">
+                                Perform ad-hoc bulk checkouts via Snipe-IT without selecting a reservation.
+                            </p>
+                            <a href="quick_checkout.php" class="btn btn-outline-primary mt-auto">
+                                Go to quick checkout
                             </a>
                         </div>
                     </div>
