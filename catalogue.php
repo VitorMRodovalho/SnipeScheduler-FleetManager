@@ -4,11 +4,102 @@ require_once __DIR__ . '/snipeit_client.php';
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/footer.php';
 
-$config = require __DIR__ . '/config.php';
+$config   = require __DIR__ . '/config.php';
+$isStaff  = !empty($currentUser['is_admin']);
+
+$bookingOverride = $_SESSION['booking_user_override'] ?? null;
+$activeUser      = $bookingOverride ?: $currentUser;
+
+$ldapCfg  = $config['ldap'] ?? [];
+$appCfg   = $config['app'] ?? [];
+$debugOn  = !empty($appCfg['debug']);
+
+// Staff-only LDAP autocomplete endpoint
+if ($isStaff && ($_GET['ajax'] ?? '') === 'ldap_user_search') {
+    header('Content-Type: application/json');
+
+    $q = trim($_GET['q'] ?? '');
+    if ($q === '' || strlen($q) < 2) {
+        echo json_encode(['results' => []]);
+        exit;
+    }
+
+    try {
+        if (!empty($ldapCfg['ignore_cert'])) {
+            putenv('LDAPTLS_REQCERT=never');
+        }
+
+        $ldap = @ldap_connect($ldapCfg['host']);
+        if (!$ldap) {
+            throw new Exception('Cannot connect to LDAP host');
+        }
+
+        ldap_set_option($ldap, LDAP_OPT_PROTOCOL_VERSION, 3);
+        ldap_set_option($ldap, LDAP_OPT_REFERRALS, 0);
+
+        if (!@ldap_bind($ldap, $ldapCfg['bind_dn'], $ldapCfg['bind_password'])) {
+            throw new Exception('LDAP service bind failed: ' . ldap_error($ldap));
+        }
+
+        $filter = sprintf(
+            '(|(mail=*%1$s*)(displayName=*%1$s*)(sAMAccountName=*%1$s*))',
+            ldap_escape($q, null, LDAP_ESCAPE_FILTER)
+        );
+
+        $attrs = ['mail', 'displayName', 'givenName', 'sn', 'sAMAccountName'];
+        $search = @ldap_search($ldap, $ldapCfg['base_dn'], $filter, $attrs, 0, 20);
+        $entries = $search ? ldap_get_entries($ldap, $search) : ['count' => 0];
+
+        $results = [];
+        for ($i = 0; $i < ($entries['count'] ?? 0); $i++) {
+            $e    = $entries[$i];
+            $mail = $e['mail'][0] ?? '';
+            $dn   = $e['displayname'][0] ?? '';
+            $fn   = $e['givenname'][0] ?? '';
+            $ln   = $e['sn'][0] ?? '';
+            $name = $dn !== '' ? $dn : trim($fn . ' ' . $ln);
+            $sam  = $e['samaccountname'][0] ?? '';
+
+            $results[] = [
+                'email' => $mail,
+                'name'  => $name !== '' ? $name : $mail,
+                'sam'   => $sam,
+            ];
+        }
+
+        ldap_unbind($ldap);
+        echo json_encode(['results' => $results]);
+    } catch (Throwable $e) {
+        if (isset($ldap) && $ldap) {
+            @ldap_unbind($ldap);
+        }
+        http_response_code(500);
+        echo json_encode(['error' => $debugOn ? $e->getMessage() : 'LDAP error']);
+    }
+    exit;
+}
+
+// Handle staff override selection
+if ($isStaff && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['mode'] ?? '') === 'set_booking_user') {
+    $revert   = isset($_POST['booking_user_revert']) && $_POST['booking_user_revert'] === '1';
+    $selEmail = trim($_POST['booking_user_email'] ?? '');
+    $selName  = trim($_POST['booking_user_name'] ?? '');
+    if ($revert || $selEmail === '') {
+        unset($_SESSION['booking_user_override']);
+    } else {
+        $_SESSION['booking_user_override'] = [
+            'email'      => $selEmail,
+            'first_name' => $selName,
+            'last_name'  => '',
+            'id'         => 0,
+        ];
+    }
+    header('Location: catalogue.php');
+    exit;
+}
 
 // Active nav + staff flag
 $active  = basename($_SERVER['PHP_SELF']);
-$isStaff = !empty($currentUser['is_admin']);
 
 // ---------------------------------------------------------------------
 // Helper: decode Snipe-IT strings safely
@@ -68,12 +159,20 @@ $models        = [];
 $modelErr      = '';
 $totalModels   = 0;
 $totalPages    = 1;
+$categoriesUsed = [];
+$nowIso        = date('Y-m-d H:i:s');
 
 try {
     $data = get_bookable_models($page, $search ?? '', $category, $sort, $perPage);
 
     if (isset($data['rows']) && is_array($data['rows'])) {
         $models = $data['rows'];
+        foreach ($models as $m) {
+            $cid = isset($m['category']['id']) ? (int)$m['category']['id'] : 0;
+            if ($cid > 0) {
+                $categoriesUsed[$cid] = true;
+            }
+        }
     }
 
     if (isset($data['total'])) {
@@ -91,6 +190,22 @@ try {
     $models   = [];
     $modelErr = $e->getMessage();
 }
+
+// Filter categories to ones that are requestable (if API provides counts) or present in current model set
+if (!empty($categories)) {
+    $categories = array_values(array_filter($categories, function ($cat) use ($categoriesUsed) {
+        $id = isset($cat['id']) ? (int)$cat['id'] : 0;
+        if (isset($cat['requestable_count']) && is_numeric($cat['requestable_count'])) {
+            if ((int)$cat['requestable_count'] > 0) {
+                return true;
+            }
+        }
+        if (!empty($categoriesUsed) && $id > 0) {
+            return isset($categoriesUsed[$id]);
+        }
+        return true;
+    }));
+}
 ?>
 <!DOCTYPE html>
 <html>
@@ -105,6 +220,7 @@ try {
 <body class="p-4">
 <div class="container">
     <div class="page-shell">
+        <?= reserveit_logo_tag() ?>
         <div class="page-header">
             <h1>Equipment catalogue</h1>
             <div class="page-subtitle">
@@ -127,6 +243,10 @@ try {
                    class="app-nav-link <?= $active === 'staff_checkout.php' ? 'active' : '' ?>">Checkout</a>
                 <a href="quick_checkout.php"
                    class="app-nav-link <?= $active === 'quick_checkout.php' ? 'active' : '' ?>">Quick Checkout</a>
+                <a href="quick_checkin.php"
+                   class="app-nav-link <?= $active === 'quick_checkin.php' ? 'active' : '' ?>">Quick Checkin</a>
+                <a href="checked_out_assets.php"
+                   class="app-nav-link <?= $active === 'checked_out_assets.php' ? 'active' : '' ?>">Checked Out Assets</a>
             <?php endif; ?>
         </nav>
 
@@ -160,6 +280,35 @@ try {
         <?php endif; ?>
 
         <!-- Filters -->
+        <?php if ($isStaff): ?>
+            <div class="alert alert-info d-flex flex-column flex-md-row align-items-md-center justify-content-md-between">
+                <div class="mb-2 mb-md-0">
+                    <strong>Booking for:</strong>
+                    <?= h($activeUser['email'] ?? '') ?>
+                    <?php if (!empty($activeUser['first_name'])): ?>
+                        (<?= h(trim(($activeUser['first_name'] ?? '') . ' ' . ($activeUser['last_name'] ?? ''))) ?>)
+                    <?php endif; ?>
+                </div>
+                <form method="post" id="booking_user_form" class="d-flex gap-2 mb-0 flex-wrap">
+                    <input type="hidden" name="mode" value="set_booking_user">
+                    <input type="hidden" name="booking_user_email" id="booking_user_email">
+                    <input type="hidden" name="booking_user_name" id="booking_user_name">
+                    <div class="position-relative">
+                        <input type="text"
+                               id="booking_user_input"
+                               class="form-control form-control-sm"
+                               placeholder="Start typing email or name"
+                               autocomplete="off">
+                        <div class="list-group position-absolute w-100"
+                             id="booking_user_suggestions"
+                             style="z-index: 1050; max-height: 220px; overflow-y: auto; display: none;"></div>
+                    </div>
+                    <button class="btn btn-sm btn-primary" type="submit">Use</button>
+                    <button class="btn btn-sm btn-outline-secondary" type="submit" name="booking_user_revert" value="1">Revert to logged in user</button>
+                </form>
+            </div>
+        <?php endif; ?>
+
         <form class="row g-2 mb-3" method="get" action="catalogue.php">
             <div class="col-md-4">
                 <input type="text"
@@ -217,8 +366,51 @@ try {
                     $manuName   = $model['manufacturer']['name'] ?? '';
                     $catName    = $model['category']['name'] ?? '';
                     $imagePath  = $model['image'] ?? '';
-                    $assetCount = isset($model['assets_count']) ? (int)$model['assets_count'] : null;
-                    $maxQty     = ($assetCount && $assetCount > 0) ? $assetCount : 10;
+                    $assetCount = null;
+                    $freeNow     = 0;
+                    $maxQty      = 0;
+                    $isRequestable = false;
+                    try {
+                        $assetCount = count_requestable_assets_by_model($modelId);
+
+                        // Active reservations overlapping "now"
+                        $stmt = $pdo->prepare("
+                            SELECT
+                                COALESCE(SUM(CASE WHEN r.status IN ('pending','confirmed') THEN ri.quantity END), 0) AS pending_qty,
+                                COALESCE(SUM(CASE WHEN r.status = 'completed' THEN ri.quantity END), 0) AS completed_qty
+                            FROM reservation_items ri
+                            JOIN reservations r ON r.id = ri.reservation_id
+                            WHERE ri.model_id = :mid
+                              AND r.status IN ('pending','confirmed','completed')
+                              AND r.start_datetime <= :now
+                              AND r.end_datetime   > :now
+                        ");
+                        $stmt->execute([
+                            ':mid' => $modelId,
+                            ':now' => $nowIso,
+                        ]);
+                        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                        $pendingQty   = $row ? (int)$row['pending_qty'] : 0;
+                        $completedQty = $row ? (int)$row['completed_qty'] : 0;
+
+                        // How many are actually still checked out in Snipe-IT
+                        $activeCheckedOut = count_checked_out_assets_by_model($modelId);
+                        $bookedFromCompleted = min($completedQty, $activeCheckedOut);
+
+                        $booked = $pendingQty + $bookedFromCompleted;
+                        $freeNow = max(0, $assetCount - $booked);
+                        $maxQty = $freeNow;
+                        $isRequestable = $assetCount > 0;
+                    } catch (Throwable $e) {
+                        $assetCount = $assetCount ?? 0;
+                        $freeNow    = 0;
+                        $maxQty     = 0;
+                        $isRequestable = $assetCount > 0;
+                    }
+                    $notes      = $model['notes'] ?? '';
+                    if (is_array($notes)) {
+                        $notes = $notes['text'] ?? '';
+                    }
 
                     $proxiedImage = '';
                     if ($imagePath !== '') {
@@ -253,7 +445,13 @@ try {
                                         <span><strong>Category:</strong> <?= label_safe($catName) ?></span><br>
                                     <?php endif; ?>
                                     <?php if ($assetCount !== null): ?>
-                                        <span><strong>Units in total:</strong> <?= $assetCount ?></span>
+                                        <span><strong>Requestable units:</strong> <?= $assetCount ?></span><br>
+                                    <?php endif; ?>
+                                    <span><strong>Available now:</strong> <?= $freeNow ?></span>
+                                    <?php if (!empty($notes)): ?>
+                                        <div class="mt-2 text-muted clamp-3">
+                                            <?= label_safe($notes) ?>
+                                        </div>
                                     <?php endif; ?>
                                 </p>
 
@@ -262,22 +460,33 @@ try {
                                       class="mt-auto add-to-basket-form">
                                     <input type="hidden" name="model_id" value="<?= $modelId ?>">
 
-                                    <div class="row g-2 align-items-center mb-2">
-                                        <div class="col-6">
-                                            <label class="form-label mb-0 small">Quantity</label>
-                                            <input type="number"
-                                                   name="quantity"
-                                                   class="form-control form-control-sm"
-                                                   value="1"
-                                                   min="1"
-                                                   max="<?= $maxQty ?>">
+                                    <?php if ($isRequestable): ?>
+                                        <div class="row g-2 align-items-center mb-2">
+                                            <div class="col-6">
+                                                <label class="form-label mb-0 small">Quantity</label>
+                                                <input type="number"
+                                                       name="quantity"
+                                                       class="form-control form-control-sm"
+                                                       value="1"
+                                                       min="1"
+                                                       max="<?= $maxQty ?>">
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <button type="submit"
-                                            class="btn btn-sm btn-success w-100">
-                                        Add to basket
-                                    </button>
+                                        <button type="submit"
+                                                class="btn btn-sm btn-success w-100">
+                                            Add to basket
+                                        </button>
+                                    <?php else: ?>
+                                        <div class="alert alert-secondary small mb-0">
+                                            No requestable units available.
+                                        </div>
+                                        <button type="button"
+                                                class="btn btn-sm btn-secondary w-100 mt-2"
+                                                disabled>
+                                            Add to basket
+                                        </button>
+                                    <?php endif; ?>
                                 </form>
                             </div>
                         </div>
@@ -316,6 +525,12 @@ try {
 document.addEventListener('DOMContentLoaded', function () {
     const viewBasketBtn = document.getElementById('view-basket-btn');
     const forms = document.querySelectorAll('.add-to-basket-form');
+    const bookingInput = document.getElementById('booking_user_input');
+    const bookingList  = document.getElementById('booking_user_suggestions');
+    const bookingEmail = document.getElementById('booking_user_email');
+    const bookingName  = document.getElementById('booking_user_name');
+    let bookingTimer   = null;
+    let bookingQuery   = '';
 
     forms.forEach(function (form) {
         form.addEventListener('submit', function (e) {
@@ -352,11 +567,99 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 })
                 .catch(function () {
-                    // Fallback: if AJAX fails for any reason, do normal form submit
-                    form.submit();
-                });
-        });
+                // Fallback: if AJAX fails for any reason, do normal form submit
+                form.submit();
+            });
     });
+
+    function hideBookingSuggestions() {
+        if (!bookingList) return;
+        bookingList.style.display = 'none';
+        bookingList.innerHTML = '';
+    }
+
+    function renderBookingSuggestions(items) {
+        if (!bookingList) return;
+        bookingList.innerHTML = '';
+        if (!items || !items.length) {
+            hideBookingSuggestions();
+            return;
+        }
+        items.forEach(function (item) {
+            const email = item.email || '';
+            const name = item.name || '';
+            const label = (name && email && name !== email) ? (name + ' (' + email + ')') : (name || email);
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'list-group-item list-group-item-action';
+            btn.textContent = label;
+            btn.addEventListener('click', function () {
+                bookingInput.value = label;
+                bookingEmail.value = email;
+                bookingName.value  = name || email;
+                hideBookingSuggestions();
+            });
+            bookingList.appendChild(btn);
+        });
+        bookingList.style.display = 'block';
+    }
+
+    if (bookingInput && bookingList) {
+        bookingInput.addEventListener('input', function () {
+            const q = bookingInput.value.trim();
+            if (q.length < 2) {
+                hideBookingSuggestions();
+                return;
+            }
+            if (bookingTimer) clearTimeout(bookingTimer);
+            bookingTimer = setTimeout(function () {
+                bookingQuery = q;
+                fetch('catalogue.php?ajax=ldap_user_search&q=' + encodeURIComponent(q), {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                    .then(function (res) { return res.ok ? res.json() : null; })
+                    .then(function (data) {
+                        if (bookingQuery !== q) return;
+                        renderBookingSuggestions(data && data.results ? data.results : []);
+                    })
+                    .catch(function () {
+                        hideBookingSuggestions();
+                    });
+            }, 250);
+        });
+
+        bookingInput.addEventListener('blur', function () {
+            setTimeout(hideBookingSuggestions, 150);
+        });
+    }
+});
+
+function clearBookingUser() {
+    const email = document.getElementById('booking_user_email');
+    const name  = document.getElementById('booking_user_name');
+    const input = document.getElementById('booking_user_input');
+    if (email) email.value = '';
+    if (name) name.value = '';
+    if (input) input.value = '';
+}
+
+function revertToLoggedIn(e) {
+    if (e) e.preventDefault();
+    const email = document.getElementById('booking_user_email');
+    const name  = document.getElementById('booking_user_name');
+    const input = document.getElementById('booking_user_input');
+    const form  = document.getElementById('booking_user_form');
+    if (email) email.value = '';
+    if (name) name.value = '';
+    if (input) input.value = '';
+    // Submit form via hidden revert button to mirror normal submit
+    const revertBtn = document.querySelector('button[name="booking_user_revert"]');
+    if (revertBtn) {
+        revertBtn.click();
+    } else if (form) {
+        form.submit();
+    }
+}
 });
 </script>
 <?php reserveit_footer(); ?>

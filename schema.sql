@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS reservations (
     start_datetime DATETIME NOT NULL,
     end_datetime DATETIME NOT NULL,
 
-    status ENUM('pending','confirmed','completed','cancelled') NOT NULL DEFAULT 'pending',
+    status ENUM('pending','confirmed','completed','cancelled','missed') NOT NULL DEFAULT 'pending',
 
     -- Cached display string of items (for quick admin lists)
     asset_name_cache TEXT NULL,

@@ -48,10 +48,19 @@ if (!empty($basket)) {
             $modelId = (int)$modelId;
             $qty     = (int)$qty;
 
+            // Count requestable assets for limits/availability
+            $requestableCount = null;
+            try {
+                $requestableCount = count_requestable_assets_by_model($modelId);
+            } catch (Throwable $e) {
+                $requestableCount = null;
+            }
+
             $models[] = [
-                'id'    => $modelId,
-                'data'  => get_model($modelId),
-                'qty'   => $qty,
+                'id'                => $modelId,
+                'data'              => get_model($modelId),
+                'qty'               => $qty,
+                'requestable_count' => $requestableCount,
             ];
             $totalItems     += $qty;
             $distinctModels += 1;
@@ -61,10 +70,13 @@ if (!empty($basket)) {
         if ($previewStart && $previewEnd) {
             foreach ($models as $entry) {
                 $mid = (int)$entry['id'];
+                $requestableTotal = $entry['requestable_count'] ?? null;
 
                 // How many units already booked in that time range?
                 $sql = "
-                    SELECT COALESCE(SUM(ri.quantity), 0) AS booked_qty
+                    SELECT
+                        COALESCE(SUM(CASE WHEN r.status IN ('pending','confirmed') THEN ri.quantity END), 0) AS pending_qty,
+                        COALESCE(SUM(CASE WHEN r.status = 'completed' THEN ri.quantity END), 0) AS completed_qty
                     FROM reservation_items ri
                     JOIN reservations r ON r.id = ri.reservation_id
                     WHERE ri.model_id = :model_id
@@ -77,20 +89,36 @@ if (!empty($basket)) {
                     ':start'    => $previewStart,
                     ':end'      => $previewEnd,
                 ]);
-                $row = $stmt->fetch();
-                $booked = $row ? (int)$row['booked_qty'] : 0;
+                $row          = $stmt->fetch();
+                $pendingQty   = $row ? (int)$row['pending_qty'] : 0;
+                $completedQty = $row ? (int)$row['completed_qty'] : 0;
 
-                // Total physical units in Snipe-IT
-                $totalHardware = get_model_hardware_count($mid);
+                // For completed reservations, only count what is still checked out in Snipe-IT
+                $activeCheckedOut = count_checked_out_assets_by_model($mid);
+                $bookedFromCompleted = min($completedQty, $activeCheckedOut);
 
-                if ($totalHardware > 0) {
-                    $free = max(0, $totalHardware - $booked);
+                $booked = $pendingQty + $completedQty;
+                if ($bookedFromCompleted < $completedQty) {
+                    $booked = $pendingQty + $bookedFromCompleted;
+                }
+
+                // Total requestable units in Snipe-IT
+                if ($requestableTotal === null) {
+                    try {
+                        $requestableTotal = count_requestable_assets_by_model($mid);
+                    } catch (Throwable $e) {
+                        $requestableTotal = 0;
+                    }
+                }
+
+                if ($requestableTotal > 0) {
+                    $free = max(0, $requestableTotal - $booked);
                 } else {
                     $free = null; // unknown
                 }
 
                 $availability[$mid] = [
-                    'total'  => $totalHardware,
+                    'total'  => $requestableTotal,
                     'booked' => $booked,
                     'free'   => $free,
                 ];
@@ -117,6 +145,7 @@ $isStaff = !empty($currentUser['is_admin']);
 <body class="p-4">
 <div class="container">
     <div class="page-shell">
+        <?= reserveit_logo_tag() ?>
         <div class="page-header">
             <h1>Your basket</h1>
             <div class="page-subtitle">
@@ -138,6 +167,10 @@ $isStaff = !empty($currentUser['is_admin']);
                    class="app-nav-link <?= $active === 'staff_checkout.php' ? 'active' : '' ?>">Checkout</a>
                 <a href="quick_checkout.php"
                    class="app-nav-link <?= $active === 'quick_checkout.php' ? 'active' : '' ?>">Quick Checkout</a>
+                <a href="quick_checkin.php"
+                   class="app-nav-link <?= $active === 'quick_checkin.php' ? 'active' : '' ?>">Quick Checkin</a>
+                <a href="checked_out_assets.php"
+                   class="app-nav-link <?= $active === 'checked_out_assets.php' ? 'active' : '' ?>">Checked Out Assets</a>
             <?php endif; ?>
         </nav>
 

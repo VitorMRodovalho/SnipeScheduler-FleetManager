@@ -18,6 +18,7 @@ $isStaff = !empty($currentUser['is_admin']);
 <body class="p-4">
 <div class="container">
     <div class="page-shell">
+        <?= reserveit_logo_tag() ?>
         <div class="page-header">
             <h1>Equipment Booking</h1>
             <div class="page-subtitle">
@@ -39,6 +40,10 @@ $isStaff = !empty($currentUser['is_admin']);
                class="app-nav-link <?= $active === 'staff_checkout.php' ? 'active' : '' ?>">Checkout</a>
             <a href="quick_checkout.php"
                class="app-nav-link <?= $active === 'quick_checkout.php' ? 'active' : '' ?>">Quick Checkout</a>
+            <a href="quick_checkin.php"
+               class="app-nav-link <?= $active === 'quick_checkin.php' ? 'active' : '' ?>">Quick Checkin</a>
+            <a href="checked_out_assets.php"
+               class="app-nav-link <?= $active === 'checked_out_assets.php' ? 'active' : '' ?>">Checked Out Assets</a>
         <?php endif; ?>
     </nav>
 
@@ -125,6 +130,20 @@ $isStaff = !empty($currentUser['is_admin']);
                             </p>
                             <a href="quick_checkout.php" class="btn btn-outline-primary mt-auto">
                                 Go to quick checkout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">Quick Checkin</h5>
+                            <p class="card-text">
+                                Scan asset tags to check items back in via Snipe-IT (quick scan style).
+                            </p>
+                            <a href="quick_checkin.php" class="btn btn-outline-primary mt-auto">
+                                Go to quick checkin
                             </a>
                         </div>
                     </div>

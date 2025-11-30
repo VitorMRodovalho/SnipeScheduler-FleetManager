@@ -226,6 +226,9 @@ if ($selectedReservationId) {
                     $assetsRaw = list_assets_by_model($mid, 300);
                     $filtered  = [];
                     foreach ($assetsRaw as $a) {
+                        if (empty($a['requestable'])) {
+                            continue; // skip non-requestable assets
+                        }
                         $assigned = $a['assigned_to'] ?? ($a['assigned_to_fullname'] ?? '');
                         $statusRaw = $a['status_label'] ?? '';
                         if (is_array($statusRaw)) {
@@ -274,6 +277,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $modelName = $asset['model']['name'] ?? '';
                 $modelId   = (int)($asset['model']['id'] ?? 0);
                 $status    = $asset['status_label'] ?? '';
+                $isRequestable = !empty($asset['requestable']);
 
                 // Normalise status label to a string (API may return array/object)
                 if (is_array($status)) {
@@ -285,6 +289,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 if ($modelId <= 0) {
                     throw new Exception('Asset record from Snipe-IT is missing model information.');
+                }
+                if (!$isRequestable) {
+                    throw new Exception('This asset is not requestable in Snipe-IT.');
                 }
 
                 // Enforce that the asset's model is in the selected reservation and within quantity.
@@ -333,14 +340,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $assetsToCheckout    = [];
 
             // Validate selections against required quantities
-            foreach ($selectedItems as $item) {
-                $mid    = (int)$item['model_id'];
-                $qty    = (int)$item['qty'];
-                $choices = $modelAssets[$mid] ?? [];
-                $choicesById = [];
-                foreach ($choices as $c) {
+        foreach ($selectedItems as $item) {
+            $mid    = (int)$item['model_id'];
+            $qty    = (int)$item['qty'];
+            $choices = $modelAssets[$mid] ?? [];
+            $choicesById = [];
+            foreach ($choices as $c) {
+                if (!empty($c['requestable'])) {
                     $choicesById[(int)($c['id'] ?? 0)] = $c;
                 }
+            }
 
                 $selectedForModel = isset($selectedAssetsInput[$mid]) && is_array($selectedAssetsInput[$mid])
                     ? array_values($selectedAssetsInput[$mid])
@@ -381,7 +390,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
 
                     foreach ($assetsToCheckout as $a) {
-                        checkout_asset_to_user((int)$a['asset_id'], $userId, $note);
+                        checkout_asset_to_user((int)$a['asset_id'], $userId, $note, $selectedEnd);
                         $checkoutMessages[] = "Checked out asset {$a['asset_tag']} to {$userName}.";
                     }
 
@@ -457,7 +466,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
 
                     try {
-                        checkout_asset_to_user($assetId, $userId, $note);
+                        checkout_asset_to_user($assetId, $userId, $note, null);
                         $checkoutMessages[] = "Checked out asset {$assetTag} to {$userName}.";
                     } catch (Throwable $e) {
                         $checkoutErrors[] = "Failed to check out {$assetTag}: " . $e->getMessage();
@@ -494,6 +503,7 @@ $isStaff = !empty($currentUser['is_admin']);
 <body class="p-4">
 <div class="container">
     <div class="page-shell">
+        <?= reserveit_logo_tag() ?>
         <div class="page-header">
             <h1>Staff checkout</h1>
             <div class="page-subtitle">
@@ -515,6 +525,10 @@ $isStaff = !empty($currentUser['is_admin']);
                class="app-nav-link <?= $active === 'staff_checkout.php' ? 'active' : '' ?>">Checkout</a>
             <a href="quick_checkout.php"
                class="app-nav-link <?= $active === 'quick_checkout.php' ? 'active' : '' ?>">Quick Checkout</a>
+            <a href="quick_checkin.php"
+               class="app-nav-link <?= $active === 'quick_checkin.php' ? 'active' : '' ?>">Quick Checkin</a>
+            <a href="checked_out_assets.php"
+               class="app-nav-link <?= $active === 'checked_out_assets.php' ? 'active' : '' ?>">Checked Out Assets</a>
         </nav>
 
         <!-- Top bar -->
@@ -647,8 +661,9 @@ $isStaff = !empty($currentUser['is_admin']);
                                                 $aid   = (int)($opt['id'] ?? 0);
                                                 $atag  = $opt['asset_tag'] ?? ('ID ' . $aid);
                                                 $aname = $opt['name'] ?? '';
-                                                $astat = $opt['status_label'] ?? '';
-                                                $label = trim($atag . ' – ' . $aname . ($astat ? " ({$astat})" : ''));
+                                                $label = $aname !== ''
+                                                    ? trim($atag . ' – ' . $aname)
+                                                    : $atag;
                                                 ?>
                                                 <option value="<?= $aid ?>"><?= h($label) ?></option>
                                             <?php endforeach; ?>

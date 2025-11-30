@@ -4,7 +4,8 @@ require 'db.php';
 require 'snipeit_client.php';
 require_once __DIR__ . '/footer.php';
 
-$user = $currentUser;
+$userOverride = $_SESSION['booking_user_override'] ?? null;
+$user = $userOverride ?: $currentUser;
 
 $assetId  = (int)($_POST['asset_id'] ?? 0);
 $startRaw = $_POST['start_datetime'] ?? '';
@@ -100,6 +101,7 @@ $insert->execute([
 </head>
 <body class="p-4">
 <div class="container">
+    <?= reserveit_logo_tag() ?>
     <h1>Thank you</h1>
     <p>Your booking has been submitted.</p>
     <p>

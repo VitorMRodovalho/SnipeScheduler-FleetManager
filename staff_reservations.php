@@ -104,6 +104,7 @@ try {
 <body class="p-4">
 <div class="container">
     <div class="page-shell">
+        <?= reserveit_logo_tag() ?>
         <div class="page-header">
             <h1>All bookings (admin)</h1>
             <div class="page-subtitle">
@@ -126,6 +127,10 @@ try {
                class="app-nav-link <?= $active === 'staff_checkout.php' ? 'active' : '' ?>">Checkout</a>
             <a href="quick_checkout.php"
                class="app-nav-link <?= $active === 'quick_checkout.php' ? 'active' : '' ?>">Quick Checkout</a>
+            <a href="quick_checkin.php"
+               class="app-nav-link <?= $active === 'quick_checkin.php' ? 'active' : '' ?>">Quick Checkin</a>
+            <a href="checked_out_assets.php"
+               class="app-nav-link <?= $active === 'checked_out_assets.php' ? 'active' : '' ?>">Checked Out Assets</a>
             <?php endif; ?>
         </nav>
 

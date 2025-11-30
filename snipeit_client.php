@@ -160,8 +160,13 @@ function get_bookable_models(
         }
     } while (true);
 
-    // Determine total
-    $total = $totalFromApi ?? count($allRows);
+    // Filter by requestable flag (Snipe-IT uses 'requestable' on models)
+    $allRows = array_values(array_filter($allRows, function ($row) {
+        return !empty($row['requestable']);
+    }));
+
+    // Determine total after filtering
+    $total = count($allRows);
     if ($total > SNIPEIT_MAX_MODELS_FETCH) {
         $total = SNIPEIT_MAX_MODELS_FETCH; // we’ve capped at this many
     }
@@ -236,6 +241,13 @@ function get_model_categories(): array
     }
 
     $rows = $data['rows'];
+    // Keep only categories that have at least one requestable model if API returns requestable_count
+    $rows = array_values(array_filter($rows, function ($row) {
+        if (isset($row['requestable_count']) && is_numeric($row['requestable_count'])) {
+            return (int)$row['requestable_count'] > 0;
+        }
+        return true;
+    }));
 
     usort($rows, function ($a, $b) {
         $na = $a['name'] ?? '';
@@ -378,6 +390,62 @@ function list_assets_by_model(int $modelId, int $maxResults = 300): array
 }
 
 /**
+ * Count requestable assets for a model (asset-level requestable flag).
+ *
+ * @param int $modelId
+ * @return int
+ * @throws Exception
+ */
+function count_requestable_assets_by_model(int $modelId): int
+{
+    static $cache = [];
+    if ($modelId <= 0) {
+        throw new InvalidArgumentException('Model ID must be positive.');
+    }
+    if (isset($cache[$modelId])) {
+        return $cache[$modelId];
+    }
+
+    $assets = list_assets_by_model($modelId, 500);
+    $count  = 0;
+
+    foreach ($assets as $a) {
+        if (!empty($a['requestable'])) {
+            $count++;
+        }
+    }
+
+    $cache[$modelId] = $count;
+    return $count;
+}
+
+/**
+ * Count how many assets for a model are currently checked out/assigned.
+ *
+ * @param int $modelId
+ * @return int
+ * @throws Exception
+ */
+function count_checked_out_assets_by_model(int $modelId): int
+{
+    $assets = list_assets_by_model($modelId, 500);
+    $count = 0;
+    foreach ($assets as $a) {
+        $assigned = $a['assigned_to'] ?? ($a['assigned_to_fullname'] ?? '');
+        $statusRaw = $a['status_label'] ?? '';
+        if (is_array($statusRaw)) {
+            $statusRaw = $statusRaw['name'] ?? ($statusRaw['status_meta'] ?? '');
+        }
+        $status = strtolower((string)$statusRaw);
+
+        if (!empty($assigned) || strpos($status, 'checked out') !== false) {
+            $count++;
+        }
+    }
+    return $count;
+}
+
+/**
  * Find a single Snipe-IT user by email or name.
  *
  * Uses /users?search=... and tries to reduce to a single match:
@@ -438,13 +506,14 @@ function find_single_user_by_email_or_name(string $query): array
  *
  * Uses POST /hardware/{id}/checkout
  *
- * @param int    $assetId
- * @param int    $userId
- * @param string $note
+ * @param int         $assetId
+ * @param int         $userId
+ * @param string      $note
+ * @param string|null $expectedCheckin ISO datetime string for expected checkin
  * @return void
  * @throws Exception
  */
-function checkout_asset_to_user(int $assetId, int $userId, string $note = ''): void
+function checkout_asset_to_user(int $assetId, int $userId, string $note = '', ?string $expectedCheckin = null): void
 {
     if ($assetId <= 0) {
         throw new InvalidArgumentException('Invalid asset ID for checkout.');
@@ -462,6 +531,9 @@ function checkout_asset_to_user(int $assetId, int $userId, string $note = ''): v
 
     if ($note !== '') {
         $payload['note'] = $note;
+    }
+    if (!empty($expectedCheckin)) {
+        $payload['expected_checkin'] = $expectedCheckin;
     }
 
     // Snipe-IT may also support expected_checkin, etc., but we
@@ -491,4 +563,104 @@ function checkout_asset_to_user(int $assetId, int $userId, string $note = ''): v
     if ($status !== 'success' || $hasExplicitError) {
         throw new Exception('Snipe-IT checkout did not succeed: ' . $message);
     }
+}
+
+/**
+ * Check in a single asset in Snipe-IT by ID.
+ *
+ * @param int    $assetId
+ * @param string $note
+ * @return void
+ * @throws Exception
+ */
+function checkin_asset(int $assetId, string $note = ''): void
+{
+    if ($assetId <= 0) {
+        throw new InvalidArgumentException('Invalid asset ID for checkin.');
+    }
+
+    $payload = [];
+    if ($note !== '') {
+        $payload['note'] = $note;
+    }
+
+    $resp = snipeit_request('POST', 'hardware/' . $assetId . '/checkin', $payload);
+
+    $status = $resp['status'] ?? 'success';
+    $messagesField = $resp['messages'] ?? ($resp['message'] ?? '');
+    $flatMessages  = [];
+    if (is_array($messagesField)) {
+        array_walk_recursive($messagesField, function ($val) use (&$flatMessages) {
+            if (is_string($val) && trim($val) !== '') {
+                $flatMessages[] = $val;
+            }
+        });
+    } elseif (is_string($messagesField) && trim($messagesField) !== '') {
+        $flatMessages[] = $messagesField;
+    }
+    $message = $flatMessages ? implode('; ', $flatMessages) : 'Unknown API response';
+    $hasExplicitError = is_array($messagesField) && isset($messagesField['error']);
+
+    if ($status !== 'success' || $hasExplicitError) {
+        throw new Exception('Snipe-IT checkin did not succeed: ' . $message);
+    }
+}
+
+/**
+ * Fetch checked-out assets (requestable only).
+ *
+ * @param bool $overdueOnly
+ * @return array
+ * @throws Exception
+ */
+function list_checked_out_assets(bool $overdueOnly = false): array
+{
+    $params = [
+        'limit'  => 500,
+    ];
+
+    $data = snipeit_request('GET', 'hardware', $params);
+    if (!isset($data['rows']) || !is_array($data['rows'])) {
+        return [];
+    }
+
+    $now = time();
+    $filtered = [];
+    foreach ($data['rows'] as $row) {
+        // Only requestable assets
+        if (empty($row['requestable'])) {
+            continue;
+        }
+
+        // Consider "checked out" if assigned_to/user is present
+        $assigned = $row['assigned_to'] ?? ($row['assigned_to_fullname'] ?? '');
+        if ($assigned === '') {
+            continue;
+        }
+
+        // Normalize date fields
+        $lastCheckout = $row['last_checkout'] ?? '';
+        if (is_array($lastCheckout)) {
+            $lastCheckout = $lastCheckout['datetime'] ?? ($lastCheckout['date'] ?? '');
+        }
+        $expectedCheckin = $row['expected_checkin'] ?? '';
+        if (is_array($expectedCheckin)) {
+            $expectedCheckin = $expectedCheckin['datetime'] ?? ($expectedCheckin['date'] ?? '');
+        }
+
+        // Overdue check
+        if ($overdueOnly) {
+            $expTs = $expectedCheckin ? strtotime($expectedCheckin) : null;
+            if (!$expTs || $expTs > $now) {
+                continue;
+            }
+        }
+
+        $row['_last_checkout_norm']   = $lastCheckout;
+        $row['_expected_checkin_norm'] = $expectedCheckin;
+
+        $filtered[] = $row;
+    }
+
+    return $filtered;
 }
