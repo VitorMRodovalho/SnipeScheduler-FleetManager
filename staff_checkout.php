@@ -654,7 +654,7 @@ $isStaff = !empty($currentUser['is_admin']);
                                     <?php endfor; ?>
                                 <?php endif; ?>
                             </div>
-                        <?php endforeach; ?>
+<?php endforeach; ?>
 
                         <button type="submit" class="btn btn-primary">
                             Check out selected assets for this reservation
@@ -663,112 +663,6 @@ $isStaff = !empty($currentUser['is_admin']);
                 </div>
             </div>
         <?php endif; ?>
-
-        <!-- Bulk checkout panel -->
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Bulk checkout (via Snipe-IT)</h5>
-                <p class="card-text">
-                    Scan or type asset tags to add them to the checkout list. When ready, enter
-                    the Snipe-IT user (email or name) and check out all items in one go.
-                </p>
-
-                <!-- Scan/add asset form -->
-                <form method="post" class="row g-2 mb-3">
-                    <input type="hidden" name="mode" value="add_asset">
-                    <div class="col-md-6">
-                        <label class="form-label">Asset tag</label>
-                        <input type="text"
-                               name="asset_tag"
-                               class="form-control"
-                               placeholder="Scan or type asset tag..."
-                               autofocus>
-                    </div>
-                    <div class="col-md-3 d-grid align-items-end">
-                        <button type="submit" class="btn btn-outline-primary mt-4 mt-md-0">
-                            Add to checkout list
-                        </button>
-                    </div>
-                </form>
-
-                <!-- Current checkout list -->
-                <?php if (empty($checkoutAssets)): ?>
-                    <div class="alert alert-secondary">
-                        No assets in the checkout list yet. Scan or enter an asset tag above.
-                    </div>
-                <?php else: ?>
-                    <div class="table-responsive mb-3">
-                        <table class="table table-sm table-striped align-middle mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Asset Tag</th>
-                                    <th>Name</th>
-                                    <th>Model</th>
-                                    <th>Status (from Snipe-IT)</th>
-                                    <th style="width: 80px;"></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($checkoutAssets as $asset): ?>
-                                    <tr>
-                                        <td><?= h($asset['asset_tag']) ?></td>
-                                        <td><?= h($asset['name']) ?></td>
-                                        <td><?= h($asset['model']) ?></td>
-                                        <?php
-                                            $statusText = $asset['status'] ?? '';
-                                            if (is_array($statusText)) {
-                                                $statusText = $statusText['name'] ?? $statusText['status_meta'] ?? $statusText['label'] ?? '';
-                                            }
-                                        ?>
-                                        <td><?= h((string)$statusText) ?></td>
-                                        <td>
-                                            <a href="staff_checkout.php?remove=<?= (int)$asset['id'] ?>"
-                                               class="btn btn-sm btn-outline-danger">
-                                                Remove
-                                            </a>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Checkout form -->
-                    <form method="post" class="border-top pt-3">
-                        <input type="hidden" name="mode" value="checkout">
-
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label">
-                                    Check out to (Snipe-IT user email or name)
-                                </label>
-                                <div class="position-relative user-autocomplete-wrapper">
-                                    <input type="text"
-                                           name="checkout_to"
-                                           class="form-control user-autocomplete"
-                                           autocomplete="off"
-                                           placeholder="Start typing email or name">
-                                    <div class="list-group position-absolute w-100"
-                                         data-suggestions
-                                         style="z-index: 1050; max-height: 220px; overflow-y: auto; display: none;"></div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Note (optional)</label>
-                                <input type="text"
-                                       name="note"
-                                       class="form-control"
-                                       placeholder="Optional note to store with checkout">
-                            </div>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary">
-                            Check out all listed assets
-                        </button>
-                    </form>
-                <?php endif; ?>
-            </div>
-        </div>
 
     </div>
 </div>
