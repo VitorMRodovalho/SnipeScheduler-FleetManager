@@ -69,6 +69,7 @@ return [
         'timezone' => 'Europe/Jersey',
         'debug'    => true,
         'logo_url' => '', // optional: full URL or relative path to logo image
+        'primary_color' => '#660000', // main UI colour for gradients/buttons
         'missed_cutoff_minutes' => 60, // minutes after start time before marking reservation as missed
     ],
 ];
