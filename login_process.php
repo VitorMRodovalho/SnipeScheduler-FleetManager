@@ -17,13 +17,23 @@ $staffCn  = $authCfg['staff_group_cn'] ?? '';
  * Polyfill ldap_escape (older PHP builds)
  */
 if (!function_exists('ldap_escape')) {
-    function ldap_escape(string $str): string
+    function ldap_escape(string $str, string $ignore = '', int $flags = 0): string
     {
-        return str_replace(
-            ['\\', '*', '(', ')', "\x00"],
-            ['\5c', '\2a', '\28', '\29', '\00'],
-            $str
-        );
+        $search  = ['\\', '*', '(', ')', "\x00"];
+        $replace = ['\5c', '\2a', '\28', '\29', '\00'];
+
+        if ($ignore !== '') {
+            for ($i = 0; $i < strlen($ignore); $i++) {
+                $idx = array_search($ignore[$i], $search, true);
+                if ($idx !== false) {
+                    unset($search[$idx], $replace[$idx]);
+                }
+            }
+            $search  = array_values($search);
+            $replace = array_values($replace);
+        }
+
+        return str_replace($search, $replace, $str);
     }
 }
 
@@ -79,9 +89,10 @@ if (!@ldap_bind($ldap, $ldapCfg['bind_dn'], $ldapCfg['bind_password'])) {
 // ------------------------------------------------------------------
 // Find user by EMAIL
 // ------------------------------------------------------------------
+$emailEsc = ldap_escape($email, '', defined('LDAP_ESCAPE_FILTER') ? LDAP_ESCAPE_FILTER : 0);
 $filter = sprintf(
-    '(&(objectClass=user)(mail=%s))',
-    ldap_escape($email)
+    '(&(objectClass=user)(|(mail=%1$s)(userPrincipalName=%1$s)(proxyAddresses=smtp:%1$s)(proxyAddresses=SMTP:%1$s)))',
+    $emailEsc
 );
 
 $attrs = [
@@ -92,6 +103,7 @@ $attrs = [
     'mail',
     'memberOf',
     'sAMAccountName',
+    'userPrincipalName',
 ];
 
 $search  = @ldap_search($ldap, $ldapCfg['base_dn'], $filter, $attrs);
@@ -131,7 +143,8 @@ if (!@ldap_bind($ldap, $userDn, $password)) {
 $firstName = $user['givenname'][0]       ?? '';
 $lastName  = $user['sn'][0]              ?? '';
 $display   = $user['displayname'][0]     ?? '';
-$mail      = $user['mail'][0]            ?? $email;
+$mail      = $user['mail'][0]
+    ?? ($user['userprincipalname'][0] ?? $email);
 $sam       = $user['samaccountname'][0]  ?? '';
 
 // Fallback name logic
