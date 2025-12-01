@@ -1,9 +1,12 @@
 <?php
 // login_process.php
+
+require_once __DIR__ . '/../src/bootstrap.php';
+require_once SRC_PATH . '/db.php';
+
 session_start();
 
-require_once __DIR__ . '/db.php';
-$config   = require __DIR__ . '/config.php';
+$config   = load_config();
 
 $ldapCfg   = $config['ldap'];
 $authCfg   = $config['auth'];

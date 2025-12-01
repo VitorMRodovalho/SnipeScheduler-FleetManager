@@ -3,6 +3,8 @@
  * Global configuration for the Snipe-IT booking app.
  *
  * Edit the values below to match your environment.
+ *
+ * Copy this file to config/config.php and keep your secrets out of version control.
  */
 
 /**

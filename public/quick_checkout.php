@@ -1,11 +1,12 @@
 <?php
-// quick_checkin.php
-// Standalone bulk check-in page (quick scan style).
+// quick_checkout.php
+// Standalone bulk checkout page (ad-hoc, not tied to reservations).
 
-require_once __DIR__ . '/auth.php';
-require_once __DIR__ . '/snipeit_client.php';
-require_once __DIR__ . '/db.php';
-require_once __DIR__ . '/footer.php';
+require_once __DIR__ . '/../src/bootstrap.php';
+require_once SRC_PATH . '/auth.php';
+require_once SRC_PATH . '/snipeit_client.php';
+require_once SRC_PATH . '/db.php';
+require_once SRC_PATH . '/footer.php';
 
 $active  = basename($_SERVER['PHP_SELF']);
 $isStaff = !empty($currentUser['is_admin']);
@@ -16,10 +17,10 @@ if (empty($currentUser['is_admin'])) {
     exit;
 }
 
-if (!isset($_SESSION['quick_checkin_assets'])) {
-    $_SESSION['quick_checkin_assets'] = [];
+if (!isset($_SESSION['quick_checkout_assets'])) {
+    $_SESSION['quick_checkout_assets'] = [];
 }
-$checkinAssets = &$_SESSION['quick_checkin_assets'];
+$checkoutAssets = &$_SESSION['quick_checkout_assets'];
 
 $messages = [];
 $errors   = [];
@@ -27,10 +28,10 @@ $errors   = [];
 // Remove single asset
 if (isset($_GET['remove'])) {
     $rid = (int)$_GET['remove'];
-    if ($rid > 0 && isset($checkinAssets[$rid])) {
-        unset($checkinAssets[$rid]);
+    if ($rid > 0 && isset($checkoutAssets[$rid])) {
+        unset($checkoutAssets[$rid]);
     }
-    header('Location: quick_checkin.php');
+    header('Location: quick_checkout.php');
     exit;
 }
 
@@ -49,6 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $assetName = $asset['name'] ?? '';
                 $modelName = $asset['model']['name'] ?? '';
                 $status    = $asset['status_label'] ?? '';
+                $isRequestable = !empty($asset['requestable']);
                 if (is_array($status)) {
                     $status = $status['name'] ?? $status['status_meta'] ?? $status['label'] ?? '';
                 }
@@ -56,37 +58,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($assetId <= 0 || $assetTag === '') {
                     throw new Exception('Asset record from Snipe-IT is missing id/asset_tag.');
                 }
+                if (!$isRequestable) {
+                    throw new Exception('This asset is not requestable in Snipe-IT.');
+                }
 
-                $checkinAssets[$assetId] = [
+                $checkoutAssets[$assetId] = [
                     'id'         => $assetId,
                     'asset_tag'  => $assetTag,
                     'name'       => $assetName,
                     'model'      => $modelName,
                     'status'     => $status,
                 ];
-                $messages[] = "Added asset {$assetTag} ({$assetName}) to check-in list.";
+                $messages[] = "Added asset {$assetTag} ({$assetName}) to checkout list.";
             } catch (Throwable $e) {
                 $errors[] = 'Could not add asset: ' . $e->getMessage();
             }
         }
-    } elseif ($mode === 'checkin') {
-        $note = trim($_POST['note'] ?? '');
+    } elseif ($mode === 'checkout') {
+        $checkoutTo = trim($_POST['checkout_to'] ?? '');
+        $note       = trim($_POST['note'] ?? '');
 
-        if (empty($checkinAssets)) {
-            $errors[] = 'There are no assets in the check-in list.';
+        if ($checkoutTo === '') {
+            $errors[] = 'Please enter the Snipe-IT user (email or name) to check out to.';
+        } elseif (empty($checkoutAssets)) {
+            $errors[] = 'There are no assets in the checkout list.';
         } else {
-            foreach ($checkinAssets as $asset) {
-                $assetId  = (int)$asset['id'];
-                $assetTag = $asset['asset_tag'] ?? '';
-                try {
-                    checkin_asset($assetId, $note);
-                    $messages[] = "Checked in asset {$assetTag}.";
-                } catch (Throwable $e) {
-                    $errors[] = "Failed to check in {$assetTag}: " . $e->getMessage();
+            try {
+                $user = find_single_user_by_email_or_name($checkoutTo);
+                $userId   = (int)($user['id'] ?? 0);
+                $userName = $user['name'] ?? ($user['username'] ?? $checkoutTo);
+
+                if ($userId <= 0) {
+                    throw new Exception('Matched user has no valid ID.');
                 }
-            }
-            if (empty($errors)) {
-                $checkinAssets = [];
+
+                foreach ($checkoutAssets as $asset) {
+                    $assetId  = (int)$asset['id'];
+                    $assetTag = $asset['asset_tag'] ?? '';
+                    try {
+                        checkout_asset_to_user($assetId, $userId, $note, null);
+                        $messages[] = "Checked out asset {$assetTag} to {$userName}.";
+                    } catch (Throwable $e) {
+                        $errors[] = "Failed to check out {$assetTag}: " . $e->getMessage();
+                    }
+                }
+
+                if (empty($errors)) {
+                    $checkoutAssets = [];
+                }
+            } catch (Throwable $e) {
+                $errors[] = 'Could not find user in Snipe-IT: ' . $e->getMessage();
             }
         }
     }
@@ -96,19 +117,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Quick Checkin – ReserveIT</title>
+    <title>Quick Checkout – ReserveIT</title>
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="assets/style.css">
 </head>
 <body class="p-4">
 <div class="container">
     <div class="page-shell">
         <?= reserveit_logo_tag() ?>
         <div class="page-header">
-            <h1>Quick Checkin</h1>
+            <h1>Quick Checkout</h1>
             <div class="page-subtitle">
-                Scan or type asset tags to check items back in via Snipe-IT.
+                Ad-hoc bulk checkout via Snipe-IT (not tied to a reservation).
             </div>
         </div>
 
@@ -153,9 +174,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title">Bulk check-in</h5>
+                <h5 class="card-title">Bulk checkout (via Snipe-IT)</h5>
                 <p class="card-text">
-                    Scan or type asset tags to add them to the check-in list. When ready, click check in.
+                    Scan or type asset tags to add them to the checkout list. When ready, enter
+                    the Snipe-IT user (email or name) and check out all items in one go.
                 </p>
 
                 <form method="post" class="row g-2 mb-3">
@@ -170,14 +192,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                     <div class="col-md-3 d-grid align-items-end">
                         <button type="submit" class="btn btn-outline-primary mt-4 mt-md-0">
-                            Add to check-in list
+                            Add to checkout list
                         </button>
                     </div>
                 </form>
 
-                <?php if (empty($checkinAssets)): ?>
+                <?php if (empty($checkoutAssets)): ?>
                     <div class="alert alert-secondary">
-                        No assets in the check-in list yet. Scan or enter an asset tag above.
+                        No assets in the checkout list yet. Scan or enter an asset tag above.
                     </div>
                 <?php else: ?>
                     <div class="table-responsive mb-3">
@@ -192,7 +214,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($checkinAssets as $asset): ?>
+                                <?php foreach ($checkoutAssets as $asset): ?>
                                     <tr>
                                         <td><?= h($asset['asset_tag']) ?></td>
                                         <td><?= h($asset['name']) ?></td>
@@ -205,7 +227,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         ?>
                                         <td><?= h((string)$statusText) ?></td>
                                         <td>
-                                            <a href="quick_checkin.php?remove=<?= (int)$asset['id'] ?>"
+                                            <a href="quick_checkout.php?remove=<?= (int)$asset['id'] ?>"
                                                class="btn btn-sm btn-outline-danger">
                                                 Remove
                                             </a>
@@ -217,20 +239,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
 
                     <form method="post" class="border-top pt-3">
-                        <input type="hidden" name="mode" value="checkin">
+                        <input type="hidden" name="mode" value="checkout">
 
                         <div class="row g-3 mb-3">
-                            <div class="col-md-12">
+                            <div class="col-md-6">
+                                <label class="form-label">
+                                    Check out to (Snipe-IT user email or name)
+                                </label>
+                                <div class="position-relative user-autocomplete-wrapper">
+                                    <input type="text"
+                                           name="checkout_to"
+                                           class="form-control user-autocomplete"
+                                           autocomplete="off"
+                                           placeholder="Start typing email or name">
+                                    <div class="list-group position-absolute w-100"
+                                         data-suggestions
+                                         style="z-index: 1050; max-height: 220px; overflow-y: auto; display: none;"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
                                 <label class="form-label">Note (optional)</label>
                                 <input type="text"
                                        name="note"
                                        class="form-control"
-                                       placeholder="Optional note to store with check-in">
+                                       placeholder="Optional note to store with checkout">
                             </div>
                         </div>
 
                         <button type="submit" class="btn btn-primary">
-                            Check in all listed assets
+                            Check out all listed assets
                         </button>
                     </form>
                 <?php endif; ?>
@@ -239,6 +276,85 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     </div>
 </div>
+
+<script>
+(function () {
+    const wrappers = document.querySelectorAll('.user-autocomplete-wrapper');
+    wrappers.forEach((wrapper) => {
+        const input = wrapper.querySelector('.user-autocomplete');
+        const list  = wrapper.querySelector('[data-suggestions]');
+        if (!input || !list) return;
+
+        let timer = null;
+        let lastQuery = '';
+
+        input.addEventListener('input', () => {
+            const q = input.value.trim();
+            if (q.length < 2) {
+                hideSuggestions();
+                return;
+            }
+            if (timer) clearTimeout(timer);
+            timer = setTimeout(() => fetchSuggestions(q), 250);
+        });
+
+        input.addEventListener('blur', () => {
+            setTimeout(hideSuggestions, 150);
+        });
+
+        function fetchSuggestions(q) {
+            lastQuery = q;
+            fetch('staff_checkout.php?ajax=user_search&q=' + encodeURIComponent(q), {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+                .then((res) => res.ok ? res.json() : Promise.reject())
+                .then((data) => {
+                    if (lastQuery !== q) return;
+                    renderSuggestions(data.results || []);
+                })
+                .catch(() => {
+                    renderSuggestions([]);
+                });
+        }
+
+        function renderSuggestions(items) {
+            list.innerHTML = '';
+            if (!items || !items.length) {
+                hideSuggestions();
+                return;
+            }
+
+            items.forEach((item) => {
+                const email = item.email || '';
+                const name = item.name || item.username || email;
+                const label = (name && email && name !== email) ? `${name} (${email})` : (name || email);
+                const value = email || name;
+
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'list-group-item list-group-item-action';
+                btn.textContent = label;
+                btn.dataset.value = value;
+
+                btn.addEventListener('click', () => {
+                    input.value = btn.dataset.value;
+                    hideSuggestions();
+                    input.focus();
+                });
+
+                list.appendChild(btn);
+            });
+
+            list.style.display = 'block';
+        }
+
+        function hideSuggestions() {
+            list.style.display = 'none';
+            list.innerHTML = '';
+        }
+    });
+})();
+</script>
 <?php reserveit_footer(); ?>
 </body>
 </html>

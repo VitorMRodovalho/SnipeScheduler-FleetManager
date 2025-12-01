@@ -2,10 +2,12 @@
 // footer.php
 // Shared footer renderer for ReserveIT pages.
 
+require_once __DIR__ . '/bootstrap.php';
+
 if (!function_exists('reserveit_footer')) {
     function reserveit_footer(): void
     {
-        $versionFile = __DIR__ . '/version.txt';
+        $versionFile = APP_ROOT . '/version.txt';
         $versionRaw  = is_file($versionFile) ? trim((string)@file_get_contents($versionFile)) : '';
         $version     = $versionRaw !== '' ? $versionRaw : 'dev';
         $versionEsc  = htmlspecialchars($version, ENT_QUOTES, 'UTF-8');
@@ -22,8 +24,12 @@ if (!function_exists('reserveit_logo_tag')) {
     {
         static $cachedConfig = null;
         if ($cfg === null) {
-            if ($cachedConfig === null && is_file(__DIR__ . '/config.php')) {
-                $cachedConfig = require __DIR__ . '/config.php';
+            if ($cachedConfig === null) {
+                try {
+                    $cachedConfig = load_config();
+                } catch (Throwable $e) {
+                    $cachedConfig = [];
+                }
             }
             $cfg = $cachedConfig ?? [];
         }
