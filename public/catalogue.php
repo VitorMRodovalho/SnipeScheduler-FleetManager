@@ -156,24 +156,17 @@ try {
 // ---------------------------------------------------------------------
 // Load models from Snipe-IT
 // ---------------------------------------------------------------------
-$models        = [];
-$modelErr      = '';
-$totalModels   = 0;
-$totalPages    = 1;
-$categoriesUsed = [];
-$nowIso        = date('Y-m-d H:i:s');
+$models      = [];
+$modelErr    = '';
+$totalModels = 0;
+$totalPages  = 1;
+$nowIso      = date('Y-m-d H:i:s');
 
 try {
     $data = get_bookable_models($page, $search ?? '', $category, $sort, $perPage);
 
     if (isset($data['rows']) && is_array($data['rows'])) {
         $models = $data['rows'];
-        foreach ($models as $m) {
-            $cid = isset($m['category']['id']) ? (int)$m['category']['id'] : 0;
-            if ($cid > 0) {
-                $categoriesUsed[$cid] = true;
-            }
-        }
     }
 
     if (isset($data['total'])) {
@@ -192,21 +185,7 @@ try {
     $modelErr = $e->getMessage();
 }
 
-// Filter categories to ones that are requestable (if API provides counts) or present in current model set
-if (!empty($categories)) {
-    $categories = array_values(array_filter($categories, function ($cat) use ($categoriesUsed) {
-        $id = isset($cat['id']) ? (int)$cat['id'] : 0;
-        if (isset($cat['requestable_count']) && is_numeric($cat['requestable_count'])) {
-            if ((int)$cat['requestable_count'] > 0) {
-                return true;
-            }
-        }
-        if (!empty($categoriesUsed) && $id > 0) {
-            return isset($categoriesUsed[$id]);
-        }
-        return true;
-    }));
-}
+// Keep all categories returned by Snipe-IT (no trimming by current page)
 ?>
 <!DOCTYPE html>
 <html>
