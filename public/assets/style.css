@@ -325,11 +325,12 @@ form .form-select {
     position: relative;
     padding: 1.25rem 1.35rem;
     border-radius: 1rem;
-    border: 1px solid rgba(var(--primary-rgb), 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.28);
     background:
-        linear-gradient(140deg, rgba(var(--primary-rgb), 0.18) 0%, rgba(var(--primary-soft-rgb), 0.14) 50%, rgba(255, 255, 255, 0.94) 100%);
-    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12);
+        linear-gradient(135deg, rgba(var(--primary-rgb), 0.85) 0%, rgba(var(--primary-soft-rgb), 0.72) 50%, rgba(var(--primary-rgb), 0.78) 100%);
+    box-shadow: 0 18px 36px rgba(var(--primary-rgb), 0.25);
     overflow: hidden;
+    color: #fff;
 }
 
 .filter-panel::after {
@@ -338,8 +339,8 @@ form .form-select {
     inset: 0;
     pointer-events: none;
     background:
-        radial-gradient(circle at 26% 24%, rgba(var(--primary-rgb), 0.18), transparent 38%),
-        radial-gradient(circle at 82% 18%, rgba(var(--primary-soft-rgb), 0.16), transparent 40%);
+        radial-gradient(circle at 26% 24%, rgba(255, 255, 255, 0.12), transparent 38%),
+        radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.08), transparent 40%);
 }
 
 .filter-panel__header {
@@ -352,7 +353,7 @@ form .form-select {
     font-size: 1.05rem;
     font-weight: 800;
     letter-spacing: 0.08em;
-    color: var(--text);
+    color: #ffffff;
 }
 
 .filter-panel__dot {
@@ -414,6 +415,17 @@ form .form-select {
 
 .filter-panel .btn {
     height: 100%;
+}
+
+.filter-panel .form-label {
+    color: rgba(255, 255, 255, 0.86);
+}
+
+.filter-panel .form-control,
+.filter-panel .form-select {
+    background: rgba(255, 255, 255, 0.96);
+    border-color: rgba(255, 255, 255, 0.65);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
 }
 
 /* --------------------------------------------------
