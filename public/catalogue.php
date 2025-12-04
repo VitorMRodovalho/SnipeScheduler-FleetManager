@@ -292,45 +292,69 @@ if (!empty($categories)) {
             </div>
         <?php endif; ?>
 
-        <form class="row g-2 mb-3" method="get" action="catalogue.php">
-            <div class="col-md-4">
-                <input type="text"
-                       name="q"
-                       class="form-control"
-                       placeholder="Search by name, manufacturer..."
-                       value="<?= htmlspecialchars($searchRaw) ?>">
+        <form class="filter-panel mb-4" method="get" action="catalogue.php">
+            <div class="filter-panel__header d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="filter-panel__dot"></span>
+                    <div>
+                        <div class="filter-panel__eyebrow">Filters</div>
+                        <div class="filter-panel__subtitle">Zero in on models quickly – start with the highlighted name search.</div>
+                    </div>
+                </div>
+                <div class="filter-panel__hint text-muted small">Tip: press Enter to search immediately</div>
             </div>
 
-            <div class="col-md-3">
-                <select name="category" class="form-select">
-                    <option value="">All categories</option>
-                    <?php foreach ($categories as $cat): ?>
-                        <?php
-                        $cid   = (int)($cat['id'] ?? 0);
-                        $cname = $cat['name'] ?? '';
-                        ?>
-                        <option value="<?= $cid ?>"
-                            <?= ($category === $cid) ? 'selected' : '' ?>>
-                            <?= label_safe($cname) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
+            <div class="row g-3 align-items-end">
+                <div class="col-12 col-lg-5">
+                    <label class="form-label mb-1 fw-semibold">Search by name</label>
+                    <div class="input-group filter-search">
+                        <span class="input-group-text filter-search__icon" aria-hidden="true">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+                                <line x1="15.5" y1="15.5" x2="21" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </span>
+                        <input type="text"
+                               name="q"
+                               class="form-control form-control-lg filter-search__input"
+                               placeholder="Search by model name or manufacturer"
+                               value="<?= htmlspecialchars($searchRaw) ?>">
+                    </div>
+                </div>
 
-            <div class="col-md-3">
-                <select name="sort" class="form-select">
-                    <option value="">Sort: Model name (A–Z)</option>
-                    <option value="name_asc"   <?= $sort === 'name_asc'   ? 'selected' : '' ?>>Model Name (Ascending)</option>
-                    <option value="name_desc"  <?= $sort === 'name_desc'  ? 'selected' : '' ?>>Model Name (Descending)</option>
-                    <option value="manu_asc"   <?= $sort === 'manu_asc'   ? 'selected' : '' ?>>Manufacturer (Ascending)</option>
-                    <option value="manu_desc"  <?= $sort === 'manu_desc'  ? 'selected' : '' ?>>Manufacturer (Descending)</option>
-                    <option value="units_asc"  <?= $sort === 'units_asc'  ? 'selected' : '' ?>>Units in Total (Ascending)</option>
-                    <option value="units_desc" <?= $sort === 'units_desc' ? 'selected' : '' ?>>Units in Total (Descending)</option>
-                </select>
-            </div>
+                <div class="col-6 col-lg-3">
+                    <label class="form-label mb-1 fw-semibold">Category</label>
+                    <select name="category" class="form-select">
+                        <option value="">All categories</option>
+                        <?php foreach ($categories as $cat): ?>
+                            <?php
+                            $cid   = (int)($cat['id'] ?? 0);
+                            $cname = $cat['name'] ?? '';
+                            ?>
+                            <option value="<?= $cid ?>"
+                                <?= ($category === $cid) ? 'selected' : '' ?>>
+                                <?= label_safe($cname) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
 
-            <div class="col-md-2 d-grid">
-                <button class="btn btn-primary" type="submit">Filter</button>
+                <div class="col-6 col-lg-2">
+                    <label class="form-label mb-1 fw-semibold">Sort</label>
+                    <select name="sort" class="form-select">
+                        <option value="">Model name (A–Z)</option>
+                        <option value="name_asc"   <?= $sort === 'name_asc'   ? 'selected' : '' ?>>Model Name (Ascending)</option>
+                        <option value="name_desc"  <?= $sort === 'name_desc'  ? 'selected' : '' ?>>Model Name (Descending)</option>
+                        <option value="manu_asc"   <?= $sort === 'manu_asc'   ? 'selected' : '' ?>>Manufacturer (Ascending)</option>
+                        <option value="manu_desc"  <?= $sort === 'manu_desc'  ? 'selected' : '' ?>>Manufacturer (Descending)</option>
+                        <option value="units_asc"  <?= $sort === 'units_asc'  ? 'selected' : '' ?>>Units in Total (Ascending)</option>
+                        <option value="units_desc" <?= $sort === 'units_desc' ? 'selected' : '' ?>>Units in Total (Descending)</option>
+                    </select>
+                </div>
+
+                <div class="col-12 col-lg-2 d-grid">
+                    <button class="btn btn-primary btn-lg" type="submit">Filter results</button>
+                </div>
             </div>
         </form>
 
