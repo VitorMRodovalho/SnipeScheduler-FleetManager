@@ -126,49 +126,63 @@ function get_bookable_models(
         }
     }
 
-    $allRows      = [];
-    $totalFromApi = null;
+    // Decide which categories to pull from Snipe-IT.
+    // If an allowlist exists and no explicit category is chosen, pull each allowed category only.
+    $categoriesToPull = [];
+    if (!empty($allowedMap)) {
+        if ($categoryId !== null) {
+            $categoriesToPull[] = $categoryId;
+        } else {
+            $categoriesToPull = array_keys($allowedMap);
+        }
+    } else {
+        $categoriesToPull[] = $categoryId; // null means "all categories"
+    }
 
     $limit  = min(200, SNIPEIT_MAX_MODELS_FETCH); // per-API-call limit
-    $offset = 0;
+    $allRows = [];
 
-    // Pull pages from Snipe-IT until we have everything (or hit our max fetch cap)
-    do {
-        $params = [
-            'limit'  => $limit,
-            'offset' => $offset,
-        ];
+    foreach ($categoriesToPull as $catId) {
+        $offset = 0;
 
-        if ($search !== '') {
-            $params['search'] = $search;
-        }
+        do {
+            $params = [
+                'limit'  => $limit,
+                'offset' => $offset,
+            ];
 
-        if (!empty($categoryId)) {
-            $params['category_id'] = $categoryId;
-        }
+            if ($search !== '') {
+                $params['search'] = $search;
+            }
 
-        $chunk = snipeit_request('GET', 'models', $params);
+            if (!empty($catId)) {
+                $params['category_id'] = $catId;
+            }
 
-        if (!isset($chunk['rows']) || !is_array($chunk['rows'])) {
+            $chunk = snipeit_request('GET', 'models', $params);
+
+            if (!isset($chunk['rows']) || !is_array($chunk['rows'])) {
+                break;
+            }
+
+            $rows    = $chunk['rows'];
+            $allRows = array_merge($allRows, $rows);
+
+            $fetchedThisCall = count($rows);
+            $offset += $limit;
+
+            // Stop if we didn't get a full page (end of data),
+            // or we have reached our max safety cap.
+            if ($fetchedThisCall < $limit || count($allRows) >= SNIPEIT_MAX_MODELS_FETCH) {
+                break;
+            }
+        } while (true);
+
+        // Stop pulling further categories if we've hit our cap
+        if (count($allRows) >= SNIPEIT_MAX_MODELS_FETCH) {
             break;
         }
-
-        if ($totalFromApi === null && isset($chunk['total'])) {
-            $totalFromApi = (int)$chunk['total'];
-        }
-
-        $rows    = $chunk['rows'];
-        $allRows = array_merge($allRows, $rows);
-
-        $fetchedThisCall = count($rows);
-        $offset += $limit;
-
-        // Stop if we didn't get a full page (end of data),
-        // or we have reached our max safety cap.
-        if ($fetchedThisCall < $limit || count($allRows) >= SNIPEIT_MAX_MODELS_FETCH) {
-            break;
-        }
-    } while (true);
+    }
 
     // Filter by requestable flag (Snipe-IT uses 'requestable' on models)
     $allRows = array_values(array_filter($allRows, function ($row) {
