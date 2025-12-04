@@ -3,6 +3,7 @@ require_once __DIR__ . '/../src/bootstrap.php';
 require_once SRC_PATH . '/auth.php';
 require_once SRC_PATH . '/footer.php';
 require_once SRC_PATH . '/config_writer.php';
+require_once SRC_PATH . '/snipeit_client.php';
 
 $active  = basename($_SERVER['PHP_SELF']);
 $isStaff = !empty($currentUser['is_admin']);
@@ -25,6 +26,15 @@ try {
     // Fall back to example config if we can't load a real one yet.
     $config = is_file($examplePath) ? require $examplePath : [];
     $errors[] = 'Config file missing – showing defaults from config.example.php.';
+}
+
+$categoryOptions    = [];
+$categoryFetchError = '';
+try {
+    $categoryOptions = get_model_categories();
+} catch (Throwable $e) {
+    $categoryOptions    = [];
+    $categoryFetchError = $e->getMessage();
 }
 
 $definedValues = [
@@ -77,12 +87,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $app['primary_color']         = $post('app_primary_color', $app['primary_color'] ?? '#660000');
     $app['missed_cutoff_minutes'] = max(0, (int)$post('app_missed_cutoff', $app['missed_cutoff_minutes'] ?? 60));
 
+    $catalogue = $config['catalogue'] ?? [];
+    $allowedRaw = $_POST['catalogue_allowed_categories'] ?? [];
+    $allowedCategories = [];
+    if (is_array($allowedRaw)) {
+        foreach ($allowedRaw as $cid) {
+            if (ctype_digit((string)$cid)) {
+                $allowedCategories[] = (int)$cid;
+            }
+        }
+    }
+    $catalogue['allowed_categories'] = $allowedCategories;
+
     $newConfig = $config;
     $newConfig['db_booking'] = $db;
     $newConfig['ldap']       = $ldap;
     $newConfig['snipeit']    = $snipe;
     $newConfig['auth']       = $auth;
     $newConfig['app']        = $app;
+    $newConfig['catalogue']  = $catalogue;
 
     $content = reserveit_build_config_file($newConfig, [
         'SNIPEIT_API_PAGE_LIMIT'   => $pageLimit,
@@ -129,6 +152,12 @@ if (!is_array($staffGroupList)) {
     $staffGroupList = [];
 }
 $staffGroupText = implode("\n", $staffGroupList);
+
+$allowedCategoryIds = $cfg(['catalogue', 'allowed_categories'], []);
+if (!is_array($allowedCategoryIds)) {
+    $allowedCategoryIds = [];
+}
+$allowedCategoryIds = array_map('intval', $allowedCategoryIds);
 
 ?>
 <!DOCTYPE html>
@@ -305,6 +334,48 @@ $staffGroupText = implode("\n", $staffGroupList);
                                 <div class="form-text">Safety cap on total models pulled when sorting before pagination.</div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title mb-1">Catalogue categories</h5>
+                        <p class="text-muted small mb-3">Choose which Snipe-IT categories appear in the catalogue filter. Leave everything unticked to show all categories.</p>
+                        <?php if ($categoryFetchError): ?>
+                            <div class="alert alert-warning small mb-3">
+                                Could not load categories from Snipe-IT: <?= h($categoryFetchError) ?>
+                            </div>
+                        <?php elseif (empty($categoryOptions)): ?>
+                            <div class="text-muted small">No categories available.</div>
+                        <?php else: ?>
+                            <div class="row g-2">
+                                <?php foreach ($categoryOptions as $cat): ?>
+                                    <?php
+                                    $cid = (int)($cat['id'] ?? 0);
+                                    $cname = $cat['name'] ?? '';
+                                    if ($cid <= 0) {
+                                        continue;
+                                    }
+                                    ?>
+                                    <div class="col-md-4 col-sm-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input"
+                                                   type="checkbox"
+                                                   name="catalogue_allowed_categories[]"
+                                                   id="cat_filter_<?= $cid ?>"
+                                                   value="<?= $cid ?>"
+                                                <?= in_array($cid, $allowedCategoryIds, true) ? 'checked' : '' ?>>
+                                            <label class="form-check-label" for="cat_filter_<?= $cid ?>">
+                                                <?= h($cname) ?>
+                                            </label>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <div class="form-text mt-2">Tip: leave all unchecked to allow every category to show in the dropdown.</div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>

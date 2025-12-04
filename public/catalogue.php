@@ -146,6 +146,7 @@ $perPage = defined('CATALOGUE_ITEMS_PER_PAGE')
 // ---------------------------------------------------------------------
 $categories   = [];
 $categoryErr  = '';
+$allowedCategoryMap = [];
 try {
     $categories = get_model_categories();
 } catch (Throwable $e) {
@@ -153,27 +154,30 @@ try {
     $categoryErr = $e->getMessage();
 }
 
+// Optional admin-controlled allowlist for categories shown in the filter
+$allowedCfg = $config['catalogue']['allowed_categories'] ?? [];
+if (is_array($allowedCfg)) {
+    foreach ($allowedCfg as $cid) {
+        if (ctype_digit((string)$cid) || is_int($cid)) {
+            $allowedCategoryMap[(int)$cid] = true;
+        }
+    }
+}
+
 // ---------------------------------------------------------------------
 // Load models from Snipe-IT
 // ---------------------------------------------------------------------
-$models         = [];
-$modelErr       = '';
-$totalModels    = 0;
-$totalPages     = 1;
-$categoriesUsed = [];
-$nowIso         = date('Y-m-d H:i:s');
+$models      = [];
+$modelErr    = '';
+$totalModels = 0;
+$totalPages  = 1;
+$nowIso      = date('Y-m-d H:i:s');
 
 try {
     $data = get_bookable_models($page, $search ?? '', $category, $sort, $perPage);
 
     if (isset($data['rows']) && is_array($data['rows'])) {
         $models = $data['rows'];
-        foreach ($models as $m) {
-            $cid = isset($m['category']['id']) ? (int)$m['category']['id'] : 0;
-            if ($cid > 0) {
-                $categoriesUsed[$cid] = true;
-            }
-        }
     }
 
     if (isset($data['total'])) {
@@ -192,23 +196,11 @@ try {
     $modelErr = $e->getMessage();
 }
 
-// Only show categories that have requestable models (based on API-provided counts;
-// fallback to currently-loaded models if counts are unavailable)
-if (!empty($categories)) {
-    $categories = array_values(array_filter($categories, function ($cat) use ($categoriesUsed) {
-        $id  = isset($cat['id']) ? (int)$cat['id'] : 0;
-        $req = $cat['requestable_count'] ?? null;
-
-        if (is_numeric($req)) {
-            return (int)$req > 0;
-        }
-
-        // Fallback: keep category if we have models for it in the current page
-        if (!empty($categoriesUsed) && $id > 0) {
-            return isset($categoriesUsed[$id]);
-        }
-
-        return false;
+// Apply allowlist if configured; otherwise show all categories returned by Snipe-IT
+if (!empty($allowedCategoryMap) && !empty($categories)) {
+    $categories = array_values(array_filter($categories, function ($cat) use ($allowedCategoryMap) {
+        $id = isset($cat['id']) ? (int)$cat['id'] : 0;
+        return $id > 0 && isset($allowedCategoryMap[$id]);
     }));
 }
 ?>

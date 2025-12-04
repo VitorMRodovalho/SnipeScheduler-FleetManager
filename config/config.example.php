@@ -72,4 +72,10 @@ return [
         'primary_color' => '#660000', // main UI colour for gradients/buttons
         'missed_cutoff_minutes' => 60, // minutes after start time before marking reservation as missed
     ],
+
+    'catalogue' => [
+        // Restrict which categories appear in the catalogue filter.
+        // Leave empty to show all categories returned by Snipe-IT.
+        'allowed_categories' => [],
+    ],
 ];
