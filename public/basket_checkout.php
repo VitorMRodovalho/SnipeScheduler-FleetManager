@@ -106,10 +106,9 @@ try {
         $label .= ' +' . ($totalRequestedItems - 1) . ' more item(s)';
     }
 
-    $userCols = reserveit_reservation_user_fields($pdo);
     $insertRes = $pdo->prepare("
         INSERT INTO reservations (
-            {$userCols['name']}, {$userCols['email']}, {$userCols['id']}, snipeit_user_id,
+            user_name, user_email, user_id, snipeit_user_id,
             asset_id, asset_name_cache,
             start_datetime, end_datetime, status
         ) VALUES (

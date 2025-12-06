@@ -184,13 +184,13 @@ if ($staffCns && !empty($user['memberof']) && is_array($user['memberof'])) {
 }
 
 // ------------------------------------------------------------------
-// Upsert into users table (legacy table name `students`: id, user_id, name, email, created_at)
+// Upsert into users table: id, user_id, name, email, created_at
 // We key users by EMAIL only, and store full name in `name`.
 // `user_id` must be UNIQUE, so we derive a stable numeric ID from email.
 // ------------------------------------------------------------------
 try {
-    $userTable = reserveit_users_table_name($pdo);
-    $userIdCol = reserveit_column_exists($pdo, $userTable, 'user_id') ? 'user_id' : 'student_id';
+    $userTable = 'users';
+    $userIdCol = 'user_id';
 
     // Look up existing record by email
     $stmt = $pdo->prepare("SELECT * FROM {$userTable} WHERE email = :email LIMIT 1");

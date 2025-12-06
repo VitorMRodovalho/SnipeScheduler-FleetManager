@@ -21,7 +21,6 @@ $baseQuery  = $embedded ? ['tab' => 'today'] : [];
 $selfUrl    = $pageBase . (!empty($baseQuery) ? '?' . http_build_query($baseQuery) : '');
 $active     = basename($_SERVER['PHP_SELF']);
 $isStaff    = !empty($currentUser['is_admin']);
-$resCols    = reserveit_reservation_user_fields($pdo);
 $tz       = new DateTimeZone($timezone);
 $now      = new DateTime('now', $tz);
 $todayStr = $now->format('Y-m-d');
@@ -336,7 +335,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$selectedReservation) {
             $checkoutErrors[] = 'Please select a reservation for today before checking out.';
         } else {
-$checkoutTo = trim($selectedReservation[$resCols['name']] ?? '');
+$checkoutTo = trim($selectedReservation['user_name'] ?? '');
             $note       = trim($_POST['reservation_note'] ?? '');
             if ($checkoutTo === '') {
                 $checkoutErrors[] = 'This reservation has no associated user name.';
@@ -560,7 +559,7 @@ $isStaff = !empty($currentUser['is_admin']);
                         $end     = uk_datetime_display($res['end_datetime'] ?? '');
                                 ?>
                                 <option value="<?= $resId ?>" <?= $resId === $selectedReservationId ? 'selected' : '' ?>>
-                                    #<?= $resId ?> – <?= h($res[$resCols['name']] ?? '') ?> (<?= h($start) ?> → <?= h($end) ?>): <?= h($summary) ?>
+                                    #<?= $resId ?> – <?= h($res['user_name'] ?? '') ?> (<?= h($start) ?> → <?= h($end) ?>): <?= h($summary) ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -573,7 +572,7 @@ $isStaff = !empty($currentUser['is_admin']);
 
                 <?php if ($selectedReservation): ?>
                     <div class="mt-3 alert alert-info mb-0">
-                        <div><strong>Selected:</strong> #<?= (int)$selectedReservation['id'] ?> – <?= h($selectedReservation[$resCols['name']] ?? '') ?></div>
+                        <div><strong>Selected:</strong> #<?= (int)$selectedReservation['id'] ?> – <?= h($selectedReservation['user_name'] ?? '') ?></div>
                         <div>When: <?= h(uk_datetime_display($selectedReservation['start_datetime'] ?? '')) ?> → <?= h(uk_datetime_display($selectedReservation['end_datetime'] ?? '')) ?></div>
                         <?php if (!empty($selectedItems)): ?>
                             <div>Models &amp; quantities: <?= h(build_items_summary_text($selectedItems)) ?></div>
@@ -626,7 +625,7 @@ $isStaff = !empty($currentUser['is_admin']);
                                 <label class="form-label">Check out to (reservation user)</label>
                                 <input type="text"
                                        class="form-control"
-                                       value="<?= h($selectedReservation[$resCols['name']] ?? '') ?>"
+                                       value="<?= h($selectedReservation['user_name'] ?? '') ?>"
                                        readonly>
                             </div>
                             <div class="col-md-6">
