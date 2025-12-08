@@ -601,7 +601,13 @@ $staffText = implode("\n", $staffPref);
             </div>
 
             <div class="col-12">
-                <!-- Non-essential settings removed; defaults will be generated in config.php -->
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title mb-1">LDAP/AD Admin Group(s)</h5>
+                        <p class="text-muted small mb-3">Comma or newline separated LDAP/AD Group names that contain users that you wish to be Administrators/Staff on this app.</p>
+                        <textarea name="staff_group_cn" rows="3" class="form-control" placeholder="ICT Staff&#10;Another Group"></textarea>
+                    </div>
+                </div>
             </div>
 
             <div class="col-12 d-flex justify-content-end">
