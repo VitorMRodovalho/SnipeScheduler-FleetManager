@@ -402,7 +402,7 @@ $checkoutTo = trim($selectedReservation['user_name'] ?? '');
 
                     // Mark reservation as checked out and store asset tags
                     $assetTags = array_map(function ($a) {
-                        return $a['asset_tag'];
+                        return trim(($a['asset_tag'] ?? '') . ' ' . ($a['name'] ?? ''));
                     }, $assetsToCheckout);
                     $assetsText = implode(', ', $assetTags);
 

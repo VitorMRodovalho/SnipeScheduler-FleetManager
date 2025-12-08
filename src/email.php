@@ -178,6 +178,7 @@ function reserveit_send_notification(string $toEmail, string $toName, string $su
     if ($includeHtml) {
         $config = $cfg ?? load_config();
         $logoUrl = trim($config['app']['logo_url'] ?? '');
+        $appName = $config['app']['name'] ?? 'ReserveIT';
 
         $htmlParts = [];
         $htmlParts[] = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;line-height:1.5;color:#222;} .logo{margin-bottom:12px;} .card{border:1px solid #e5e5e5;border-radius:8px;padding:12px;background:#fafafa;} .muted{color:#666;font-size:12px;}</style></head><body>';
@@ -191,12 +192,17 @@ function reserveit_send_notification(string $toEmail, string $toName, string $su
             $htmlParts[] = '<p style="margin:6px 0;">' . nl2br(htmlspecialchars($line, ENT_QUOTES, 'UTF-8')) . '</p>';
         }
         $htmlParts[] = '</div>';
-        $htmlParts[] = '<div class="muted" style="margin-top:12px;">This message was sent by ReserveIT.</div>';
+        $htmlParts[] = '<div class="muted" style="margin-top:12px;">This message was sent by ' . htmlspecialchars($appName, ENT_QUOTES, 'UTF-8') . '.</div>';
         $htmlParts[] = '</body></html>';
         $htmlBody = implode('', $htmlParts);
     }
 
-    return reserveit_send_mail($toEmail, $toName, $subject, $body, $cfg, $htmlBody);
+    // Prefix subject with app name
+    $config = $cfg ?? load_config();
+    $appName = $config['app']['name'] ?? 'ReserveIT';
+    $prefixedSubject = $appName . ' - ' . $subject;
+
+    return reserveit_send_mail($toEmail, $toName, $prefixedSubject, $body, $cfg, $htmlBody);
 }
 
 function encode_header(string $str): string
