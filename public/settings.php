@@ -461,11 +461,11 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Base DN</label>
-                                <input type="text" name="ldap_base_dn" class="form-control" value="<?= h($cfg(['ldap', 'base_dn'], '')) ?>">
+                                <input type="text" name="ldap_base_dn" class="form-control" value="<?= h($cfg(['ldap', 'base_dn'], '')) ?>" placeholder="dc=company,dc=local">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Bind DN (service account)</label>
-                                <input type="text" name="ldap_bind_dn" class="form-control" value="<?= h($cfg(['ldap', 'bind_dn'], '')) ?>">
+                                <input type="text" name="ldap_bind_dn" class="form-control" value="<?= h($cfg(['ldap', 'bind_dn'], '')) ?>" placeholder="CN=binduser,CN=Users,DC=company,DC=local">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Bind password</label>
