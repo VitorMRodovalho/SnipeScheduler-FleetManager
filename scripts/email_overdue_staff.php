@@ -25,6 +25,47 @@ require_once SRC_PATH . '/email.php';
 $staffEmail = 'staff@example.com';
 $staffName  = 'Staff Overdue Reports';
 
+function build_overdue_email_staff(array $rows, string $subject, array $config): array
+{
+    $appName = $config['app']['name'] ?? 'ReserveIT';
+    $logoUrl = trim($config['app']['logo_url'] ?? '');
+
+    $textLines = ["Overdue assets report:"];
+    foreach ($rows as $r) {
+        $textLines[] = "- {$r['tag']} ({$r['model']}) – due {$r['due']} ({$r['days']} day" . ($r['days'] === 1 ? '' : 's') . " overdue) | User: {$r['user']}";
+    }
+    $textBody = implode("\n", $textLines);
+
+    $rowsHtml = '';
+    foreach ($rows as $r) {
+        $bg = $r['days'] >= 2 ? '#f8d7da' : '#fff3cd';
+        $rowsHtml .= '<tr style="background:' . $bg . ';">'
+            . '<td style="padding:6px 8px; border:1px solid #e5e5e5;">' . htmlspecialchars($r['tag'], ENT_QUOTES, 'UTF-8') . '</td>'
+            . '<td style="padding:6px 8px; border:1px solid #e5e5e5;">' . htmlspecialchars($r['model'], ENT_QUOTES, 'UTF-8') . '</td>'
+            . '<td style="padding:6px 8px; border:1px solid #e5e5e5;">' . htmlspecialchars($r['due'], ENT_QUOTES, 'UTF-8') . '</td>'
+            . '<td style="padding:6px 8px; border:1px solid #e5e5e5; text-align:center;">' . (int)$r['days'] . '</td>'
+            . '<td style="padding:6px 8px; border:1px solid #e5e5e5;">' . htmlspecialchars($r['user'], ENT_QUOTES, 'UTF-8') . '</td>'
+            . '</tr>';
+    }
+
+    $htmlParts = [];
+    $htmlParts[] = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;line-height:1.5;color:#222;} .card{border:1px solid #e5e5e5;border-radius:8px;padding:12px;background:#fafafa;} table{border-collapse:collapse;width:100%;} th{background:#f1f1f1;text-align:left;padding:6px 8px;border:1px solid #e5e5e5;}</style></head><body>';
+    if ($logoUrl !== '') {
+        $htmlParts[] = '<div style="margin-bottom:12px;"><img src="' . htmlspecialchars($logoUrl, ENT_QUOTES, 'UTF-8') . '" alt="Logo" style="max-height:60px;"></div>';
+    }
+    $htmlParts[] = '<div class="card">';
+    $htmlParts[] = '<h2 style="margin:0 0 10px 0; font-size:18px;">' . htmlspecialchars($subject, ENT_QUOTES, 'UTF-8') . '</h2>';
+    $htmlParts[] = '<p style="margin:6px 0;">Overdue assets report:</p>';
+    $htmlParts[] = '<table><thead><tr><th>Asset</th><th>Model</th><th>Due</th><th>Days overdue</th><th>User</th></tr></thead><tbody>';
+    $htmlParts[] = $rowsHtml;
+    $htmlParts[] = '</tbody></table>';
+    $htmlParts[] = '</div>';
+    $htmlParts[] = '<div style="color:#666;font-size:12px;margin-top:12px;">Sent by ' . htmlspecialchars($appName, ENT_QUOTES, 'UTF-8') . '.</div>';
+    $htmlParts[] = '</body></html>';
+
+    return [$textBody, implode('', $htmlParts)];
+}
+
 try {
     $assets = list_checked_out_assets(true); // overdue only
 } catch (Throwable $e) {
@@ -51,26 +92,33 @@ foreach ($assets as $a) {
         $userName = $assigned;
     }
     $expRaw = $a['_expected_checkin_norm'] ?? ($a['expected_checkin'] ?? '');
-    $exp    = $expRaw ? date('d/m/Y', strtotime($expRaw)) : 'unknown';
+    $expTs  = $expRaw ? strtotime($expRaw) : null;
+    $exp    = $expTs ? date('d/m/Y', $expTs) : 'unknown';
+    $daysOverdue = $expTs ? max(1, (int)floor((time() - $expTs) / 86400)) : 1;
 
-    $line = $model !== '' ? "{$tag} ({$model}) – due {$exp}" : "{$tag} – due {$exp}";
-    if ($userEmail !== '') {
-        $line .= " | User: {$userEmail}" . ($userName !== '' ? " ({$userName})" : '');
-    }
-    $lines[] = $line;
+    $lineUser = $userEmail !== '' ? "{$userEmail}" . ($userName !== '' ? " ({$userName})" : '') : 'Unknown';
+    $lines[] = [
+        'tag'  => $tag,
+        'model'=> $model,
+        'due'  => $exp,
+        'days' => $daysOverdue,
+        'user' => $lineUser,
+    ];
 }
 
-$bodyLines = [
-    'Overdue assets report:',
-    implode("\n", array_map(static fn($l) => "- {$l}", $lines)),
-];
+$config = load_config();
+$appName = $config['app']['name'] ?? 'ReserveIT';
+$subject = $appName . ' - Overdue assets report';
+[$textBody, $htmlBody] = build_overdue_email_staff($lines, $subject, $config);
 
 try {
-    $ok = reserveit_send_notification(
+    $ok = reserveit_send_mail(
         $staffEmail,
         $staffName !== '' ? $staffName : $staffEmail,
-        'Overdue assets report',
-        $bodyLines
+        $subject,
+        $textBody,
+        $config,
+        $htmlBody
     );
     if ($ok) {
         echo "[sent] Overdue report sent to {$staffEmail}\n";
