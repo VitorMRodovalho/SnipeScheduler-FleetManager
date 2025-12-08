@@ -79,4 +79,14 @@ return [
         // Leave empty to show all categories returned by Snipe-IT.
         'allowed_categories' => [],
     ],
+
+    'smtp' => [
+        'host'       => '',
+        'port'       => 587,
+        'username'   => '',
+        'password'   => '',
+        'encryption' => 'tls', // none|ssl|tls
+        'from_email' => '',
+        'from_name'  => 'ReserveIT',
+    ],
 ];

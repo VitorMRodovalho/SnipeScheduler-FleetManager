@@ -299,6 +299,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$installLocked) {
         $newConfig['catalogue'] = [
             'allowed_categories' => [],
         ];
+        $newConfig['smtp'] = [
+            'host'       => $post('smtp_host', ''),
+            'port'       => (int)$post('smtp_port', 587),
+            'username'   => $post('smtp_username', ''),
+            'password'   => $_POST['smtp_password'] ?? '',
+            'encryption' => $post('smtp_encryption', 'tls'),
+            'from_email' => $post('smtp_from_email', ''),
+            'from_name'  => $post('smtp_from_name', 'ReserveIT'),
+        ];
 
         if ($isAjax && $action !== 'save') {
             try {
@@ -605,7 +614,54 @@ $staffText = implode("\n", $staffPref);
                     <div class="card-body">
                         <h5 class="card-title mb-1">LDAP/AD Admin Group(s)</h5>
                         <p class="text-muted small mb-3">Comma or newline separated LDAP/AD Group names that contain users that you wish to be Administrators/Staff on this app.</p>
-                        <textarea name="staff_group_cn" rows="3" class="form-control" placeholder="ICT Staff&#10;Another Group"></textarea>
+                        <textarea name="staff_group_cn" rows="3" class="form-control" placeholder="ICT Staff&#10;Another Group"><?= installer_h($staffText) ?></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title mb-1">SMTP (email)</h5>
+                        <p class="text-muted small mb-3">Used for notification emails during and after setup.</p>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">SMTP host</label>
+                                <input type="text" name="smtp_host" class="form-control" value="<?= installer_h($pref(['smtp', 'host'], '')) ?>">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Port</label>
+                                <input type="number" name="smtp_port" class="form-control" value="<?= (int)$pref(['smtp', 'port'], 587) ?>">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Encryption</label>
+                                <select name="smtp_encryption" class="form-select">
+                                    <?php
+                                    $enc = strtolower($pref(['smtp', 'encryption'], 'tls'));
+                                    foreach (['none', 'ssl', 'tls'] as $opt) {
+                                        $sel = $enc === $opt ? 'selected' : '';
+                                        echo "<option value=\"{$opt}\" {$sel}>" . strtoupper($opt) . "</option>";
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Username</label>
+                                <input type="text" name="smtp_username" class="form-control" value="<?= installer_h($pref(['smtp', 'username'], '')) ?>">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Password</label>
+                                <input type="password" name="smtp_password" class="form-control">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">From email</label>
+                                <input type="email" name="smtp_from_email" class="form-control" value="<?= installer_h($pref(['smtp', 'from_email'], '')) ?>">
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label">From name</label>
+                                <input type="text" name="smtp_from_name" class="form-control" value="<?= installer_h($pref(['smtp', 'from_name'], 'ReserveIT')) ?>">
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

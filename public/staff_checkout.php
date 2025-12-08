@@ -11,6 +11,7 @@ require_once SRC_PATH . '/auth.php';
 require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/booking_helpers.php';
 require_once SRC_PATH . '/snipeit_client.php';
+require_once SRC_PATH . '/email.php';
 require_once SRC_PATH . '/footer.php';
 
 $config     = load_config();
@@ -416,6 +417,27 @@ $checkoutTo = trim($selectedReservation['user_name'] ?? '');
         ':assets_text' => $assetsText,
                     ]);
                     $checkoutMessages[] = 'Reservation marked as checked out.';
+
+                    // Email notifications
+                    $userEmail = $selectedReservation['user_email'] ?? '';
+                    $userName  = $selectedReservation['user_name'] ?? ($selectedReservation['user_email'] ?? 'User');
+                    $staffEmail = $currentUser['email'] ?? '';
+                    $staffName  = trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''));
+                    $dueDate    = $selectedReservation['end_datetime'] ?? '';
+                    $dueDisplay = $dueDate ? uk_datetime_display($dueDate) : 'N/A';
+
+                    $assetLines = $assetsText !== '' ? $assetsText : implode(', ', $assetTags);
+                    $bodyLines = [
+                        "Reservation #{$selectedReservationId} has been checked out.",
+                        "Items: {$assetLines}",
+                        "Return by: {$dueDisplay}",
+                    ];
+                    if ($userEmail !== '') {
+                        reserveit_send_notification($userEmail, $userName, 'Your reservation has been checked out', $bodyLines);
+                    }
+                    if ($staffEmail !== '') {
+                        reserveit_send_notification($staffEmail, $staffName !== '' ? $staffName : $staffEmail, 'You checked out a reservation', $bodyLines);
+                    }
 
                     // Clear selected reservation to avoid repeat
                     unset($_SESSION['selected_reservation_id']);
