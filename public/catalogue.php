@@ -289,7 +289,7 @@ if (!empty($allowedCategoryMap) && !empty($categories)) {
                                autocomplete="off">
                         <div class="list-group position-absolute w-100"
                              id="booking_user_suggestions"
-                             style="z-index: 1050; max-height: 220px; overflow-y: auto; display: none;"></div>
+                             style="z-index: 2100; max-height: 220px; overflow-y: auto; display: none; box-shadow: 0 8px 16px rgba(0,0,0,0.12);"></div>
                     </div>
                     <button class="btn btn-sm btn-primary" type="submit">Use</button>
                     <button class="btn btn-sm btn-outline-secondary" type="submit" name="booking_user_revert" value="1">Revert to logged in user</button>
