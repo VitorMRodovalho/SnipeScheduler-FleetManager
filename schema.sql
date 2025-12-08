@@ -34,7 +34,9 @@ CREATE TABLE IF NOT EXISTS reservations (
     user_id VARCHAR(64) NOT NULL,    -- user identifier
     user_name VARCHAR(255) NOT NULL, -- user display name
     user_email VARCHAR(255) NOT NULL,
+    snipeit_user_id INT UNSIGNED DEFAULT NULL, -- optional link to Snipe-IT user id
 
+    asset_id INT UNSIGNED NOT NULL DEFAULT 0,  -- optional: single-asset reservations
     start_datetime DATETIME NOT NULL,
     end_datetime DATETIME NOT NULL,
 
@@ -59,7 +61,7 @@ CREATE TABLE IF NOT EXISTS reservation_items (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     reservation_id INT UNSIGNED NOT NULL,
     model_id INT UNSIGNED NOT NULL,
-    model_name VARCHAR(255) NOT NULL,
+    model_name_cache VARCHAR(255) NOT NULL,
     quantity INT UNSIGNED NOT NULL DEFAULT 1,
 
     PRIMARY KEY (id),
