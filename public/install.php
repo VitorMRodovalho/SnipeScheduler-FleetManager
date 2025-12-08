@@ -11,6 +11,7 @@ define('APP_ROOT', dirname(__DIR__));
 define('CONFIG_PATH', APP_ROOT . '/config');
 
 require_once APP_ROOT . '/src/config_writer.php';
+require_once APP_ROOT . '/src/email.php';
 
 $configPath  = CONFIG_PATH . '/config.php';
 $examplePath = CONFIG_PATH . '/config.example.php';
@@ -317,6 +318,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$installLocked) {
                     $messages[] = installer_test_snipe($newConfig['snipeit']);
                 } elseif ($action === 'test_ldap') {
                     $messages[] = installer_test_ldap($newConfig['ldap']);
+                } elseif ($action === 'test_smtp') {
+                    $smtp = $newConfig['smtp'];
+                    if (empty($smtp['host']) || empty($smtp['from_email'])) {
+                        throw new Exception('SMTP host and from email are required.');
+                    }
+                    $targetEmail = $smtp['from_email'];
+                    $targetName  = $smtp['from_name'] ?? $targetEmail;
+                    $sent = reserveit_send_notification(
+                        $targetEmail,
+                        $targetName,
+                        'ReserveIT SMTP test',
+                        ['This is a test email from the installer SMTP settings.'],
+                        ['smtp' => $smtp]
+                    );
+                    if ($sent) {
+                        $messages[] = 'SMTP test email sent to ' . $targetEmail . '.';
+                    } else {
+                        throw new Exception('SMTP send failed (see logs).');
+                    }
                 } else {
                     $errors[] = 'Unknown test action.';
                 }
@@ -661,6 +681,10 @@ $staffText = implode("\n", $staffPref);
                                 <label class="form-label">From name</label>
                                 <input type="text" name="smtp_from_name" class="form-control" value="<?= installer_h($pref(['smtp', 'from_name'], 'ReserveIT')) ?>">
                             </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <div class="small text-muted" id="smtp-test-result"></div>
+                            <button type="button" class="btn btn-outline-primary btn-sm" data-test-action="test_smtp" data-target="smtp-test-result">Test SMTP</button>
                         </div>
                     </div>
                 </div>

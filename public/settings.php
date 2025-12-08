@@ -4,6 +4,7 @@ require_once SRC_PATH . '/auth.php';
 require_once SRC_PATH . '/footer.php';
 require_once SRC_PATH . '/config_writer.php';
 require_once SRC_PATH . '/snipeit_client.php';
+require_once SRC_PATH . '/email.php';
 
 $active  = basename($_SERVER['PHP_SELF']);
 $isStaff = !empty($currentUser['is_admin']);
@@ -284,6 +285,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } catch (Throwable $e) {
             $errors[] = 'LDAP test failed: ' . $e->getMessage();
         }
+    } elseif ($action === 'test_smtp') {
+        try {
+            if (empty($smtp['host']) || empty($smtp['from_email'])) {
+                throw new Exception('SMTP host and from email are required.');
+            }
+            $targetEmail = $smtp['from_email'];
+            $targetName  = $smtp['from_name'] ?? $targetEmail;
+            $sent = reserveit_send_notification(
+                $targetEmail,
+                $targetName,
+                'ReserveIT SMTP test',
+                ['This is a test email from ReserveIT SMTP settings.'],
+                ['smtp' => $smtp] + $config
+            );
+            if ($sent) {
+                $messages[] = 'SMTP test email sent to ' . $targetEmail . '.';
+            } else {
+                throw new Exception('SMTP send failed (see logs).');
+            }
+        } catch (Throwable $e) {
+            $errors[] = 'SMTP test failed: ' . $e->getMessage();
+        }
     } else {
         $content = reserveit_build_config_file($newConfig, [
             'SNIPEIT_API_PAGE_LIMIT'   => $pageLimit,
@@ -549,6 +572,10 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
                                 <label class="form-label">From name</label>
                                 <input type="text" name="smtp_from_name" class="form-control" value="<?= h($cfg(['smtp', 'from_name'], 'ReserveIT')) ?>">
                             </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <div class="small text-muted" id="smtp-test-result"></div>
+                            <button type="button" class="btn btn-outline-primary btn-sm" data-test-action="test_smtp" data-target="smtp-test-result">Test SMTP</button>
                         </div>
                     </div>
                 </div>
