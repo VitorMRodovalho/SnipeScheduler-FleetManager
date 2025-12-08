@@ -177,7 +177,7 @@ foreach ($assets as $a) {
     $tag    = $a['asset_tag'] ?? '';
     $model  = $a['model']['name'] ?? '';
     $expRaw = $a['_expected_checkin_norm'] ?? ($a['expected_checkin'] ?? '');
-    $exp    = $expRaw ? date('Y-m-d', strtotime($expRaw)) : 'unknown';
+    $exp    = $expRaw ? date('d/m/Y', strtotime($expRaw)) : 'unknown';
 
     $line = $model !== '' ? "{$tag} ({$model}) – due {$exp}" : "{$tag} – due {$exp}";
 
