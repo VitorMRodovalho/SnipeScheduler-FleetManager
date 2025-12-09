@@ -52,3 +52,7 @@ In the app, Users can request equipment, and staff can manage reservations, chec
 ## Making Equipment available to be booked.
 
 For an asset on Snipe-IT to be made available on this app for reservation, both the model and the asset itself must be set to 'Requestable' in Snipe-IT. If a model is set to 'Requestable' and the asset is not, the model will be listed on the catalogue of this app, however the specific asset will not be able to be reserved. This is useful in case you have a certain batch of assets, but you don't want all of them to necessarily be bookable.
+
+## Setting up Admins/Staff
+
+As mentioned, this app uses LDAP for authentication. When installing this app, please make sure to add LDAP/AD Groups on the initial config that contain your users that you wish to be admins/staff. Standard users only have access to reservations, whereas LDAP/AD groups assigned to the staff section of this app can checkout/checkin equipment. 
