@@ -55,6 +55,14 @@ $view    = $viewRaw === 'overdue' ? 'overdue' : 'all';
 $error   = '';
 $assets  = [];
 $search  = trim($_GET['q'] ?? '');
+$forceRefresh = isset($_REQUEST['refresh']) && $_REQUEST['refresh'] === '1';
+if ($forceRefresh) {
+    // Disable cached Snipe-IT responses for this request
+    if (isset($cacheTtl)) {
+        $GLOBALS['_reserveit_prev_cache_ttl'] = $cacheTtl;
+    }
+    $cacheTtl = 0;
+}
 
 // Handle renew action (overdue tab only)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['renew_asset_id']) && $view === 'overdue') {
@@ -77,11 +85,11 @@ try {
     $assets = list_checked_out_assets($view === 'overdue');
     if ($search !== '') {
         $q = mb_strtolower($search);
-        $assets = array_values(array_filter($assets, function ($row) use ($q) {
-            $fields = [
-                $row['asset_tag'] ?? '',
-                $row['name'] ?? '',
-                $row['model']['name'] ?? '',
+    $assets = array_values(array_filter($assets, function ($row) use ($q) {
+        $fields = [
+            $row['asset_tag'] ?? '',
+            $row['name'] ?? '',
+            $row['model']['name'] ?? '',
                 $row['assigned_to'] ?? ($row['assigned_to_fullname'] ?? ''),
             ];
             foreach ($fields as $f) {
@@ -97,6 +105,12 @@ try {
     }
 } catch (Throwable $e) {
     $error = $e->getMessage();
+}
+
+// Restore cache TTL if we temporarily disabled it
+if ($forceRefresh && isset($GLOBALS['_reserveit_prev_cache_ttl'])) {
+    $cacheTtl = $GLOBALS['_reserveit_prev_cache_ttl'];
+    unset($GLOBALS['_reserveit_prev_cache_ttl']);
 }
 ?>
 <?php
@@ -295,6 +309,6 @@ function reserveit_checked_out_url(string $base, array $params): string
         url.searchParams.set('refresh', '1');
         // Force no-cache reload
         window.location.reload(true);
-    }, 2500);
+    }, 4000);
 </script>
 <?php endif; ?>
