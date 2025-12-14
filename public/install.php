@@ -674,7 +674,7 @@ $googleDomainsText = implode("\n", $googleDomainsPref);
                         <h5 class="card-title mb-1">Authentication</h5>
                         <p class="text-muted small mb-3">Configure sign-in methods below. Toggle each method on/off and add its settings.</p>
 
-                        <h6 class="mt-2 pb-1 border-bottom">LDAP / Active Directory</h6>
+                        <h6 class="mt-2 pb-1 border-bottom text-uppercase fw-bold border-3 border-primary border-start ps-2">LDAP / Active Directory</h6>
                         <div class="row g-3">
                             <div class="col-md-4">
                                 <div class="form-check">
@@ -719,7 +719,7 @@ $googleDomainsText = implode("\n", $googleDomainsPref);
 
                         <hr class="my-4">
 
-                        <h6 class="mt-4 pb-1 border-bottom">Google OAuth</h6>
+                        <h6 class="mt-4 pb-1 border-bottom text-uppercase fw-bold border-3 border-success border-start ps-2">Google OAuth</h6>
                         <div class="row g-3">
                             <div class="col-md-4">
                                 <div class="form-check">
