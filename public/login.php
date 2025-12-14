@@ -99,7 +99,7 @@ if (!empty($_SESSION['user']['email'])) {
                 <?php endif; ?>
 
                 <?php if ($showMicrosoft): ?>
-                    <a href="login_process.php?provider=microsoft" class="btn btn-outline-primary w-100 mt-2 d-flex align-items-center justify-content-center gap-2">
+                    <a href="login_process.php?provider=microsoft" class="btn btn-outline-dark w-100 mt-2 d-flex align-items-center justify-content-center gap-2">
                         <svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 23 23">
                             <rect width="10.5" height="10.5" x="0.5" y="0.5" fill="#F35325"/>
                             <rect width="10.5" height="10.5" x="12" y="0.5" fill="#81BC06"/>
@@ -123,7 +123,7 @@ if (!empty($_SESSION['user']['email'])) {
                 </a>
             <?php endif; ?>
             <?php if ($showMicrosoft): ?>
-                <a href="login_process.php?provider=microsoft" class="btn btn-outline-primary w-100 mt-2 d-flex align-items-center justify-content-center gap-2">
+                <a href="login_process.php?provider=microsoft" class="btn btn-outline-dark w-100 mt-2 d-flex align-items-center justify-content-center gap-2">
                     <svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 23 23">
                         <rect width="10.5" height="10.5" x="0.5" y="0.5" fill="#F35325"/>
                         <rect width="10.5" height="10.5" x="12" y="0.5" fill="#81BC06"/>
