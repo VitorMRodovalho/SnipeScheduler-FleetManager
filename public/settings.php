@@ -439,6 +439,14 @@ if (!is_array($googleAllowedDomains)) {
 }
 $googleAllowedDomainsText = implode("\n", $googleAllowedDomains);
 
+$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$host   = $_SERVER['HTTP_HOST'] ?? '';
+$dir    = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
+$dir    = ($dir === '' || $dir === '.') ? '' : $dir;
+$googleRedirectDefault = $host
+    ? $scheme . '://' . $host . $dir . '/login_process.php?provider=google'
+    : 'https://your-app-domain/login_process.php?provider=google';
+
 $allowedCategoryIds = $cfg(['catalogue', 'allowed_categories'], []);
 if (!is_array($allowedCategoryIds)) {
     $allowedCategoryIds = [];
@@ -635,8 +643,10 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Redirect URI (optional)</label>
-                                <input type="text" name="google_redirect_uri" class="form-control" value="<?= h($cfg(['google_oauth', 'redirect_uri'], '')) ?>" placeholder="https://your-app/login_process.php?provider=google">
-                                <div class="form-text">Leave blank to auto-detect the login_process.php?provider=google URL.</div>
+                                <input type="text" name="google_redirect_uri" class="form-control" value="<?= h($cfg(['google_oauth', 'redirect_uri'], '')) ?>" placeholder="<?= h($googleRedirectDefault) ?>">
+                                <div class="form-text">
+                                    Leave blank to auto-detect. Typical authorised redirect URI: <code><?= h($googleRedirectDefault) ?></code>
+                                </div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Allowed Google domains (optional)</label>
