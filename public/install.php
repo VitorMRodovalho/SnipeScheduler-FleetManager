@@ -230,11 +230,15 @@ function installer_test_microsoft(array $ms, array $auth): string
 
     $clientId     = trim($ms['client_id'] ?? '');
     $clientSecret = trim($ms['client_secret'] ?? '');
-    $tenant       = trim($ms['tenant'] ?? 'common');
+    $tenant       = trim($ms['tenant'] ?? '');
     $redirectUri  = trim($ms['redirect_uri'] ?? '');
 
     if ($clientId === '' || $clientSecret === '') {
         throw new Exception('Client ID and Client Secret are required.');
+    }
+
+    if ($tenant === '') {
+        throw new Exception('Tenant ID is required.');
     }
 
     if ($redirectUri !== '' && !filter_var($redirectUri, FILTER_VALIDATE_URL)) {
@@ -355,7 +359,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$installLocked) {
         $googleStaffEmails    = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $googleStaffRaw))));
         $msClientId    = $post('microsoft_client_id', '');
         $msClientSecret = $_POST['microsoft_client_secret'] ?? '';
-        $msTenant       = $post('microsoft_tenant', 'common');
+        $msTenant       = $post('microsoft_tenant', '');
         $msRedirectUri  = $post('microsoft_redirect_uri', '');
         $msDomainsRaw   = $post('microsoft_allowed_domains', '');
         $msStaffRaw     = $post('microsoft_staff_emails', '');
@@ -867,8 +871,9 @@ $msRedirectDefault = $host
                                 <input type="password" name="microsoft_client_secret" class="form-control">
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Tenant (ID, domain, or common/organizations/consumers)</label>
-                                <input type="text" name="microsoft_tenant" class="form-control" value="<?= installer_h($pref(['microsoft_oauth', 'tenant'], 'common')) ?>">
+                                <label class="form-label">Tenant ID (GUID)</label>
+                                <input type="text" name="microsoft_tenant" class="form-control" value="<?= installer_h($pref(['microsoft_oauth', 'tenant'], '')) ?>" placeholder="00000000-0000-0000-0000-000000000000">
+                                <div class="form-text">Required. Use the Directory (tenant) ID from Entra.</div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Redirect URI (optional)</label>

@@ -90,8 +90,8 @@ return [
     'microsoft_oauth' => [
         'client_id'     => '',
         'client_secret' => '',
-        // Tenant ID, domain, or "common" / "organizations" / "consumers"
-        'tenant'        => 'common',
+        // Tenant ID (GUID)
+        'tenant'        => '',
         // Leave blank to auto-detect the login_process.php callback URL
         'redirect_uri'  => '',
         // Optional restriction to specific domains

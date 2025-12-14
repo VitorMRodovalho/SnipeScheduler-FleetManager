@@ -172,11 +172,15 @@ function reserveit_test_microsoft_oauth(array $ms, array $auth): string
 
     $clientId     = trim($ms['client_id'] ?? '');
     $clientSecret = trim($ms['client_secret'] ?? '');
-    $tenant       = trim($ms['tenant'] ?? 'common');
+    $tenant       = trim($ms['tenant'] ?? '');
     $redirectUri  = trim($ms['redirect_uri'] ?? '');
 
     if ($clientId === '' || $clientSecret === '') {
         throw new Exception('Client ID and Client Secret are required.');
+    }
+
+    if ($tenant === '') {
+        throw new Exception('Tenant ID is required.');
     }
 
     if ($redirectUri !== '' && !filter_var($redirectUri, FILTER_VALIDATE_URL)) {
@@ -337,7 +341,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $ms['client_secret'] = $msSecretInput === '' ? ($loadedConfig['microsoft_oauth']['client_secret'] ?? '') : $msSecretInput;
     }
-    $ms['tenant']        = $post('microsoft_tenant', $ms['tenant'] ?? 'common');
+    $ms['tenant']        = $post('microsoft_tenant', $ms['tenant'] ?? '');
     $ms['redirect_uri']  = $post('microsoft_redirect_uri', $ms['redirect_uri'] ?? '');
     $msDomainsRaw = $post('microsoft_allowed_domains', '');
     $ms['allowed_domains'] = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $msDomainsRaw))));
@@ -769,8 +773,9 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
                                 <input type="password" name="microsoft_client_secret" class="form-control" placeholder="Leave blank to keep">
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Tenant (ID, domain, or common/organizations/consumers)</label>
-                                <input type="text" name="microsoft_tenant" class="form-control" value="<?= h($cfg(['microsoft_oauth', 'tenant'], 'common')) ?>">
+                                <label class="form-label">Tenant ID (GUID)</label>
+                                <input type="text" name="microsoft_tenant" class="form-control" value="<?= h($cfg(['microsoft_oauth', 'tenant'], '')) ?>" placeholder="00000000-0000-0000-0000-000000000000">
+                                <div class="form-text">Required. Use the Directory (tenant) ID from Entra.</div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Redirect URI (optional)</label>

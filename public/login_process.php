@@ -276,10 +276,14 @@ if ($provider === 'microsoft') {
 
     $clientId     = trim($msCfg['client_id'] ?? '');
     $clientSecret = trim($msCfg['client_secret'] ?? '');
-    $tenant       = trim($msCfg['tenant'] ?? 'common');
+    $tenant       = trim($msCfg['tenant'] ?? '');
 
     if ($clientId === '' || $clientSecret === '') {
         $redirectWithError('Microsoft sign-in is not configured.');
+    }
+
+    if ($tenant === '') {
+        $redirectWithError('Microsoft tenant ID is required.');
     }
 
     $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
