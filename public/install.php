@@ -218,6 +218,52 @@ function installer_test_google(array $google, array $auth): string
     return 'Google OAuth settings look OK and endpoints are reachable.';
 }
 
+function installer_test_microsoft(array $ms, array $auth): string
+{
+    if (!function_exists('curl_init')) {
+        throw new Exception('PHP cURL extension is not installed.');
+    }
+
+    if (empty($auth['microsoft_oauth_enabled'])) {
+        throw new Exception('Microsoft OAuth is disabled.');
+    }
+
+    $clientId     = trim($ms['client_id'] ?? '');
+    $clientSecret = trim($ms['client_secret'] ?? '');
+    $tenant       = trim($ms['tenant'] ?? 'common');
+    $redirectUri  = trim($ms['redirect_uri'] ?? '');
+
+    if ($clientId === '' || $clientSecret === '') {
+        throw new Exception('Client ID and Client Secret are required.');
+    }
+
+    if ($redirectUri !== '' && !filter_var($redirectUri, FILTER_VALIDATE_URL)) {
+        throw new Exception('Redirect URI is not a valid URL.');
+    }
+
+    $wellKnown = 'https://login.microsoftonline.com/' . rawurlencode($tenant) . '/v2.0/.well-known/openid-configuration';
+    $ch = curl_init($wellKnown);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 6,
+        CURLOPT_CONNECTTIMEOUT => 3,
+    ]);
+    $raw = curl_exec($ch);
+    if ($raw === false) {
+        $err = curl_error($ch);
+        curl_close($ch);
+        throw new Exception('Network check failed: ' . $err);
+    }
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($code >= 400) {
+        throw new Exception('Microsoft OAuth endpoints unavailable (HTTP ' . $code . ').');
+    }
+
+    return 'Microsoft OAuth settings look OK and endpoints are reachable.';
+}
+
 function installer_test_ldap(array $ldap): string
 {
     if (!function_exists('ldap_connect')) {
@@ -307,6 +353,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$installLocked) {
         $googleStaffRaw    = $post('google_staff_emails', '');
         $googleAllowedDomains = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $googleDomainsRaw))));
         $googleStaffEmails    = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $googleStaffRaw))));
+        $msClientId    = $post('microsoft_client_id', '');
+        $msClientSecret = $_POST['microsoft_client_secret'] ?? '';
+        $msTenant       = $post('microsoft_tenant', 'common');
+        $msRedirectUri  = $post('microsoft_redirect_uri', '');
+        $msDomainsRaw   = $post('microsoft_allowed_domains', '');
+        $msStaffRaw     = $post('microsoft_staff_emails', '');
+        $msAllowedDomains = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $msDomainsRaw))));
+        $msStaffEmails    = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $msStaffRaw))));
 
         // Defaults for omitted settings
         $staffCns    = [];
@@ -341,15 +395,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$installLocked) {
             'bind_password' => $ldapPass,
             'ignore_cert'   => $ldapIgnore,
         ];
-        $newConfig['auth']['ldap_enabled']         = $authLdapEnabled;
-        $newConfig['auth']['google_oauth_enabled'] = $authGoogleEnabled;
-        $newConfig['auth']['staff_group_cn']       = $staffCns;
-        $newConfig['auth']['google_staff_emails']  = $googleStaffEmails;
+        $newConfig['auth']['ldap_enabled']           = $authLdapEnabled;
+        $newConfig['auth']['google_oauth_enabled']   = $authGoogleEnabled;
+        $newConfig['auth']['microsoft_oauth_enabled'] = isset($_POST['auth_microsoft_enabled']);
+        $newConfig['auth']['staff_group_cn']         = $staffCns;
+        $newConfig['auth']['google_staff_emails']    = $googleStaffEmails;
+        $newConfig['auth']['microsoft_staff_emails'] = $msStaffEmails;
         $newConfig['google_oauth'] = [
             'client_id'       => $googleClientId,
             'client_secret'   => $googleClientSecret,
             'redirect_uri'    => $googleRedirectUri,
             'allowed_domains' => $googleAllowedDomains,
+        ];
+        $newConfig['microsoft_oauth'] = [
+            'client_id'       => $msClientId,
+            'client_secret'   => $msClientSecret,
+            'tenant'          => $msTenant,
+            'redirect_uri'    => $msRedirectUri,
+            'allowed_domains' => $msAllowedDomains,
         ];
         $newConfig['app'] = [
             'timezone'              => $timezone,
@@ -379,6 +442,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$installLocked) {
                     $messages[] = installer_test_db($newConfig['db_booking']);
                 } elseif ($action === 'test_api') {
                     $messages[] = installer_test_snipe($newConfig['snipeit']);
+                } elseif ($action === 'test_microsoft') {
+                    $messages[] = installer_test_microsoft($newConfig['microsoft_oauth'], $newConfig['auth']);
                 } elseif ($action === 'test_google') {
                     $messages[] = installer_test_google($newConfig['google_oauth'], $newConfig['auth']);
                 } elseif ($action === 'test_ldap') {
@@ -489,11 +554,21 @@ if (!is_array($googleStaffPref)) {
     $googleStaffPref = [];
 }
 $googleStaffText = implode("\n", $googleStaffPref);
+$msStaffPref = $pref(['auth', 'microsoft_staff_emails'], []);
+if (!is_array($msStaffPref)) {
+    $msStaffPref = [];
+}
+$msStaffText = implode("\n", $msStaffPref);
 $googleDomainsPref = $pref(['google_oauth', 'allowed_domains'], []);
 if (!is_array($googleDomainsPref)) {
     $googleDomainsPref = [];
 }
 $googleDomainsText = implode("\n", $googleDomainsPref);
+$msDomainsPref = $pref(['microsoft_oauth', 'allowed_domains'], []);
+if (!is_array($msDomainsPref)) {
+    $msDomainsPref = [];
+}
+$msDomainsText = implode("\n", $msDomainsPref);
 
 $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 $host   = $_SERVER['HTTP_HOST'] ?? '';
@@ -502,6 +577,9 @@ $dir    = ($dir === '' || $dir === '.') ? '' : $dir;
 $googleRedirectDefault = $host
     ? $scheme . '://' . $host . $dir . '/login_process.php?provider=google'
     : 'https://your-app-domain/login_process.php?provider=google';
+$msRedirectDefault = $host
+    ? $scheme . '://' . $host . $dir . '/login_process.php?provider=microsoft'
+    : 'https://your-app-domain/login_process.php?provider=microsoft';
 
 ?>
 <!DOCTYPE html>
@@ -766,6 +844,53 @@ $googleRedirectDefault = $host
                         <div class="d-flex justify-content-between align-items-center mt-3">
                             <div class="small text-muted" id="google-test-result"></div>
                             <button type="button" class="btn btn-outline-primary btn-sm" data-test-action="test_google" data-target="google-test-result">Test Google OAuth</button>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h6 class="mt-2 pb-1 border-bottom text-uppercase fw-bold border-3 border-info border-start ps-2">Microsoft Entra / 365</h6>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="auth_microsoft_enabled" id="auth_microsoft_enabled" <?= $pref(['auth', 'microsoft_oauth_enabled'], false) ? 'checked' : '' ?>>
+                                    <label class="form-check-label" for="auth_microsoft_enabled">Enable Microsoft sign-in</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-1">
+                            <div class="col-md-6">
+                                <label class="form-label">Client ID (Application ID)</label>
+                                <input type="text" name="microsoft_client_id" class="form-control" value="<?= installer_h($pref(['microsoft_oauth', 'client_id'], '')) ?>">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Client Secret</label>
+                                <input type="password" name="microsoft_client_secret" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Tenant (ID, domain, or common/organizations/consumers)</label>
+                                <input type="text" name="microsoft_tenant" class="form-control" value="<?= installer_h($pref(['microsoft_oauth', 'tenant'], 'common')) ?>">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Redirect URI (optional)</label>
+                                <input type="text" name="microsoft_redirect_uri" class="form-control" value="<?= installer_h($pref(['microsoft_oauth', 'redirect_uri'], '')) ?>" placeholder="<?= installer_h($msRedirectDefault) ?>">
+                                <div class="form-text">
+                                    Leave blank to auto-detect. Typical authorised redirect URI: <code><?= installer_h($msRedirectDefault) ?></code>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Allowed domains (optional)</label>
+                                <textarea name="microsoft_allowed_domains" rows="3" class="form-control" placeholder="example.com&#10;sub.example.com"><?= installer_h($msDomainsText) ?></textarea>
+                                <div class="form-text">Comma or newline separated. Leave empty to allow any Microsoft account.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Staff/admin emails (optional)</label>
+                                <textarea name="microsoft_staff_emails" rows="3" class="form-control" placeholder="admin1@example.com&#10;admin2@example.com"><?= installer_h($msStaffText) ?></textarea>
+                                <div class="form-text">Comma or newline separated addresses that should be treated as staff when signing in with Microsoft.</div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <div class="small text-muted" id="ms-test-result"></div>
+                            <button type="button" class="btn btn-outline-primary btn-sm" data-test-action="test_microsoft" data-target="ms-test-result">Test Microsoft OAuth</button>
                         </div>
                     </div>
                 </div>

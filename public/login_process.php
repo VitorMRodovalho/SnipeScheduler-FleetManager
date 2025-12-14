@@ -10,12 +10,14 @@ $config   = load_config();
 
 $ldapCfg   = $config['ldap'] ?? [];
 $googleCfg = $config['google_oauth'] ?? [];
+$msCfg     = $config['microsoft_oauth'] ?? [];
 $authCfg   = $config['auth'] ?? [];
 $appCfg    = $config['app'] ?? [];
 $debugOn   = !empty($appCfg['debug']);
 
 $ldapEnabled   = array_key_exists('ldap_enabled', $authCfg) ? !empty($authCfg['ldap_enabled']) : true;
 $googleEnabled = !empty($authCfg['google_oauth_enabled']);
+$msEnabled     = !empty($authCfg['microsoft_oauth_enabled']);
 
 // Staff group CN(s) from config (string or array)
 $staffCns = $authCfg['staff_group_cn'] ?? '';
@@ -28,6 +30,11 @@ if (!is_array($googleStaffEmails)) {
     $googleStaffEmails = [];
 }
 $googleStaffEmails = array_values(array_filter(array_map('strtolower', array_map('trim', $googleStaffEmails))));
+$msStaffEmails = $authCfg['microsoft_staff_emails'] ?? [];
+if (!is_array($msStaffEmails)) {
+    $msStaffEmails = [];
+}
+$msStaffEmails = array_values(array_filter(array_map('strtolower', array_map('trim', $msStaffEmails))));
 
 $provider = strtolower($_GET['provider'] ?? $_POST['provider'] ?? 'ldap');
 
@@ -206,6 +213,159 @@ if ($provider === 'google') {
     }
 
     $isStaff = in_array($email, $googleStaffEmails, true);
+
+    $_SESSION['user'] = [
+        'id'           => $userId,
+        'email'        => $email,
+        'username'     => $email,
+        'first_name'   => $firstName ?: $email,
+        'last_name'    => $lastName ?? '',
+        'display_name' => $fullName,
+        'is_admin'     => $isStaff,
+    ];
+
+    header('Location: index.php');
+    exit;
+}
+
+if ($provider === 'microsoft') {
+    if (!$msEnabled) {
+        $redirectWithError('Microsoft sign-in is not available.');
+    }
+
+    $clientId     = trim($msCfg['client_id'] ?? '');
+    $clientSecret = trim($msCfg['client_secret'] ?? '');
+    $tenant       = trim($msCfg['tenant'] ?? 'common');
+
+    if ($clientId === '' || $clientSecret === '') {
+        $redirectWithError('Microsoft sign-in is not configured.');
+    }
+
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host   = $_SERVER['HTTP_HOST'] ?? '';
+    $base   = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '')), '/');
+    $fallbackRedirect = $scheme . '://' . $host . $base . '/login_process.php?provider=microsoft';
+    $redirectUri = trim($msCfg['redirect_uri'] ?? '') ?: $fallbackRedirect;
+
+    $allowedDomains = $msCfg['allowed_domains'] ?? [];
+    if (!is_array($allowedDomains)) {
+        $allowedDomains = [];
+    }
+    $allowedDomains = array_values(array_filter(array_map('strtolower', array_map('trim', $allowedDomains))));
+
+    if (!isset($_GET['code'])) {
+        $state = bin2hex(random_bytes(16));
+        $_SESSION['ms_oauth_state'] = $state;
+
+        $authUrl = 'https://login.microsoftonline.com/' . rawurlencode($tenant) . '/oauth2/v2.0/authorize?' . http_build_query([
+            'client_id'     => $clientId,
+            'redirect_uri'  => $redirectUri,
+            'response_type' => 'code',
+            'response_mode' => 'query',
+            'scope'         => 'openid profile email User.Read',
+            'state'         => $state,
+        ]);
+
+        header('Location: ' . $authUrl);
+        exit;
+    }
+
+    $state = $_GET['state'] ?? '';
+    if ($state === '' || empty($_SESSION['ms_oauth_state']) || !hash_equals($_SESSION['ms_oauth_state'], $state)) {
+        unset($_SESSION['ms_oauth_state']);
+        $redirectWithError('Microsoft sign-in failed. Please try again.');
+    }
+    unset($_SESSION['ms_oauth_state']);
+
+    $code = trim($_GET['code'] ?? '');
+    if ($code === '') {
+        $redirectWithError('Microsoft sign-in failed (no code returned).');
+    }
+
+    $tokenUrl = 'https://login.microsoftonline.com/' . rawurlencode($tenant) . '/oauth2/v2.0/token';
+    $tokenCh = curl_init($tokenUrl);
+    curl_setopt_array($tokenCh, [
+        CURLOPT_POST           => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POSTFIELDS     => http_build_query([
+            'client_id'     => $clientId,
+            'scope'         => 'openid profile email User.Read',
+            'code'          => $code,
+            'redirect_uri'  => $redirectUri,
+            'grant_type'    => 'authorization_code',
+            'client_secret' => $clientSecret,
+        ]),
+        CURLOPT_TIMEOUT        => 10,
+        CURLOPT_CONNECTTIMEOUT => 5,
+    ]);
+    $tokenRaw = curl_exec($tokenCh);
+    if ($tokenRaw === false) {
+        $err = curl_error($tokenCh);
+        curl_close($tokenCh);
+        $redirectWithError($debugOn ? 'Microsoft token request failed: ' . $err : 'Microsoft sign-in failed.');
+    }
+    $tokenCode = curl_getinfo($tokenCh, CURLINFO_HTTP_CODE);
+    curl_close($tokenCh);
+
+    $tokenData = json_decode($tokenRaw, true);
+    if ($tokenCode >= 400 || !$tokenData || !empty($tokenData['error'])) {
+        $msg = $tokenData['error_description'] ?? $tokenData['error'] ?? 'Unexpected response';
+        $redirectWithError($debugOn ? 'Microsoft token error: ' . $msg : 'Microsoft sign-in failed.');
+    }
+
+    $accessToken = $tokenData['access_token'] ?? '';
+    if ($accessToken === '') {
+        $redirectWithError('Microsoft sign-in failed (no access token).');
+    }
+
+    $infoCh = curl_init('https://graph.microsoft.com/v1.0/me?$select=displayName,givenName,surname,mail,userPrincipalName');
+    curl_setopt_array($infoCh, [
+        CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $accessToken],
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 8,
+        CURLOPT_CONNECTTIMEOUT => 4,
+    ]);
+    $infoRaw = curl_exec($infoCh);
+    if ($infoRaw === false) {
+        $err = curl_error($infoCh);
+        curl_close($infoCh);
+        $redirectWithError($debugOn ? 'Microsoft profile request failed: ' . $err : 'Microsoft sign-in failed.');
+    }
+    $infoCode = curl_getinfo($infoCh, CURLINFO_HTTP_CODE);
+    curl_close($infoCh);
+
+    $info = json_decode($infoRaw, true);
+    $email = '';
+    if (is_array($info)) {
+        $email = $info['mail'] ?? ($info['userPrincipalName'] ?? '');
+    }
+    $email = strtolower(trim((string)$email));
+
+    if ($infoCode >= 400 || !$info || $email === '') {
+        $redirectWithError($debugOn ? 'Could not read Microsoft profile (HTTP ' . $infoCode . ')' : 'Microsoft sign-in failed.');
+    }
+
+    if (!empty($allowedDomains)) {
+        $domain = strtolower((string)substr(strrchr($email, '@'), 1));
+        if ($domain === '' || !in_array($domain, $allowedDomains, true)) {
+            $redirectWithError('This Microsoft account is not permitted to sign in.');
+        }
+    }
+
+    $firstName = $info['givenName'] ?? '';
+    $lastName  = $info['surname'] ?? '';
+    $fullName  = trim($info['displayName'] ?? ($firstName . ' ' . $lastName));
+    if ($fullName === '') {
+        $fullName = $email;
+    }
+
+    try {
+        $userId = $upsertUser($pdo, $email, $fullName);
+    } catch (Throwable $e) {
+        $redirectWithError($debugOn ? 'Login system is currently unavailable (database error): ' . $e->getMessage() : 'Login system is currently unavailable (database error).');
+    }
+
+    $isStaff = in_array($email, $msStaffEmails, true);
 
     $_SESSION['user'] = [
         'id'           => $userId,
