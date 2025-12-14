@@ -38,6 +38,46 @@ $msStaffEmails = array_values(array_filter(array_map('strtolower', array_map('tr
 
 $provider = strtolower($_GET['provider'] ?? $_POST['provider'] ?? 'ldap');
 
+$ensureProviderParam = static function (string $uri, string $provider): string {
+    $parts = parse_url($uri);
+    if ($parts === false) {
+        return $uri;
+    }
+
+    $query = [];
+    if (!empty($parts['query'])) {
+        parse_str($parts['query'], $query);
+    }
+
+    if (!isset($query['provider'])) {
+        $query['provider'] = $provider;
+    }
+
+    $rebuilt = ($parts['scheme'] ?? '') !== '' ? $parts['scheme'] . '://' : '';
+    if (isset($parts['user'])) {
+        $rebuilt .= $parts['user'];
+        if (isset($parts['pass'])) {
+            $rebuilt .= ':' . $parts['pass'];
+        }
+        $rebuilt .= '@';
+    }
+    if (isset($parts['host'])) {
+        $rebuilt .= $parts['host'];
+    }
+    if (isset($parts['port'])) {
+        $rebuilt .= ':' . $parts['port'];
+    }
+    if (isset($parts['path'])) {
+        $rebuilt .= $parts['path'];
+    }
+    $rebuilt .= '?' . http_build_query($query);
+    if (isset($parts['fragment'])) {
+        $rebuilt .= '#' . $parts['fragment'];
+    }
+
+    return $rebuilt;
+};
+
 $redirectWithError = static function (string $message) {
     $_SESSION['login_error'] = $message;
     header('Location: login.php');
@@ -95,6 +135,7 @@ if ($provider === 'google') {
     $base   = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '')), '/');
     $fallbackRedirect = $scheme . '://' . $host . $base . '/login_process.php?provider=google';
     $redirectUri = trim($googleCfg['redirect_uri'] ?? '') ?: $fallbackRedirect;
+    $redirectUri = $ensureProviderParam($redirectUri, 'google');
 
     $allowedDomains = $googleCfg['allowed_domains'] ?? [];
     if (!is_array($allowedDomains)) {
@@ -246,6 +287,7 @@ if ($provider === 'microsoft') {
     $base   = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '')), '/');
     $fallbackRedirect = $scheme . '://' . $host . $base . '/login_process.php?provider=microsoft';
     $redirectUri = trim($msCfg['redirect_uri'] ?? '') ?: $fallbackRedirect;
+    $redirectUri = $ensureProviderParam($redirectUri, 'microsoft');
 
     $allowedDomains = $msCfg['allowed_domains'] ?? [];
     if (!is_array($allowedDomains)) {
