@@ -116,6 +116,100 @@ function reserveit_test_snipe_api(array $snipe): string
     return 'Snipe-IT API reachable (HTTP ' . $code . ').';
 }
 
+function reserveit_test_google_oauth(array $google, array $auth): string
+{
+    if (!function_exists('curl_init')) {
+        throw new Exception('PHP cURL extension is not installed.');
+    }
+
+    if (empty($auth['google_oauth_enabled'])) {
+        throw new Exception('Google OAuth is disabled.');
+    }
+
+    $clientId     = trim($google['client_id'] ?? '');
+    $clientSecret = trim($google['client_secret'] ?? '');
+    $redirectUri  = trim($google['redirect_uri'] ?? '');
+
+    if ($clientId === '' || $clientSecret === '') {
+        throw new Exception('Client ID and Client Secret are required.');
+    }
+
+    if ($redirectUri !== '' && !filter_var($redirectUri, FILTER_VALIDATE_URL)) {
+        throw new Exception('Redirect URI is not a valid URL.');
+    }
+
+    $ch = curl_init('https://accounts.google.com/.well-known/openid-configuration');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 6,
+        CURLOPT_CONNECTTIMEOUT => 3,
+    ]);
+    $raw = curl_exec($ch);
+    if ($raw === false) {
+        $err = curl_error($ch);
+        curl_close($ch);
+        throw new Exception('Network check failed: ' . $err);
+    }
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($code >= 400) {
+        throw new Exception('Google OAuth endpoints unavailable (HTTP ' . $code . ').');
+    }
+
+    return 'Google OAuth settings look OK and endpoints are reachable.';
+}
+
+function reserveit_test_microsoft_oauth(array $ms, array $auth): string
+{
+    if (!function_exists('curl_init')) {
+        throw new Exception('PHP cURL extension is not installed.');
+    }
+
+    if (empty($auth['microsoft_oauth_enabled'])) {
+        throw new Exception('Microsoft OAuth is disabled.');
+    }
+
+    $clientId     = trim($ms['client_id'] ?? '');
+    $clientSecret = trim($ms['client_secret'] ?? '');
+    $tenant       = trim($ms['tenant'] ?? '');
+    $redirectUri  = trim($ms['redirect_uri'] ?? '');
+
+    if ($clientId === '' || $clientSecret === '') {
+        throw new Exception('Client ID and Client Secret are required.');
+    }
+
+    if ($tenant === '') {
+        throw new Exception('Tenant ID is required.');
+    }
+
+    if ($redirectUri !== '' && !filter_var($redirectUri, FILTER_VALIDATE_URL)) {
+        throw new Exception('Redirect URI is not a valid URL.');
+    }
+
+    $wellKnown = 'https://login.microsoftonline.com/' . rawurlencode($tenant) . '/v2.0/.well-known/openid-configuration';
+    $ch = curl_init($wellKnown);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 6,
+        CURLOPT_CONNECTTIMEOUT => 3,
+    ]);
+    $raw = curl_exec($ch);
+    if ($raw === false) {
+        $err = curl_error($ch);
+        curl_close($ch);
+        throw new Exception('Network check failed: ' . $err);
+    }
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($code >= 400) {
+        throw new Exception('Microsoft OAuth endpoints unavailable (HTTP ' . $code . ').');
+    }
+
+    return 'Microsoft OAuth settings look OK and endpoints are reachable.';
+}
+
 function reserveit_test_ldap(array $ldap): string
 {
     if (!function_exists('ldap_connect')) {
@@ -216,9 +310,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $snipe['verify_ssl'] = isset($_POST['snipe_verify_ssl']);
 
     $auth = $config['auth'] ?? [];
+    $auth['ldap_enabled']        = isset($_POST['auth_ldap_enabled']);
+    $auth['google_oauth_enabled'] = isset($_POST['auth_google_enabled']);
+    $auth['microsoft_oauth_enabled'] = isset($_POST['auth_microsoft_enabled']);
     $staffCnsRaw   = $post('staff_group_cn', '');
     $staffGroupCns = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $staffCnsRaw))));
     $auth['staff_group_cn'] = $staffGroupCns;
+    $googleStaffRaw = $post('google_staff_emails', '');
+    $auth['google_staff_emails'] = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $googleStaffRaw))));
+    $msStaffRaw = $post('microsoft_staff_emails', '');
+    $auth['microsoft_staff_emails'] = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $msStaffRaw))));
+
+    $google = $config['google_oauth'] ?? [];
+    $google['client_id']     = $post('google_client_id', $google['client_id'] ?? '');
+    $googleSecretInput       = $_POST['google_client_secret'] ?? '';
+    if ($useRawSecrets) {
+        $google['client_secret'] = $googleSecretInput;
+    } else {
+        $google['client_secret'] = $googleSecretInput === '' ? ($loadedConfig['google_oauth']['client_secret'] ?? '') : $googleSecretInput;
+    }
+    $google['redirect_uri']  = $post('google_redirect_uri', $google['redirect_uri'] ?? '');
+    $domainsRaw = $post('google_allowed_domains', '');
+    $google['allowed_domains'] = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $domainsRaw))));
+
+    $ms = $config['microsoft_oauth'] ?? [];
+    $ms['client_id']     = $post('microsoft_client_id', $ms['client_id'] ?? '');
+    $msSecretInput       = $_POST['microsoft_client_secret'] ?? '';
+    if ($useRawSecrets) {
+        $ms['client_secret'] = $msSecretInput;
+    } else {
+        $ms['client_secret'] = $msSecretInput === '' ? ($loadedConfig['microsoft_oauth']['client_secret'] ?? '') : $msSecretInput;
+    }
+    $ms['tenant']        = $post('microsoft_tenant', $ms['tenant'] ?? '');
+    $ms['redirect_uri']  = $post('microsoft_redirect_uri', $ms['redirect_uri'] ?? '');
+    $msDomainsRaw = $post('microsoft_allowed_domains', '');
+    $ms['allowed_domains'] = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $msDomainsRaw))));
 
     $app = $config['app'] ?? [];
     $app['timezone']              = $post('app_timezone', $app['timezone'] ?? 'Europe/Jersey');
@@ -256,6 +382,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $newConfig['ldap']       = $ldap;
     $newConfig['snipeit']    = $snipe;
     $newConfig['auth']       = $auth;
+    $newConfig['google_oauth'] = $google;
+    $newConfig['microsoft_oauth'] = $ms;
     $newConfig['app']        = $app;
     $newConfig['catalogue']  = $catalogue;
     $newConfig['smtp']       = $smtp;
@@ -279,6 +407,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $messages[] = reserveit_test_snipe_api($snipe);
         } catch (Throwable $e) {
             $errors[] = 'Snipe-IT API test failed: ' . $e->getMessage();
+        }
+    } elseif ($action === 'test_microsoft') {
+        try {
+            $messages[] = reserveit_test_microsoft_oauth($ms, $auth);
+        } catch (Throwable $e) {
+            $errors[] = 'Microsoft OAuth test failed: ' . $e->getMessage();
+        }
+    } elseif ($action === 'test_google') {
+        try {
+            $messages[] = reserveit_test_google_oauth($google, $auth);
+        } catch (Throwable $e) {
+            $errors[] = 'Google OAuth test failed: ' . $e->getMessage();
         }
     } elseif ($action === 'test_ldap') {
         try {
@@ -359,6 +499,41 @@ if (!is_array($staffGroupList)) {
     $staffGroupList = [];
 }
 $staffGroupText = implode("\n", $staffGroupList);
+
+$googleStaffList = $cfg(['auth', 'google_staff_emails'], []);
+if (!is_array($googleStaffList)) {
+    $googleStaffList = [];
+}
+$googleStaffText = implode("\n", $googleStaffList);
+
+$msStaffList = $cfg(['auth', 'microsoft_staff_emails'], []);
+if (!is_array($msStaffList)) {
+    $msStaffList = [];
+}
+$msStaffText = implode("\n", $msStaffList);
+
+$googleAllowedDomains = $cfg(['google_oauth', 'allowed_domains'], []);
+if (!is_array($googleAllowedDomains)) {
+    $googleAllowedDomains = [];
+}
+$googleAllowedDomainsText = implode("\n", $googleAllowedDomains);
+
+$msAllowedDomains = $cfg(['microsoft_oauth', 'allowed_domains'], []);
+if (!is_array($msAllowedDomains)) {
+    $msAllowedDomains = [];
+}
+$msAllowedDomainsText = implode("\n", $msAllowedDomains);
+
+$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$host   = $_SERVER['HTTP_HOST'] ?? '';
+$dir    = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
+$dir    = ($dir === '' || $dir === '.') ? '' : $dir;
+$googleRedirectDefault = $host
+    ? $scheme . '://' . $host . $dir . '/login_process.php?provider=google'
+    : 'https://your-app-domain/login_process.php?provider=google';
+$msRedirectDefault = $host
+    ? $scheme . '://' . $host . $dir . '/login_process.php?provider=microsoft'
+    : 'https://your-app-domain/login_process.php?provider=microsoft';
 
 $allowedCategoryIds = $cfg(['catalogue', 'allowed_categories'], []);
 if (!is_array($allowedCategoryIds)) {
@@ -488,8 +663,18 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
             <div class="col-12">
                 <div class="card">
                     <div class="card-body">
-                        <h5 class="card-title mb-1">LDAP / Active Directory</h5>
-                        <p class="text-muted small mb-3">Settings used to authenticate and look up users.</p>
+                        <h5 class="card-title mb-1">Authentication</h5>
+                        <p class="text-muted small mb-3">Configure sign-in methods below. Toggle each method on/off and add its settings.</p>
+
+                        <h6 class="mt-2 pb-1 border-bottom text-uppercase fw-bold border-3 border-primary border-start ps-2">LDAP / Active Directory</h6>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="auth_ldap_enabled" id="auth_ldap_enabled" <?= $cfg(['auth', 'ldap_enabled'], true) ? 'checked' : '' ?>>
+                                    <label class="form-check-label" for="auth_ldap_enabled">Enable LDAP sign-in</label>
+                                </div>
+                            </div>
+                        </div>
                         <div class="row g-3">
                             <div class="col-md-4">
                                 <label class="form-label">LDAP host (e.g. ldaps://host)</label>
@@ -513,21 +698,107 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
                                     <label class="form-check-label" for="ldap_ignore_cert">Ignore SSL certificate errors</label>
                                 </div>
                             </div>
+                            <div class="col-12">
+                                <label class="form-label">LDAP/AD Admin Group(s)</label>
+                                <textarea name="staff_group_cn" rows="3" class="form-control" placeholder="ICT Staff&#10;Another Group"><?= reserveit_textarea_value($staffGroupText) ?></textarea>
+                                <div class="form-text">Comma or newline separated group names that should be treated as staff.</div>
+                            </div>
                         </div>
                         <div class="d-flex justify-content-between align-items-center mt-3">
                             <div class="small text-muted" id="ldap-test-result"></div>
                             <button type="button" name="action" value="test_ldap" class="btn btn-outline-primary btn-sm" data-test-action="test_ldap" data-target="ldap-test-result">Test LDAP connection</button>
                         </div>
-                    </div>
-                </div>
-            </div>
 
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title mb-1">LDAP/AD Admin Group(s)</h5>
-                        <p class="text-muted small mb-3">Comma or newline separated LDAP/AD Group names that contain users that you wish to be Administrators/Staff on this app.</p>
-                        <textarea name="staff_group_cn" rows="3" class="form-control" placeholder="ICT Staff&#10;Another Group"><?= reserveit_textarea_value($staffGroupText) ?></textarea>
+                        <hr class="my-4">
+
+                        <h6 class="mt-4 pb-1 border-bottom text-uppercase fw-bold border-3 border-success border-start ps-2">Google OAuth</h6>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="auth_google_enabled" id="auth_google_enabled" <?= $cfg(['auth', 'google_oauth_enabled'], false) ? 'checked' : '' ?>>
+                                    <label class="form-check-label" for="auth_google_enabled">Enable Google OAuth sign-in</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-1">
+                            <div class="col-md-6">
+                                <label class="form-label">Google Client ID</label>
+                                <input type="text" name="google_client_id" class="form-control" value="<?= h($cfg(['google_oauth', 'client_id'], '')) ?>">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Google Client Secret</label>
+                                <input type="password" name="google_client_secret" class="form-control" placeholder="Leave blank to keep">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Redirect URI (optional)</label>
+                                <input type="text" name="google_redirect_uri" class="form-control" value="<?= h($cfg(['google_oauth', 'redirect_uri'], '')) ?>" placeholder="<?= h($googleRedirectDefault) ?>">
+                                <div class="form-text">
+                                    Leave blank to auto-detect. Typical authorised redirect URI: <code><?= h($googleRedirectDefault) ?></code>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Allowed Google domains (optional)</label>
+                                <textarea name="google_allowed_domains" rows="3" class="form-control" placeholder="example.com&#10;sub.example.com"><?= reserveit_textarea_value($googleAllowedDomainsText) ?></textarea>
+                                <div class="form-text">Comma or newline separated. Leave empty to allow any Google account.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Google staff/admin emails (optional)</label>
+                                <textarea name="google_staff_emails" rows="3" class="form-control" placeholder="admin1@example.com&#10;admin2@example.com"><?= reserveit_textarea_value($googleStaffText) ?></textarea>
+                                <div class="form-text">Comma or newline separated addresses that should be treated as staff when signing in with Google.</div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <div class="small text-muted" id="google-test-result"></div>
+                            <button type="button" name="action" value="test_google" class="btn btn-outline-primary btn-sm" data-test-action="test_google" data-target="google-test-result">Test Google OAuth</button>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h6 class="mt-2 pb-1 border-bottom text-uppercase fw-bold border-3 border-info border-start ps-2">Microsoft Entra / 365</h6>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="auth_microsoft_enabled" id="auth_microsoft_enabled" <?= $cfg(['auth', 'microsoft_oauth_enabled'], false) ? 'checked' : '' ?>>
+                                    <label class="form-check-label" for="auth_microsoft_enabled">Enable Microsoft sign-in</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-1">
+                            <div class="col-md-6">
+                                <label class="form-label">Client ID (Application ID)</label>
+                                <input type="text" name="microsoft_client_id" class="form-control" value="<?= h($cfg(['microsoft_oauth', 'client_id'], '')) ?>">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Client Secret</label>
+                                <input type="password" name="microsoft_client_secret" class="form-control" placeholder="Leave blank to keep">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Tenant ID (GUID)</label>
+                                <input type="text" name="microsoft_tenant" class="form-control" value="<?= h($cfg(['microsoft_oauth', 'tenant'], '')) ?>" placeholder="00000000-0000-0000-0000-000000000000">
+                                <div class="form-text">Required. Use the Directory (tenant) ID from Entra.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Redirect URI (optional)</label>
+                                <input type="text" name="microsoft_redirect_uri" class="form-control" value="<?= h($cfg(['microsoft_oauth', 'redirect_uri'], '')) ?>" placeholder="<?= h($msRedirectDefault) ?>">
+                                <div class="form-text">
+                                    Leave blank to auto-detect. Typical authorised redirect URI: <code><?= h($msRedirectDefault) ?></code>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Allowed domains (optional)</label>
+                                <textarea name="microsoft_allowed_domains" rows="3" class="form-control" placeholder="example.com&#10;sub.example.com"><?= reserveit_textarea_value($msAllowedDomainsText) ?></textarea>
+                                <div class="form-text">Comma or newline separated. Leave empty to allow any Microsoft account.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Staff/admin emails (optional)</label>
+                                <textarea name="microsoft_staff_emails" rows="3" class="form-control" placeholder="admin1@example.com&#10;admin2@example.com"><?= reserveit_textarea_value($msStaffText) ?></textarea>
+                                <div class="form-text">Comma or newline separated addresses that should be treated as staff when signing in with Microsoft.</div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <div class="small text-muted" id="ms-test-result"></div>
+                            <button type="button" name="action" value="test_microsoft" class="btn btn-outline-primary btn-sm" data-test-action="test_microsoft" data-target="ms-test-result">Test Microsoft OAuth</button>
+                        </div>
                     </div>
                 </div>
             </div>
