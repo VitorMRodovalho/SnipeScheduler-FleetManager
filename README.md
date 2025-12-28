@@ -32,9 +32,9 @@ In the app, Users can request equipment, and staff can manage reservations, chec
 3. Point your web server at the `public/` directory.
 4. Visit `public/install.php` in your browser:
    - Fill in database, Snipe-IT API, and at least one of the authentication (LDAP/Google/Entra) methods (tests are available inline).
-   - If you are using Entra for Authentication and User Search, you will need to create an App Registration on Entra, and assign the following permissions:
+   - If you are using Entra for Authentication and User Search, you will need to create an App Registration on Entra, and assign the following API permissions:
 
-      - Login only (current sign‑in flow)
+      - Login only:
         Delegated: 'User.Read'
 
       - Staff user search (directory autocomplete)
