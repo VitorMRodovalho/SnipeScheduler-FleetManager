@@ -6,7 +6,7 @@
 // Requirements:
 // - Configure Microsoft Graph app with application permissions: Chat.Create, Chat.ReadWrite.All, User.Read.All
 // - Set the Graph credentials and scope below (hard-coded for clarity).
-// - ReserveIT config present (load_config) and Snipe-IT credentials set.
+// - SnipeScheduler config present (load_config) and Snipe-IT credentials set.
 //
 // Usage (cron):
 //     * * * * * /usr/bin/php /path/to/scripts/teams_overdue_reminder.php >> /var/log/reserveit_teams_reminder.log 2>&1

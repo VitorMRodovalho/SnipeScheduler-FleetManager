@@ -22,7 +22,7 @@ function reserveit_build_config_file(array $config, array $defines = []): string
 
     $content = "<?php\n";
     $content .= "/**\n";
-    $content .= " * Auto-generated config for ReserveIT.\n";
+    $content .= " * Auto-generated config for SnipeScheduler.\n";
     $content .= " * Update via the staff settings page or the installer script.\n";
     $content .= " */\n\n";
 

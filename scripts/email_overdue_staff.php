@@ -3,7 +3,7 @@
 // Send a consolidated overdue asset report via email to a designated staff user.
 //
 // Requirements:
-// - ReserveIT config with SMTP settings configured (host, from, auth, etc.).
+// - SnipeScheduler config with SMTP settings configured (host, from, auth, etc.).
 // - Set STAFF_EMAIL (env) to the staff recipient; optional STAFF_NAME for display.
 // - CLI only; intended for cron.
 //
@@ -27,7 +27,7 @@ $staffName  = 'Staff Overdue Reports';
 
 function build_overdue_email_staff(array $rows, string $subject, array $config): array
 {
-    $appName = $config['app']['name'] ?? 'ReserveIT';
+    $appName = $config['app']['name'] ?? 'SnipeScheduler';
     $logoUrl = trim($config['app']['logo_url'] ?? '');
 
     $textLines = ["Overdue assets report:"];
@@ -107,7 +107,7 @@ foreach ($assets as $a) {
 }
 
 $config = load_config();
-$appName = $config['app']['name'] ?? 'ReserveIT';
+$appName = $config['app']['name'] ?? 'SnipeScheduler';
 $subject = $appName . ' - Overdue assets report';
 [$textBody, $htmlBody] = build_overdue_email_staff($lines, $subject, $config);
 

@@ -3,7 +3,7 @@
 // Send overdue asset reminders via email to each assigned user.
 //
 // Requirements:
-// - ReserveIT config with SMTP settings configured (host, from, auth, etc.).
+// - SnipeScheduler config with SMTP settings configured (host, from, auth, etc.).
 // - CLI only; intended for cron.
 //
 // Example cron:
@@ -22,7 +22,7 @@ require_once SRC_PATH . '/email.php';
 
 function build_overdue_email(array $rows, string $subject, array $config): array
 {
-    $appName = $config['app']['name'] ?? 'ReserveIT';
+    $appName = $config['app']['name'] ?? 'SnipeScheduler';
     $logoUrl = trim($config['app']['logo_url'] ?? '');
 
     $textLines = ["The following assets are overdue:"];
@@ -118,7 +118,7 @@ $sent = 0;
 $failed = 0;
 foreach ($buckets as $email => $info) {
     $config = load_config();
-    $appName = $config['app']['name'] ?? 'ReserveIT';
+    $appName = $config['app']['name'] ?? 'SnipeScheduler';
     $subject = $appName . ' - Overdue assets reminder';
     [$textBody, $htmlBody] = build_overdue_email($info['assets'], $subject, $config);
     try {

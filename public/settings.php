@@ -375,7 +375,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $smtp['encryption'] = $post('smtp_encryption', $smtp['encryption'] ?? 'tls');
     $smtp['auth_method'] = $post('smtp_auth_method', $smtp['auth_method'] ?? 'login');
     $smtp['from_email'] = $post('smtp_from_email', $smtp['from_email'] ?? '');
-    $smtp['from_name']  = $post('smtp_from_name', $smtp['from_name'] ?? 'ReserveIT');
+    $smtp['from_name']  = $post('smtp_from_name', $smtp['from_name'] ?? 'SnipeScheduler');
 
     $newConfig = $config;
     $newConfig['db_booking'] = $db;
@@ -436,8 +436,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $sent = reserveit_send_notification(
                 $targetEmail,
                 $targetName,
-                'ReserveIT SMTP test',
-                ['This is a test email from ReserveIT SMTP settings.'],
+                'SnipeScheduler SMTP test',
+                ['This is a test email from SnipeScheduler SMTP settings.'],
                 ['smtp' => $smtp] + $config
             );
             if ($sent) {
@@ -547,7 +547,7 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Settings – ReserveIT</title>
+    <title>Settings – SnipeScheduler</title>
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="assets/style.css">
@@ -855,7 +855,7 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
                             </div>
                             <div class="col-md-5">
                                 <label class="form-label">From name</label>
-                                <input type="text" name="smtp_from_name" class="form-control" value="<?= h($cfg(['smtp', 'from_name'], 'ReserveIT')) ?>">
+                                <input type="text" name="smtp_from_name" class="form-control" value="<?= h($cfg(['smtp', 'from_name'], 'SnipeScheduler')) ?>">
                             </div>
                         </div>
                         <div class="d-flex justify-content-between align-items-center mt-3">

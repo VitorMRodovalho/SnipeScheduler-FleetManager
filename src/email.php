@@ -1,6 +1,6 @@
 <?php
 // email.php
-// Minimal SMTP sender for ReserveIT. Supports plain/SSL/TLS with LOGIN auth.
+// Minimal SMTP sender for SnipeScheduler. Supports plain/SSL/TLS with LOGIN auth.
 
 require_once __DIR__ . '/bootstrap.php';
 
@@ -27,17 +27,17 @@ function reserveit_send_mail(string $toEmail, string $toName, string $subject, s
     $enc    = strtolower(trim($smtp['encryption'] ?? '')); // none|ssl|tls
     $auth   = strtolower(trim($smtp['auth_method'] ?? 'login')); // login|plain|none
     $from   = $smtp['from_email'] ?? '';
-    $fromNm = $smtp['from_name'] ?? 'ReserveIT';
+    $fromNm = $smtp['from_name'] ?? 'SnipeScheduler';
 
     if ($host === '' || $from === '') {
-        error_log('ReserveIT SMTP not configured (host/from missing).');
+        error_log('SnipeScheduler SMTP not configured (host/from missing).');
         return false;
     }
 
     $remoteHost = ($enc === 'ssl') ? "ssl://{$host}" : $host; // STARTTLS uses plain host, SSL wraps immediately
     $fp = @stream_socket_client("{$remoteHost}:{$port}", $errno, $errstr, 10, STREAM_CLIENT_CONNECT);
     if (!$fp) {
-        error_log("ReserveIT SMTP connect failed: " . ($errstr ?? 'unknown'));
+        error_log("SnipeScheduler SMTP connect failed: " . ($errstr ?? 'unknown'));
         return false;
     }
 
@@ -151,7 +151,7 @@ function reserveit_send_mail(string $toEmail, string $toName, string $subject, s
         fclose($fp);
         return true;
     } catch (Throwable $e) {
-        error_log('ReserveIT SMTP send failed: ' . $e->getMessage());
+        error_log('SnipeScheduler SMTP send failed: ' . $e->getMessage());
         fclose($fp);
         return false;
     }
@@ -178,7 +178,7 @@ function reserveit_send_notification(string $toEmail, string $toName, string $su
     if ($includeHtml) {
         $config = $cfg ?? load_config();
         $logoUrl = trim($config['app']['logo_url'] ?? '');
-        $appName = $config['app']['name'] ?? 'ReserveIT';
+        $appName = $config['app']['name'] ?? 'SnipeScheduler';
 
         $htmlParts = [];
         $htmlParts[] = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;line-height:1.5;color:#222;} .logo{margin-bottom:12px;} .card{border:1px solid #e5e5e5;border-radius:8px;padding:12px;background:#fafafa;} .muted{color:#666;font-size:12px;}</style></head><body>';
@@ -199,7 +199,7 @@ function reserveit_send_notification(string $toEmail, string $toName, string $su
 
     // Prefix subject with app name
     $config = $cfg ?? load_config();
-    $appName = $config['app']['name'] ?? 'ReserveIT';
+    $appName = $config['app']['name'] ?? 'SnipeScheduler';
     $prefixedSubject = $appName . ' - ' . $subject;
 
     return reserveit_send_mail($toEmail, $toName, $prefixedSubject, $body, $cfg, $htmlBody);

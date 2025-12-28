@@ -1,6 +1,6 @@
 <?php
 /**
- * Web installer for ReserveIT.
+ * Web installer for SnipeScheduler.
  *
  * Builds config/config.php and (optionally) creates the database using schema.sql.
  * Use only during initial setup. If config.php already exists, you must confirm overwriting it.
@@ -437,7 +437,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$installLocked) {
             'encryption' => $post('smtp_encryption', 'tls'),
             'auth_method'=> $post('smtp_auth_method', 'login'),
             'from_email' => $post('smtp_from_email', ''),
-            'from_name'  => $post('smtp_from_name', 'ReserveIT'),
+            'from_name'  => $post('smtp_from_name', 'SnipeScheduler'),
         ];
 
         if ($isAjax && $action !== 'save') {
@@ -462,7 +462,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$installLocked) {
                     $sent = reserveit_send_notification(
                         $targetEmail,
                         $targetName,
-                        'ReserveIT SMTP test',
+                        'SnipeScheduler SMTP test',
                         ['This is a test email from the installer SMTP settings.'],
                         ['smtp' => $smtp]
                     );
@@ -591,7 +591,7 @@ $msRedirectDefault = $host
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ReserveIT – Web Installer</title>
+    <title>SnipeScheduler – Web Installer</title>
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="assets/style.css">
@@ -607,7 +607,7 @@ $msRedirectDefault = $host
 <div class="container installer-page">
     <div class="page-shell">
         <div class="page-header">
-            <h1>ReserveIT Installer</h1>
+            <h1>SnipeScheduler Installer</h1>
             <div class="page-subtitle">
                 Create config.php and initialise the database. For production security, remove or protect this file after setup.
             </div>
@@ -953,7 +953,7 @@ $msRedirectDefault = $host
                             </div>
                             <div class="col-md-5">
                                 <label class="form-label">From name</label>
-                                <input type="text" name="smtp_from_name" class="form-control" value="<?= installer_h($pref(['smtp', 'from_name'], 'ReserveIT')) ?>">
+                                <input type="text" name="smtp_from_name" class="form-control" value="<?= installer_h($pref(['smtp', 'from_name'], 'SnipeScheduler')) ?>">
                             </div>
                         </div>
                         <div class="d-flex justify-content-between align-items-center mt-3">

@@ -123,6 +123,6 @@ return [
         'encryption' => 'tls', // none|ssl|tls
         'auth_method'=> 'login', // login|plain|none
         'from_email' => '',
-        'from_name'  => 'ReserveIT',
+        'from_name'  => 'SnipeScheduler',
     ],
 ];
