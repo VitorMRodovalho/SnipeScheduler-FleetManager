@@ -9,7 +9,7 @@
 // - SnipeScheduler config present (load_config) and Snipe-IT credentials set.
 //
 // Usage (cron):
-//     * * * * * /usr/bin/php /path/to/scripts/teams_overdue_reminder.php >> /var/log/reserveit_teams_reminder.log 2>&1
+//     * * * * * /usr/bin/php /path/to/scripts/teams_overdue_reminder.php >> /var/log/layout_teams_reminder.log 2>&1
 //
 // Azure setup (for chats):
 // 1) Register an app in Entra ID → get Client ID and Tenant ID.

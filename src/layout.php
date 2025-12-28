@@ -1,14 +1,14 @@
 <?php
-// footer.php
-// Shared footer renderer for SnipeScheduler pages.
+// layout.php
+// Shared layout helpers (nav, logo, theme, footer) for SnipeScheduler pages.
 
 require_once __DIR__ . '/bootstrap.php';
 
 /**
  * Cache config and expose helper functions for shared UI elements.
  */
-if (!function_exists('reserveit_cached_config')) {
-    function reserveit_cached_config(?array $cfg = null): array
+if (!function_exists('layout_cached_config')) {
+    function layout_cached_config(?array $cfg = null): array
     {
         static $cachedConfig = null;
 
@@ -31,8 +31,8 @@ if (!function_exists('reserveit_cached_config')) {
 /**
  * Normalize a hex color string to #rrggbb.
  */
-if (!function_exists('reserveit_normalize_hex_color')) {
-    function reserveit_normalize_hex_color(?string $color, string $fallback): string
+if (!function_exists('layout_normalize_hex_color')) {
+    function layout_normalize_hex_color(?string $color, string $fallback): string
     {
         $fallback = ltrim($fallback, '#');
         $candidate = trim((string)$color);
@@ -53,8 +53,8 @@ if (!function_exists('reserveit_normalize_hex_color')) {
 /**
  * Convert #rrggbb to [r, g, b].
  */
-if (!function_exists('reserveit_color_to_rgb')) {
-    function reserveit_color_to_rgb(string $hex): array
+if (!function_exists('layout_color_to_rgb')) {
+    function layout_color_to_rgb(string $hex): array
     {
         $hex = ltrim($hex, '#');
         return [
@@ -68,11 +68,11 @@ if (!function_exists('reserveit_color_to_rgb')) {
 /**
  * Adjust lightness: positive to lighten, negative to darken.
  */
-if (!function_exists('reserveit_adjust_lightness')) {
-    function reserveit_adjust_lightness(string $hex, float $ratio): string
+if (!function_exists('layout_adjust_lightness')) {
+    function layout_adjust_lightness(string $hex, float $ratio): string
     {
         $ratio = max(-1.0, min(1.0, $ratio));
-        [$r, $g, $b] = reserveit_color_to_rgb($hex);
+        [$r, $g, $b] = layout_color_to_rgb($hex);
 
         $adjust = static function (int $channel) use ($ratio): int {
             if ($ratio >= 0) {
@@ -89,26 +89,26 @@ if (!function_exists('reserveit_adjust_lightness')) {
     }
 }
 
-if (!function_exists('reserveit_primary_color')) {
-    function reserveit_primary_color(?array $cfg = null): string
+if (!function_exists('layout_primary_color')) {
+    function layout_primary_color(?array $cfg = null): string
     {
-        $config = reserveit_cached_config($cfg);
+        $config = layout_cached_config($cfg);
         $raw    = $config['app']['primary_color'] ?? '#660000';
 
-        return reserveit_normalize_hex_color($raw, '#660000');
+        return layout_normalize_hex_color($raw, '#660000');
     }
 }
 
-if (!function_exists('reserveit_theme_styles')) {
-    function reserveit_theme_styles(?array $cfg = null): string
+if (!function_exists('layout_theme_styles')) {
+    function layout_theme_styles(?array $cfg = null): string
     {
-        $primary      = reserveit_primary_color($cfg);
-        $primarySoft  = reserveit_adjust_lightness($primary, 0.3);   // subtle gradient partner
-        $primaryStrong = reserveit_adjust_lightness($primary, -0.08); // slightly deeper for contrast
+        $primary      = layout_primary_color($cfg);
+        $primarySoft  = layout_adjust_lightness($primary, 0.3);   // subtle gradient partner
+        $primaryStrong = layout_adjust_lightness($primary, -0.08); // slightly deeper for contrast
 
-        [$r, $g, $b]          = reserveit_color_to_rgb($primary);
-        [$rs, $gs, $bs]       = reserveit_color_to_rgb($primaryStrong);
-        [$rl, $gl, $bl]       = reserveit_color_to_rgb($primarySoft);
+        [$r, $g, $b]          = layout_color_to_rgb($primary);
+        [$rs, $gs, $bs]       = layout_color_to_rgb($primaryStrong);
+        [$rl, $gl, $bl]       = layout_color_to_rgb($primarySoft);
 
         $style = <<<CSS
 <style>
@@ -129,11 +129,11 @@ CSS;
     }
 }
 
-if (!function_exists('reserveit_render_nav')) {
+if (!function_exists('layout_render_nav')) {
     /**
      * Render the main app navigation. Highlights the active page and hides staff-only items for non-staff users.
      */
-    function reserveit_render_nav(string $active, bool $isStaff): string
+    function layout_render_nav(string $active, bool $isStaff): string
     {
         $links = [
             ['href' => 'index.php',          'label' => 'Dashboard',           'staff' => false],
@@ -163,8 +163,8 @@ if (!function_exists('reserveit_render_nav')) {
     }
 }
 
-if (!function_exists('reserveit_footer')) {
-    function reserveit_footer(): void
+if (!function_exists('layout_footer')) {
+    function layout_footer(): void
     {
         $versionFile = APP_ROOT . '/version.txt';
         $versionRaw  = is_file($versionFile) ? trim((string)@file_get_contents($versionFile)) : '';
@@ -179,10 +179,10 @@ if (!function_exists('reserveit_footer')) {
     }
 }
 
-if (!function_exists('reserveit_logo_tag')) {
-    function reserveit_logo_tag(?array $cfg = null): string
+if (!function_exists('layout_logo_tag')) {
+    function layout_logo_tag(?array $cfg = null): string
     {
-        $cfg = reserveit_cached_config($cfg);
+        $cfg = layout_cached_config($cfg);
 
         $logoUrl = '';
         if (isset($cfg['app']['logo_url']) && trim($cfg['app']['logo_url']) !== '') {
@@ -195,7 +195,9 @@ if (!function_exists('reserveit_logo_tag')) {
 
         $urlEsc = htmlspecialchars($logoUrl, ENT_QUOTES, 'UTF-8');
         return '<div class="app-logo text-center mb-3">'
+            . '<a href="index.php" aria-label="Go to dashboard">'
             . '<img src="' . $urlEsc . '" alt="SnipeScheduler logo" style="max-height:80px; width:auto; height:auto; max-width:100%; object-fit:contain;">'
+            . '</a>'
             . '</div>';
     }
 }

@@ -15,7 +15,7 @@ require_once __DIR__ . '/bootstrap.php';
  * @param array|null  $cfg       Override config array (uses load_config() if null)
  * @return bool                   True on success, false on failure.
  */
-function reserveit_send_mail(string $toEmail, string $toName, string $subject, string $body, ?array $cfg = null, ?string $htmlBody = null): bool
+function layout_send_mail(string $toEmail, string $toName, string $subject, string $body, ?array $cfg = null, ?string $htmlBody = null): bool
 {
     $config = $cfg ?? load_config();
     $smtp   = $config['smtp'] ?? [];
@@ -167,7 +167,7 @@ function reserveit_send_mail(string $toEmail, string $toName, string $subject, s
  * @param array|null $cfg
  * @return bool
  */
-function reserveit_send_notification(string $toEmail, string $toName, string $subject, array $lines, ?array $cfg = null, bool $includeHtml = true): bool
+function layout_send_notification(string $toEmail, string $toName, string $subject, array $lines, ?array $cfg = null, bool $includeHtml = true): bool
 {
     $bodyLines = array_filter($lines, static function ($line) {
         return $line !== null && $line !== '';
@@ -202,7 +202,7 @@ function reserveit_send_notification(string $toEmail, string $toName, string $su
     $appName = $config['app']['name'] ?? 'SnipeScheduler';
     $prefixedSubject = $appName . ' - ' . $subject;
 
-    return reserveit_send_mail($toEmail, $toName, $prefixedSubject, $body, $cfg, $htmlBody);
+    return layout_send_mail($toEmail, $toName, $prefixedSubject, $body, $cfg, $htmlBody);
 }
 
 function encode_header(string $str): string

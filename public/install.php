@@ -459,7 +459,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$installLocked) {
                     }
                     $targetEmail = $smtp['from_email'];
                     $targetName  = $smtp['from_name'] ?? $targetEmail;
-                    $sent = reserveit_send_notification(
+                    $sent = layout_send_notification(
                         $targetEmail,
                         $targetName,
                         'SnipeScheduler SMTP test',
@@ -491,7 +491,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$installLocked) {
             @mkdir(CONFIG_PATH, 0755, true);
         }
 
-        $content = reserveit_build_config_file($newConfig, [
+        $content = layout_build_config_file($newConfig, [
             'SNIPEIT_API_PAGE_LIMIT'   => $pageLimit,
             'CATALOGUE_ITEMS_PER_PAGE' => $cataloguePP,
             'SNIPEIT_MAX_MODELS_FETCH' => $maxModels,

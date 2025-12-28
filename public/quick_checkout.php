@@ -7,7 +7,7 @@ require_once SRC_PATH . '/auth.php';
 require_once SRC_PATH . '/snipeit_client.php';
 require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/email.php';
-require_once SRC_PATH . '/footer.php';
+require_once SRC_PATH . '/layout.php';
 
 $now = new DateTime();
 $defaultStart = $now->format('Y-m-d\TH:i');
@@ -205,7 +205,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $note !== '' ? "Note: {$note}" : '',
                     ];
                     if ($userEmail !== '') {
-                        reserveit_send_notification($userEmail, $userName, 'Assets checked out', $bodyLines);
+                        layout_send_notification($userEmail, $userName, 'Assets checked out', $bodyLines);
                     }
                     if ($staffEmail !== '') {
                         $staffBody = array_merge(
@@ -214,7 +214,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             ],
                             $bodyLines
                         );
-                        reserveit_send_notification($staffEmail, $staffDisplayName, 'You checked out assets', $staffBody);
+                        layout_send_notification($staffEmail, $staffDisplayName, 'You checked out assets', $staffBody);
                     }
 
                     $checkoutAssets = [];
@@ -235,12 +235,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="assets/style.css">
-    <?= reserveit_theme_styles() ?>
+    <?= layout_theme_styles() ?>
 </head>
 <body class="p-4">
 <div class="container">
     <div class="page-shell">
-        <?= reserveit_logo_tag() ?>
+        <?= layout_logo_tag() ?>
         <div class="page-header">
             <h1>Quick Checkout</h1>
             <div class="page-subtitle">
@@ -248,7 +248,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
 
-        <?= reserveit_render_nav($active, $isStaff) ?>
+        <?= layout_render_nav($active, $isStaff) ?>
 
         <?php if (!empty($messages)): ?>
             <div class="alert alert-success">
@@ -508,6 +508,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     });
 })();
 </script>
-<?php reserveit_footer(); ?>
+<?php layout_footer(); ?>
 </body>
 </html>

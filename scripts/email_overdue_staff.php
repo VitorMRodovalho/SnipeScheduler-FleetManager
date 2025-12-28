@@ -8,7 +8,7 @@
 // - CLI only; intended for cron.
 //
 // Example cron:
-// STAFF_EMAIL=staff@yourtenant.com STAFF_NAME="Ops Team" /usr/bin/php /path/to/scripts/email_overdue_staff.php >> /var/log/reserveit_overdue_staff.log 2>&1
+// STAFF_EMAIL=staff@yourtenant.com STAFF_NAME="Ops Team" /usr/bin/php /path/to/scripts/email_overdue_staff.php >> /var/log/layout_overdue_staff.log 2>&1
 
 declare(strict_types=1);
 
@@ -112,7 +112,7 @@ $subject = $appName . ' - Overdue assets report';
 [$textBody, $htmlBody] = build_overdue_email_staff($lines, $subject, $config);
 
 try {
-    $ok = reserveit_send_mail(
+    $ok = layout_send_mail(
         $staffEmail,
         $staffName !== '' ? $staffName : $staffEmail,
         $subject,

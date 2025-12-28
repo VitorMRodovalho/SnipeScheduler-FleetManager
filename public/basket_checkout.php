@@ -3,7 +3,7 @@ require_once __DIR__ . '/../src/bootstrap.php';
 require_once SRC_PATH . '/auth.php';
 require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/snipeit_client.php';
-require_once SRC_PATH . '/footer.php';
+require_once SRC_PATH . '/layout.php';
 
 $userOverride = $_SESSION['booking_user_override'] ?? null;
 $user   = $userOverride ?: $currentUser;
@@ -169,7 +169,7 @@ try {
 </head>
 <body class="p-4">
 <div class="container">
-    <?= reserveit_logo_tag() ?>
+    <?= layout_logo_tag() ?>
     <h1>Thank you</h1>
     <p>Your booking has been submitted for <?= (int)$totalRequestedItems ?> item(s).</p>
     <p>
@@ -177,6 +177,6 @@ try {
         <a href="my_bookings.php" class="btn btn-secondary">View my bookings</a>
     </p>
 </div>
-<?php reserveit_footer(); ?>
+<?php layout_footer(); ?>
 </body>
 </html>

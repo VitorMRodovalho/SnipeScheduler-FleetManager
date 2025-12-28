@@ -12,7 +12,7 @@ require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/booking_helpers.php';
 require_once SRC_PATH . '/snipeit_client.php';
 require_once SRC_PATH . '/email.php';
-require_once SRC_PATH . '/footer.php';
+require_once SRC_PATH . '/layout.php';
 
 $config     = load_config();
 $timezone   = $config['app']['timezone'] ?? 'Europe/Jersey';
@@ -437,10 +437,10 @@ $checkoutTo = trim($selectedReservation['user_name'] ?? '');
                         "Checked out by: {$staffName}",
                     ];
                     if ($userEmail !== '') {
-                        reserveit_send_notification($userEmail, $userName, 'Your reservation has been checked out', $bodyLines);
+                        layout_send_notification($userEmail, $userName, 'Your reservation has been checked out', $bodyLines);
                     }
                     if ($staffEmail !== '') {
-                        reserveit_send_notification($staffEmail, $staffName !== '' ? $staffName : $staffEmail, 'You checked out a reservation', $bodyLines);
+                        layout_send_notification($staffEmail, $staffName !== '' ? $staffName : $staffEmail, 'You checked out a reservation', $bodyLines);
                     }
 
                     // Clear selected reservation to avoid repeat
@@ -533,12 +533,12 @@ $isStaff = !empty($currentUser['is_admin']);
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="assets/style.css">
-    <?= reserveit_theme_styles() ?>
+    <?= layout_theme_styles() ?>
 </head>
 <body class="p-4">
 <div class="container">
     <div class="page-shell">
-        <?= reserveit_logo_tag() ?>
+        <?= layout_logo_tag() ?>
 <?php endif; ?>
         <div class="page-header">
             <h1>Today’s Reservations (Checkout)</h1>
@@ -549,7 +549,7 @@ $isStaff = !empty($currentUser['is_admin']);
 
         <!-- App navigation -->
         <?php if (!$embedded): ?>
-            <?= reserveit_render_nav($active, $isStaff) ?>
+            <?= layout_render_nav($active, $isStaff) ?>
         <?php endif; ?>
 
         <!-- Top bar -->
@@ -832,7 +832,7 @@ $isStaff = !empty($currentUser['is_admin']);
 })();
 </script>
 <?php if (!$embedded): ?>
-<?php reserveit_footer(); ?>
+<?php layout_footer(); ?>
 </body>
 </html>
 <?php endif; ?>

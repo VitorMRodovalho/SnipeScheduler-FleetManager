@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/../src/bootstrap.php';
 require_once SRC_PATH . '/auth.php';
-require_once SRC_PATH . '/footer.php';
+require_once SRC_PATH . '/layout.php';
 
 $active  = basename($_SERVER['PHP_SELF']);
 $isStaff = !empty($currentUser['is_admin']);
@@ -46,7 +46,7 @@ if (!$tabFile || !is_file($tabFile)) {
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="assets/style.css">
-    <?= reserveit_theme_styles() ?>
+    <?= layout_theme_styles() ?>
     <style>
         /* Make reservations tabs more prominent */
         .reservations-tabs {
@@ -84,7 +84,7 @@ if (!$tabFile || !is_file($tabFile)) {
 <body class="p-4">
 <div class="container">
     <div class="page-shell">
-        <?= reserveit_logo_tag() ?>
+        <?= layout_logo_tag() ?>
         <div class="page-header">
             <h1>Reservations</h1>
             <div class="page-subtitle">
@@ -92,7 +92,7 @@ if (!$tabFile || !is_file($tabFile)) {
             </div>
         </div>
 
-        <?= reserveit_render_nav($active, $isStaff) ?>
+        <?= layout_render_nav($active, $isStaff) ?>
 
         <div class="top-bar mb-3">
             <div class="top-bar-user">
@@ -125,6 +125,6 @@ if (!$tabFile || !is_file($tabFile)) {
         </div>
     </div>
 </div>
-<?php reserveit_footer(); ?>
+<?php layout_footer(); ?>
 </body>
 </html>

@@ -9,7 +9,7 @@
 // - Set Graph credentials below (hard-coded for clarity).
 //
 // Usage (cron):
-//     /usr/bin/php /path/to/scripts/teams_overdue_reminder_staff.php >> /var/log/reserveit_teams_staff.log 2>&1
+//     /usr/bin/php /path/to/scripts/teams_overdue_reminder_staff.php >> /var/log/layout_teams_staff.log 2>&1
 //
 // Azure setup (for chats):
 // 1) Register an app in Entra ID → get Client ID and Tenant ID.

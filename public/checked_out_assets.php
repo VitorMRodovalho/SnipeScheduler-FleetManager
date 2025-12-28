@@ -3,7 +3,7 @@ require_once __DIR__ . '/../src/bootstrap.php';
 require_once SRC_PATH . '/auth.php';
 require_once SRC_PATH . '/snipeit_client.php';
 require_once SRC_PATH . '/db.php';
-require_once SRC_PATH . '/footer.php';
+require_once SRC_PATH . '/layout.php';
 
 function format_display_date($val): string
 {
@@ -59,7 +59,7 @@ $forceRefresh = isset($_REQUEST['refresh']) && $_REQUEST['refresh'] === '1';
 if ($forceRefresh) {
     // Disable cached Snipe-IT responses for this request
     if (isset($cacheTtl)) {
-        $GLOBALS['_reserveit_prev_cache_ttl'] = $cacheTtl;
+        $GLOBALS['_layout_prev_cache_ttl'] = $cacheTtl;
     }
     $cacheTtl = 0;
 }
@@ -151,13 +151,13 @@ try {
 }
 
 // Restore cache TTL if we temporarily disabled it
-if ($forceRefresh && isset($GLOBALS['_reserveit_prev_cache_ttl'])) {
-    $cacheTtl = $GLOBALS['_reserveit_prev_cache_ttl'];
-    unset($GLOBALS['_reserveit_prev_cache_ttl']);
+if ($forceRefresh && isset($GLOBALS['_layout_prev_cache_ttl'])) {
+    $cacheTtl = $GLOBALS['_layout_prev_cache_ttl'];
+    unset($GLOBALS['_layout_prev_cache_ttl']);
 }
 ?>
 <?php
-function reserveit_checked_out_url(string $base, array $params): string
+function layout_checked_out_url(string $base, array $params): string
 {
     $query = http_build_query($params);
     return $query === '' ? $base : ($base . '?' . $query);
@@ -173,12 +173,12 @@ function reserveit_checked_out_url(string $base, array $params): string
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="assets/style.css">
-    <?= reserveit_theme_styles() ?>
+    <?= layout_theme_styles() ?>
 </head>
 <body class="p-4">
 <div class="container">
     <div class="page-shell">
-        <?= reserveit_logo_tag() ?>
+        <?= layout_logo_tag() ?>
 <?php endif; ?>
         <style>
             /* Make sub-tabs pop within the reservations area */
@@ -215,7 +215,7 @@ function reserveit_checked_out_url(string $base, array $params): string
         </div>
 
         <?php if (!$embedded): ?>
-            <?= reserveit_render_nav($active, $isStaff) ?>
+            <?= layout_render_nav($active, $isStaff) ?>
         <?php endif; ?>
 
         <?php
@@ -226,8 +226,8 @@ function reserveit_checked_out_url(string $base, array $params): string
                 $allParams['q']     = $search;
                 $overdueParams['q'] = $search;
             }
-            $allUrl     = reserveit_checked_out_url($pageBase, $allParams);
-            $overdueUrl = reserveit_checked_out_url($pageBase, $overdueParams);
+            $allUrl     = layout_checked_out_url($pageBase, $allParams);
+            $overdueUrl = layout_checked_out_url($pageBase, $overdueParams);
         ?>
 
         <ul class="nav nav-tabs reservations-subtabs mb-3">
@@ -353,7 +353,7 @@ function reserveit_checked_out_url(string $base, array $params): string
 <?php if (!$embedded): ?>
     </div>
 </div>
-<?php reserveit_footer(); ?>
+<?php layout_footer(); ?>
 </body>
 </html>
 <?php endif; ?>

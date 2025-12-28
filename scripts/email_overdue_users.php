@@ -7,7 +7,7 @@
 // - CLI only; intended for cron.
 //
 // Example cron:
-// */30 * * * * /usr/bin/php /path/to/scripts/email_overdue_users.php >> /var/log/reserveit_overdue_users.log 2>&1
+// */30 * * * * /usr/bin/php /path/to/scripts/email_overdue_users.php >> /var/log/layout_overdue_users.log 2>&1
 
 declare(strict_types=1);
 
@@ -122,7 +122,7 @@ foreach ($buckets as $email => $info) {
     $subject = $appName . ' - Overdue assets reminder';
     [$textBody, $htmlBody] = build_overdue_email($info['assets'], $subject, $config);
     try {
-        $ok = reserveit_send_mail($email, $info['name'], $subject, $textBody, $config, $htmlBody);
+        $ok = layout_send_mail($email, $info['name'], $subject, $textBody, $config, $htmlBody);
         if ($ok) {
             $sent++;
             echo "[sent] {$email}\n";

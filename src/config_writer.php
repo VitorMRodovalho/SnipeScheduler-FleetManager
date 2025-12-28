@@ -8,7 +8,7 @@
  * @param array $config  The configuration array to return from the file.
  * @param array $defines Map of constant name => value to define if not already set.
  */
-function reserveit_build_config_file(array $config, array $defines = []): string
+function layout_build_config_file(array $config, array $defines = []): string
 {
     $safeDefines = [];
     foreach ($defines as $name => $value) {

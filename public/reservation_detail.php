@@ -4,7 +4,7 @@ require_once __DIR__ . '/../src/bootstrap.php';
 require_once SRC_PATH . '/auth.php';
 require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/booking_helpers.php';
-require_once SRC_PATH . '/footer.php';
+require_once SRC_PATH . '/layout.php';
 
 $isStaff = !empty($currentUser['is_admin']);
 
@@ -78,12 +78,12 @@ $isStaff = !empty($currentUser['is_admin']);
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="assets/style.css">
-    <?= reserveit_theme_styles() ?>
+    <?= layout_theme_styles() ?>
 </head>
 <body class="p-4">
 <div class="container">
     <div class="page-shell">
-        <?= reserveit_logo_tag() ?>
+        <?= layout_logo_tag() ?>
         <div class="page-header">
             <h1>Booking #<?= (int)$id ?> – Details</h1>
             <div class="page-subtitle">
@@ -92,7 +92,7 @@ $isStaff = !empty($currentUser['is_admin']);
         </div>
 
         <!-- App navigation -->
-        <?= reserveit_render_nav($active, $isStaff) ?>
+        <?= layout_render_nav($active, $isStaff) ?>
 
         <div class="top-bar mb-3">
             <div class="top-bar-user">
@@ -168,6 +168,6 @@ $isStaff = !empty($currentUser['is_admin']);
 
     </div>
 </div>
-<?php reserveit_footer(); ?>
+<?php layout_footer(); ?>
 </body>
 </html>

@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/../src/bootstrap.php';
 require_once SRC_PATH . '/auth.php';
-require_once SRC_PATH . '/footer.php';
+require_once SRC_PATH . '/layout.php';
 require_once SRC_PATH . '/config_writer.php';
 require_once SRC_PATH . '/snipeit_client.php';
 require_once SRC_PATH . '/email.php';
@@ -47,7 +47,7 @@ $definedValues = [
     'SNIPEIT_MAX_MODELS_FETCH'  => defined('SNIPEIT_MAX_MODELS_FETCH') ? SNIPEIT_MAX_MODELS_FETCH : 1000,
 ];
 
-function reserveit_test_db_connection(array $db): string
+function layout_test_db_connection(array $db): string
 {
     $dsn = sprintf(
         'mysql:host=%s;port=%d;dbname=%s;charset=%s',
@@ -70,7 +70,7 @@ function reserveit_test_db_connection(array $db): string
     return 'Database connection succeeded.';
 }
 
-function reserveit_test_snipe_api(array $snipe): string
+function layout_test_snipe_api(array $snipe): string
 {
     if (!function_exists('curl_init')) {
         throw new Exception('PHP cURL extension is not installed.');
@@ -116,7 +116,7 @@ function reserveit_test_snipe_api(array $snipe): string
     return 'Snipe-IT API reachable (HTTP ' . $code . ').';
 }
 
-function reserveit_test_google_oauth(array $google, array $auth): string
+function layout_test_google_oauth(array $google, array $auth): string
 {
     if (!function_exists('curl_init')) {
         throw new Exception('PHP cURL extension is not installed.');
@@ -160,7 +160,7 @@ function reserveit_test_google_oauth(array $google, array $auth): string
     return 'Google OAuth settings look OK and endpoints are reachable.';
 }
 
-function reserveit_test_microsoft_oauth(array $ms, array $auth): string
+function layout_test_microsoft_oauth(array $ms, array $auth): string
 {
     if (!function_exists('curl_init')) {
         throw new Exception('PHP cURL extension is not installed.');
@@ -210,7 +210,7 @@ function reserveit_test_microsoft_oauth(array $ms, array $auth): string
     return 'Microsoft OAuth settings look OK and endpoints are reachable.';
 }
 
-function reserveit_test_ldap(array $ldap): string
+function layout_test_ldap(array $ldap): string
 {
     if (!function_exists('ldap_connect')) {
         throw new Exception('PHP LDAP extension is not installed.');
@@ -398,31 +398,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'test_db') {
         try {
-            $messages[] = reserveit_test_db_connection($db);
+            $messages[] = layout_test_db_connection($db);
         } catch (Throwable $e) {
             $errors[] = 'Database test failed: ' . $e->getMessage();
         }
     } elseif ($action === 'test_api') {
         try {
-            $messages[] = reserveit_test_snipe_api($snipe);
+            $messages[] = layout_test_snipe_api($snipe);
         } catch (Throwable $e) {
             $errors[] = 'Snipe-IT API test failed: ' . $e->getMessage();
         }
     } elseif ($action === 'test_microsoft') {
         try {
-            $messages[] = reserveit_test_microsoft_oauth($ms, $auth);
+            $messages[] = layout_test_microsoft_oauth($ms, $auth);
         } catch (Throwable $e) {
             $errors[] = 'Microsoft OAuth test failed: ' . $e->getMessage();
         }
     } elseif ($action === 'test_google') {
         try {
-            $messages[] = reserveit_test_google_oauth($google, $auth);
+            $messages[] = layout_test_google_oauth($google, $auth);
         } catch (Throwable $e) {
             $errors[] = 'Google OAuth test failed: ' . $e->getMessage();
         }
     } elseif ($action === 'test_ldap') {
         try {
-            $messages[] = reserveit_test_ldap($ldap);
+            $messages[] = layout_test_ldap($ldap);
         } catch (Throwable $e) {
             $errors[] = 'LDAP test failed: ' . $e->getMessage();
         }
@@ -433,7 +433,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $targetEmail = $smtp['from_email'];
             $targetName  = $smtp['from_name'] ?? $targetEmail;
-            $sent = reserveit_send_notification(
+            $sent = layout_send_notification(
                 $targetEmail,
                 $targetName,
                 'SnipeScheduler SMTP test',
@@ -449,7 +449,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors[] = 'SMTP test failed: ' . $e->getMessage();
         }
     } else {
-        $content = reserveit_build_config_file($newConfig, [
+        $content = layout_build_config_file($newConfig, [
             'SNIPEIT_API_PAGE_LIMIT'   => $pageLimit,
             'CATALOGUE_ITEMS_PER_PAGE' => $cataloguePP,
             'SNIPEIT_MAX_MODELS_FETCH' => $maxModels,
@@ -489,7 +489,7 @@ $cfg = static function (array $path, $fallback = '') use ($config) {
     return $ref === null ? $fallback : $ref;
 };
 
-function reserveit_textarea_value(string $value): string
+function layout_textarea_value(string $value): string
 {
     return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
 }
@@ -551,12 +551,12 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="assets/style.css">
-    <?= reserveit_theme_styles($config) ?>
+    <?= layout_theme_styles($config) ?>
 </head>
 <body class="p-4">
 <div class="container">
     <div class="page-shell">
-        <?= reserveit_logo_tag($config) ?>
+        <?= layout_logo_tag($config) ?>
         <div class="page-header">
             <h1>Settings</h1>
             <div class="page-subtitle">
@@ -564,7 +564,7 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
             </div>
         </div>
 
-        <?= reserveit_render_nav($active, $isStaff) ?>
+        <?= layout_render_nav($active, $isStaff) ?>
 
         <div class="top-bar mb-3">
             <div class="top-bar-user">
@@ -700,7 +700,7 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
                             </div>
                             <div class="col-12">
                                 <label class="form-label">LDAP/AD Admin Group(s)</label>
-                                <textarea name="staff_group_cn" rows="3" class="form-control" placeholder="ICT Staff&#10;Another Group"><?= reserveit_textarea_value($staffGroupText) ?></textarea>
+                                <textarea name="staff_group_cn" rows="3" class="form-control" placeholder="ICT Staff&#10;Another Group"><?= layout_textarea_value($staffGroupText) ?></textarea>
                                 <div class="form-text">Comma or newline separated group names that should be treated as staff.</div>
                             </div>
                         </div>
@@ -738,12 +738,12 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Allowed Google domains (optional)</label>
-                                <textarea name="google_allowed_domains" rows="3" class="form-control" placeholder="example.com&#10;sub.example.com"><?= reserveit_textarea_value($googleAllowedDomainsText) ?></textarea>
+                                <textarea name="google_allowed_domains" rows="3" class="form-control" placeholder="example.com&#10;sub.example.com"><?= layout_textarea_value($googleAllowedDomainsText) ?></textarea>
                                 <div class="form-text">Comma or newline separated. Leave empty to allow any Google account.</div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Google staff/admin emails (optional)</label>
-                                <textarea name="google_staff_emails" rows="3" class="form-control" placeholder="admin1@example.com&#10;admin2@example.com"><?= reserveit_textarea_value($googleStaffText) ?></textarea>
+                                <textarea name="google_staff_emails" rows="3" class="form-control" placeholder="admin1@example.com&#10;admin2@example.com"><?= layout_textarea_value($googleStaffText) ?></textarea>
                                 <div class="form-text">Comma or newline separated addresses that should be treated as staff when signing in with Google.</div>
                             </div>
                         </div>
@@ -786,12 +786,12 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Allowed domains (optional)</label>
-                                <textarea name="microsoft_allowed_domains" rows="3" class="form-control" placeholder="example.com&#10;sub.example.com"><?= reserveit_textarea_value($msAllowedDomainsText) ?></textarea>
+                                <textarea name="microsoft_allowed_domains" rows="3" class="form-control" placeholder="example.com&#10;sub.example.com"><?= layout_textarea_value($msAllowedDomainsText) ?></textarea>
                                 <div class="form-text">Comma or newline separated. Leave empty to allow any Microsoft account.</div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Staff/admin emails (optional)</label>
-                                <textarea name="microsoft_staff_emails" rows="3" class="form-control" placeholder="admin1@example.com&#10;admin2@example.com"><?= reserveit_textarea_value($msStaffText) ?></textarea>
+                                <textarea name="microsoft_staff_emails" rows="3" class="form-control" placeholder="admin1@example.com&#10;admin2@example.com"><?= layout_textarea_value($msStaffText) ?></textarea>
                                 <div class="form-text">Comma or newline separated addresses that should be treated as staff when signing in with Microsoft.</div>
                             </div>
                         </div>
@@ -969,7 +969,7 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
         </form>
     </div>
 </div>
-<?php reserveit_footer(); ?>
+<?php layout_footer(); ?>
 <script>
 (function () {
     const form = document.getElementById('settings-form');
