@@ -62,7 +62,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $assigned = $asset['assigned_to'] ?? ($asset['assigned_to_fullname'] ?? []);
                 $assignedEmail = '';
                 $assignedName  = '';
+                $assignedId    = 0;
                 if (is_array($assigned)) {
+                    $assignedId    = (int)($assigned['id'] ?? 0);
                     $assignedEmail = $assigned['email'] ?? ($assigned['username'] ?? '');
                     $assignedName  = $assigned['name'] ?? ($assigned['username'] ?? ($assigned['email'] ?? ''));
                 } elseif (is_string($assigned)) {
@@ -75,6 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'name'       => $assetName,
                     'model'      => $modelName,
                     'status'     => $status,
+                    'assigned_id'    => $assignedId,
                     'assigned_email' => $assignedEmail,
                     'assigned_name'  => $assignedName,
                 ];
@@ -94,7 +97,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $staffDisplayName = $staffName !== '' ? $staffName : ($currentUser['email'] ?? 'Staff');
             $assetTags  = [];
             $userBuckets = [];
+            $summaryBuckets = [];
             $userLookupCache = [];
+            $userIdCache = [];
 
             foreach ($checkinAssets as $asset) {
                 $assetId  = (int)$asset['id'];
@@ -108,6 +113,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     $assignedEmail = $asset['assigned_email'] ?? '';
                     $assignedName  = $asset['assigned_name'] ?? '';
+                    $assignedId    = (int)($asset['assigned_id'] ?? 0);
+                    if ($assignedEmail === '' && $assignedId > 0) {
+                        if (isset($userIdCache[$assignedId])) {
+                            $cached = $userIdCache[$assignedId];
+                            $assignedEmail = $cached['email'] ?? '';
+                            $assignedName = $assignedName !== '' ? $assignedName : ($cached['name'] ?? '');
+                        } else {
+                            try {
+                                $matchedUser = snipeit_request('GET', 'users/' . $assignedId);
+                                $matchedEmail = $matchedUser['email'] ?? ($matchedUser['username'] ?? '');
+                                $matchedName  = $matchedUser['name'] ?? ($matchedUser['username'] ?? '');
+                                $userIdCache[$assignedId] = [
+                                    'email' => $matchedEmail,
+                                    'name'  => $matchedName,
+                                ];
+                                if ($matchedEmail !== '') {
+                                    $assignedEmail = $matchedEmail;
+                                }
+                                if ($assignedName === '' && $matchedName !== '') {
+                                    $assignedName = $matchedName;
+                                }
+                            } catch (Throwable $e) {
+                                // Skip lookup failure; user details may be unavailable.
+                            }
+                        }
+                    }
                     if ($assignedEmail === '' && $assignedName !== '') {
                         $cacheKey = strtolower(trim($assignedName));
                         if (isset($userLookupCache[$cacheKey])) {
@@ -125,6 +156,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             }
                         }
                     }
+
+                    $summaryLabel = '';
+                    if ($assignedEmail !== '') {
+                        $summaryLabel = $assignedName !== '' && $assignedName !== $assignedEmail
+                            ? ($assignedName . " <{$assignedEmail}>")
+                            : $assignedEmail;
+                    } elseif ($assignedName !== '') {
+                        $summaryLabel = $assignedName;
+                    } else {
+                        $summaryLabel = 'Unknown user';
+                    }
+                    if (!isset($summaryBuckets[$summaryLabel])) {
+                        $summaryBuckets[$summaryLabel] = [];
+                    }
+                    $summaryBuckets[$summaryLabel][] = $formatted;
 
                     if ($assignedEmail !== '') {
                         if (!isset($userBuckets[$assignedEmail])) {
@@ -166,12 +212,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($staffEmail !== '' && !empty($assetTags)) {
                     // Build per-user summary for staff so they can see who had the assets
                     $perUserSummary = [];
-                    foreach ($userBuckets as $email => $info) {
-                        $label = ($info['name'] ?? $email);
-                        if ($label !== $email) {
-                            $label .= " <{$email}>";
-                        }
-                        $perUserSummary[] = '- ' . $label . ': ' . implode(', ', $info['assets']);
+                    foreach ($summaryBuckets as $label => $assets) {
+                        $perUserSummary[] = '- ' . $label . ': ' . implode(', ', $assets);
                     }
 
                     $bodyLines = [];
