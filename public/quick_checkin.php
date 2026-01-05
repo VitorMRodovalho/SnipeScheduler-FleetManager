@@ -59,7 +59,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new Exception('Asset record from Snipe-IT is missing id/asset_tag.');
                 }
 
-                $assigned = $asset['assigned_to'] ?? ($asset['assigned_to_fullname'] ?? []);
+                $assigned = $asset['assigned_to'] ?? null;
+                if (empty($assigned) && isset($asset['assigned_to_fullname'])) {
+                    $assigned = $asset['assigned_to_fullname'];
+                }
                 $assignedEmail = '';
                 $assignedName  = '';
                 $assignedId    = 0;
@@ -152,7 +155,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     $userLookupCache[$cacheKey] = $matchedEmail;
                                 }
                             } catch (Throwable $e) {
-                                // Skip lookup failure; user email may be unavailable.
+                                try {
+                                    $data = snipeit_request('GET', 'users', [
+                                        'search' => $assignedName,
+                                        'limit'  => 50,
+                                    ]);
+                                    $rows = $data['rows'] ?? [];
+                                    $exact = [];
+                                    $nameLower = strtolower(trim($assignedName));
+                                    foreach ($rows as $row) {
+                                        $rowName = strtolower(trim((string)($row['name'] ?? '')));
+                                        $rowEmail = strtolower(trim((string)($row['email'] ?? ($row['username'] ?? ''))));
+                                        if ($rowName !== '' && $rowName === $nameLower) {
+                                            $exact[] = $row;
+                                        } elseif ($rowEmail !== '' && $rowEmail === $nameLower) {
+                                            $exact[] = $row;
+                                        }
+                                    }
+                                    if (!empty($exact)) {
+                                        $picked = $exact[0];
+                                        $matchedEmail = $picked['email'] ?? ($picked['username'] ?? '');
+                                        if ($matchedEmail !== '') {
+                                            $assignedEmail = $matchedEmail;
+                                            $userLookupCache[$cacheKey] = $matchedEmail;
+                                        }
+                                        if ($assignedName === '') {
+                                            $assignedName = $picked['name'] ?? ($picked['username'] ?? '');
+                                        }
+                                    }
+                                } catch (Throwable $e2) {
+                                    // Skip lookup failure; user email may be unavailable.
+                                }
                             }
                         }
                     }
