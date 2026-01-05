@@ -108,15 +108,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $assetId  = (int)$asset['id'];
                 $assetTag = $asset['asset_tag'] ?? '';
                 try {
+                    $assignedEmail = $asset['assigned_email'] ?? '';
+                    $assignedName  = $asset['assigned_name'] ?? '';
+                    $assignedId    = (int)($asset['assigned_id'] ?? 0);
+                    if (($assignedEmail === '' && $assignedName === '') || $assignedId === 0) {
+                        try {
+                            $freshAsset = snipeit_request('GET', 'hardware/' . $assetId);
+                            $freshAssigned = $freshAsset['assigned_to'] ?? null;
+                            if (empty($freshAssigned) && isset($freshAsset['assigned_to_fullname'])) {
+                                $freshAssigned = $freshAsset['assigned_to_fullname'];
+                            }
+                            if (is_array($freshAssigned)) {
+                                $assignedId    = (int)($freshAssigned['id'] ?? $assignedId);
+                                $assignedEmail = $freshAssigned['email'] ?? ($freshAssigned['username'] ?? $assignedEmail);
+                                $assignedName  = $freshAssigned['name'] ?? ($freshAssigned['username'] ?? ($freshAssigned['email'] ?? $assignedName));
+                            } elseif (is_string($freshAssigned) && $assignedName === '') {
+                                $assignedName = $freshAssigned;
+                            }
+                        } catch (Throwable $e) {
+                            // Skip fresh lookup; proceed with stored assignment data.
+                        }
+                    }
+
                     checkin_asset($assetId, $note);
                     $messages[] = "Checked in asset {$assetTag}.";
                     $model = $asset['model'] ?? '';
                     $formatted = $model !== '' ? ($assetTag . ' (' . $model . ')') : $assetTag;
                     $assetTags[] = $formatted;
 
-                    $assignedEmail = $asset['assigned_email'] ?? '';
-                    $assignedName  = $asset['assigned_name'] ?? '';
-                    $assignedId    = (int)($asset['assigned_id'] ?? 0);
                     if ($assignedEmail === '' && $assignedId > 0) {
                         if (isset($userIdCache[$assignedId])) {
                             $cached = $userIdCache[$assignedId];
