@@ -683,9 +683,9 @@ form .form-select {
 
 .basket-toast {
     position: fixed;
-    top: 50%;
+    top: 24px;
     left: 50%;
-    transform: translate(-50%, -50%) scale(0.98);
+    transform: translate(-50%, 0) scale(0.98);
     z-index: 1050;
     background: #15803d;
     color: #ffffff;
@@ -701,5 +701,5 @@ form .form-select {
 
 .basket-toast.show {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translate(-50%, 0) scale(1);
 }
