@@ -73,4 +73,4 @@ As mentioned, this app uses LDAP, Google OAuth or Microsoft Entra for authentica
 
 ## CRON Scripts
 
-In the scripts folder of this app, there are certain PHP scripts you can run as a cron or via PHP CLI. The 'cron_mark_missed.php' script will automatically mark all reservations not checked out after a specified time period (set in the script) as missed and release them to be booked again. By default, this is set to 1 hour. The email_overdue_staff and users.php scripts will automatically email users that have overdue equipment and inform staff specified explicitly in the script of currently overdue reservations.
+In the scripts folder of this app, there are certain PHP scripts you can run as a cron or via PHP CLI. The 'cron_mark_missed.php' script will automatically mark all reservations not checked out after a specified time period (set on the settings age) as missed and release them to be booked again. By default, this is set to 1 hour. The email_overdue_staff and users.php scripts will automatically email users that have overdue equipment and inform staff specified on the settings page of currently overdue reservations.
