@@ -951,12 +951,12 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
                                 <div class="form-text">After this many minutes past start, mark reservation as missed.</div>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Overdue report recipient email</label>
+                                <label class="form-label">Overdue Asset Staff Reminder Email Address</label>
                                 <input type="email" name="app_overdue_staff_email" class="form-control" value="<?= h($cfg(['app', 'overdue_staff_email'], '')) ?>">
-                                <div class="form-text">Used by `scripts/email_overdue_staff.php` (cron recommended).</div>
+                                <div class="form-text">Used by `scripts/email_overdue_staff.php` (cron recommended). Each run sends an email to the set recipient with a list of overdue assets.</div>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Overdue report recipient name</label>
+                                <label class="form-label">Overdue Asset Staff Reminder Email Name</label>
                                 <input type="text" name="app_overdue_staff_name" class="form-control" value="<?= h($cfg(['app', 'overdue_staff_name'], '')) ?>">
                             </div>
                             <div class="col-md-6">
