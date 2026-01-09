@@ -72,6 +72,31 @@ if (empty($currentUser['is_admin'])) {
     exit;
 }
 
+if (($_GET['ajax'] ?? '') === 'asset_search') {
+    header('Content-Type: application/json');
+    $q = trim($_GET['q'] ?? '');
+    if ($q === '' || strlen($q) < 2) {
+        echo json_encode(['results' => []]);
+        exit;
+    }
+
+    try {
+        $rows = search_assets($q, 20, true);
+        $results = [];
+        foreach ($rows as $row) {
+            $results[] = [
+                'asset_tag' => $row['asset_tag'] ?? '',
+                'name'      => $row['name'] ?? '',
+            ];
+        }
+        echo json_encode(['results' => $results]);
+    } catch (Throwable $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Asset search failed.']);
+    }
+    exit;
+}
+
 if (!isset($_SESSION['quick_checkout_assets'])) {
     $_SESSION['quick_checkout_assets'] = [];
 }
@@ -284,11 +309,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="hidden" name="mode" value="add_asset">
                     <div class="col-md-6">
                         <label class="form-label">Asset tag</label>
-                        <input type="text"
-                               name="asset_tag"
-                               class="form-control"
-                               placeholder="Scan or type asset tag..."
-                               autofocus>
+                        <div class="position-relative asset-autocomplete-wrapper">
+                            <input type="text"
+                                   name="asset_tag"
+                                   class="form-control asset-autocomplete"
+                                   autocomplete="off"
+                                   placeholder="Scan or type asset tag..."
+                                   autofocus>
+                            <div class="list-group position-absolute w-100"
+                                 data-asset-suggestions
+                                 style="z-index: 1050; max-height: 220px; overflow-y: auto; display: none;"></div>
+                        </div>
                     </div>
                     <div class="col-md-3 d-grid align-items-end">
                         <button type="submit" class="btn btn-outline-primary mt-4 mt-md-0">
@@ -434,6 +465,80 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <script>
 (function () {
+    const assetWrappers = document.querySelectorAll('.asset-autocomplete-wrapper');
+    assetWrappers.forEach((wrapper) => {
+        const input = wrapper.querySelector('.asset-autocomplete');
+        const list  = wrapper.querySelector('[data-asset-suggestions]');
+        if (!input || !list) return;
+
+        let timer = null;
+        let lastQuery = '';
+
+        input.addEventListener('input', () => {
+            const q = input.value.trim();
+            if (q.length < 2) {
+                hideSuggestions();
+                return;
+            }
+            if (timer) clearTimeout(timer);
+            timer = setTimeout(() => fetchSuggestions(q), 200);
+        });
+
+        input.addEventListener('blur', () => {
+            setTimeout(hideSuggestions, 150);
+        });
+
+        function fetchSuggestions(q) {
+            lastQuery = q;
+            fetch('quick_checkout.php?ajax=asset_search&q=' + encodeURIComponent(q), {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+                .then((res) => res.ok ? res.json() : Promise.reject())
+                .then((data) => {
+                    if (lastQuery !== q) return;
+                    renderSuggestions(data.results || []);
+                })
+                .catch(() => {
+                    renderSuggestions([]);
+                });
+        }
+
+        function renderSuggestions(items) {
+            list.innerHTML = '';
+            if (!items || !items.length) {
+                hideSuggestions();
+                return;
+            }
+
+            items.forEach((item) => {
+                const tag = item.asset_tag || '';
+                const name = item.name || '';
+                const label = name !== '' ? `${tag} [${name}]` : tag;
+
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'list-group-item list-group-item-action';
+                btn.textContent = label;
+                btn.dataset.value = tag;
+
+                btn.addEventListener('click', () => {
+                    input.value = btn.dataset.value;
+                    hideSuggestions();
+                    input.focus();
+                });
+
+                list.appendChild(btn);
+            });
+
+            list.style.display = 'block';
+        }
+
+        function hideSuggestions() {
+            list.style.display = 'none';
+            list.innerHTML = '';
+        }
+    });
+
     const wrappers = document.querySelectorAll('.user-autocomplete-wrapper');
     wrappers.forEach((wrapper) => {
         const input = wrapper.querySelector('.user-autocomplete');

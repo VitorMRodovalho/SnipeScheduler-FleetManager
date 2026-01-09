@@ -420,6 +420,44 @@ function find_asset_by_tag(string $tag): array
 }
 
 /**
+ * Search assets by tag or name (Snipe-IT hardware search).
+ *
+ * @param string $query
+ * @param int $limit
+ * @param bool $requestableOnly
+ * @return array
+ * @throws Exception
+ */
+function search_assets(string $query, int $limit = 20, bool $requestableOnly = false): array
+{
+    $q = trim($query);
+    if ($q === '') {
+        return [];
+    }
+
+    $params = [
+        'search' => $q,
+        'limit'  => max(1, min(50, $limit)),
+    ];
+
+    $data = snipeit_request('GET', 'hardware', $params);
+    $rows = isset($data['rows']) && is_array($data['rows']) ? $data['rows'] : [];
+
+    $rows = array_values(array_filter($rows, function ($row) use ($requestableOnly) {
+        $tag = $row['asset_tag'] ?? '';
+        if ($tag === '') {
+            return false;
+        }
+        if ($requestableOnly && empty($row['requestable'])) {
+            return false;
+        }
+        return true;
+    }));
+
+    return $rows;
+}
+
+/**
  * List hardware assets for a given model.
  *
  * @param int $modelId
