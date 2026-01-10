@@ -468,10 +468,17 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    sortRows('expected_asc');
-    sortSelect.value = 'expected_asc';
+    const storageKey = 'checked_out_sort';
+    const saved = window.localStorage ? localStorage.getItem(storageKey) : '';
+    const initial = saved || 'expected_asc';
+    sortSelect.value = initial;
+    sortRows(initial);
     sortSelect.addEventListener('change', function () {
-        sortRows(sortSelect.value);
+        const val = sortSelect.value;
+        if (window.localStorage) {
+            localStorage.setItem(storageKey, val);
+        }
+        sortRows(val);
     });
 });
 </script>
