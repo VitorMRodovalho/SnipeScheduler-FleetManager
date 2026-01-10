@@ -74,7 +74,7 @@ As mentioned, this app uses LDAP, Google OAuth or Microsoft Entra for authentica
 
 ## CRON Scripts
 
-In the scripts folder of this app, there are certain PHP scripts you must run as a cron or via PHP CLI at regular intervals for this app to function correctly. The shorter duration between each running of the scripts will dicate how up-to-date your equipment availability information is.
+In the scripts folder of this app, there are certain PHP scripts you must run as a cron or via PHP CLI at regular intervals for this app to function correctly. The shorter duration between each running of the scripts will dictate how up-to-date your equipment availability information is.
 
 - The 'sync_checked_out_assets.php' script is probably the most important, and i would suggest running this once a minute if you can. It queries your Snipe-IT API every time the script is run for currently checked out asset details, and caches them in the SnipeScheduler mysql database. The SnipeScheduler app then uses that information to show checked out items and update equipment availability. If you only run this script as a CRON at long intervals, equipment availability information is likely to be out of date. Using checked out assets cache avoids querying the Snipe-IT API on every catalogue and basket page load, therefore vastly improving page load times on the app, especially when you have large amounts of assets in Snipe-IT.
 
