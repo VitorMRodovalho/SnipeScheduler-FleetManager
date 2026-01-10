@@ -767,26 +767,49 @@ function checkin_asset(int $assetId, string $note = ''): void
 }
 
 /**
- * Fetch checked-out assets (requestable only).
+ * Fetch checked-out assets (requestable only), paging through hardware.
  *
  * @param bool $overdueOnly
+ * @param int $maxResults Safety cap for total hardware rows fetched (0 to use config)
  * @return array
  * @throws Exception
  */
-function list_checked_out_assets(bool $overdueOnly = false): array
+function list_checked_out_assets(bool $overdueOnly = false, int $maxResults = 0): array
 {
-    $params = [
-        'limit'  => 500,
-    ];
-
-    $data = snipeit_request('GET', 'hardware', $params);
-    if (!isset($data['rows']) || !is_array($data['rows'])) {
-        return [];
+    if ($maxResults <= 0) {
+        $config = load_config();
+        $maxResults = (int)($config['app']['checked_out_scan_limit'] ?? 2000);
     }
+    if ($maxResults <= 0) {
+        $maxResults = PHP_INT_MAX;
+    }
+    $all = [];
+    $limit = min(200, $maxResults);
+    $offset = 0;
+
+    do {
+        $params = [
+            'limit'  => $limit,
+            'offset' => $offset,
+        ];
+
+        $data = snipeit_request('GET', 'hardware', $params);
+        $rows = isset($data['rows']) && is_array($data['rows']) ? $data['rows'] : [];
+        if (empty($rows)) {
+            break;
+        }
+        $all = array_merge($all, $rows);
+        $count = count($rows);
+        $offset += $limit;
+
+        if ($count < $limit || count($all) >= $maxResults) {
+            break;
+        }
+    } while (true);
 
     $now = time();
     $filtered = [];
-    foreach ($data['rows'] as $row) {
+    foreach ($all as $row) {
         // Only requestable assets
         if (empty($row['requestable'])) {
             continue;
