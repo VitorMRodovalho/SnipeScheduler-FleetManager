@@ -25,7 +25,9 @@ if ($qtyRequested > 100) {
 
 // Enforce hardware limits from Snipe-IT (if available)
 try {
-    $maxQty = get_model_hardware_count($modelId);
+    $requestableTotal = count_requestable_assets_by_model($modelId);
+    $activeCheckedOut = count_checked_out_assets_by_model($modelId);
+    $maxQty = $requestableTotal > 0 ? max(0, $requestableTotal - $activeCheckedOut) : 0;
 } catch (Throwable $e) {
     $maxQty = 0; // treat as unknown (no hard cap)
 }

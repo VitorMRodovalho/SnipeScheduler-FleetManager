@@ -76,14 +76,16 @@ try {
         $row = $stmt->fetch();
         $existingBooked = $row ? (int)$row['booked_qty'] : 0;
 
-        // Total physical units in Snipe-IT
-        $totalHardware = get_model_hardware_count($modelId);
+        // Total requestable units in Snipe-IT
+        $totalRequestable = count_requestable_assets_by_model($modelId);
+        $activeCheckedOut = count_checked_out_assets_by_model($modelId);
+        $availableNow = $totalRequestable > 0 ? max(0, $totalRequestable - $activeCheckedOut) : 0;
 
-        if ($totalHardware > 0 && $existingBooked + $qty > $totalHardware) {
+        if ($totalRequestable > 0 && $existingBooked + $qty > $availableNow) {
             throw new Exception(
                 'Not enough units available for "' . ($model['name'] ?? ('ID '.$modelId)) . '" '
                 . 'in that time period. Requested ' . $qty . ', already booked ' . $existingBooked
-                . ', total available ' . $totalHardware . '.'
+                . ', total available ' . $availableNow . '.'
             );
         }
 
