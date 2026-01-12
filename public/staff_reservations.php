@@ -51,6 +51,8 @@ $updatedMsg = '';
 if (!empty($_GET['updated'])) {
     $updatedMsg = 'Reservation #' . (int)$_GET['updated'] . ' has been updated.';
 }
+$restoredMsg = '';
+$restoreError = '';
 
 // Filters
 $qRaw    = trim($_GET['q'] ?? '');
@@ -60,6 +62,83 @@ $toRaw   = trim($_GET['to'] ?? '');
 $q        = $qRaw !== '' ? $qRaw : null;
 $dateFrom = $fromRaw !== '' ? $fromRaw : null;
 $dateTo   = $toRaw !== '' ? $toRaw : null;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'restore_missed') {
+    $restoreId = (int)($_POST['reservation_id'] ?? 0);
+    if ($restoreId <= 0) {
+        $restoreError = 'Invalid reservation selected for restore.';
+    } else {
+        try {
+            $stmt = $pdo->prepare('SELECT * FROM reservations WHERE id = :id');
+            $stmt->execute([':id' => $restoreId]);
+            $reservation = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$reservation || ($reservation['status'] ?? '') !== 'missed') {
+                throw new Exception('Reservation is not in a missed state.');
+            }
+
+            $start = $reservation['start_datetime'] ?? '';
+            $end   = $reservation['end_datetime'] ?? '';
+
+            $itemsStmt = $pdo->prepare('
+                SELECT model_id, quantity, model_name_cache
+                FROM reservation_items
+                WHERE reservation_id = :id
+            ');
+            $itemsStmt->execute([':id' => $restoreId]);
+            $items = $itemsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if (empty($items)) {
+                throw new Exception('This reservation has no items to restore.');
+            }
+
+            foreach ($items as $item) {
+                $mid = (int)($item['model_id'] ?? 0);
+                $qty = (int)($item['quantity'] ?? 0);
+                $modelName = $item['model_name_cache'] ?? ('Model #' . $mid);
+
+                if ($mid <= 0 || $qty <= 0) {
+                    continue;
+                }
+
+                $sql = "
+                    SELECT COALESCE(SUM(ri.quantity), 0) AS booked_qty
+                    FROM reservation_items ri
+                    JOIN reservations r ON r.id = ri.reservation_id
+                    WHERE ri.model_id = :model_id
+                      AND r.status IN ('pending','confirmed')
+                      AND (r.start_datetime < :end AND r.end_datetime > :start)
+                ";
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute([
+                    ':model_id' => $mid,
+                    ':start'    => $start,
+                    ':end'      => $end,
+                ]);
+                $row = $stmt->fetch();
+                $existingBooked = $row ? (int)$row['booked_qty'] : 0;
+
+                $totalRequestable = count_requestable_assets_by_model($mid);
+                $activeCheckedOut = count_checked_out_assets_by_model($mid);
+                $availableNow = $totalRequestable > 0 ? max(0, $totalRequestable - $activeCheckedOut) : 0;
+
+                if ($totalRequestable > 0 && $existingBooked + $qty > $availableNow) {
+                    throw new Exception('Not enough units available for "' . $modelName . '" in that time period.');
+                }
+            }
+
+            $upd = $pdo->prepare("
+                UPDATE reservations
+                SET status = 'pending'
+                WHERE id = :id
+            ");
+            $upd->execute([':id' => $restoreId]);
+            $restoredMsg = 'Reservation #' . $restoreId . ' has been re-enabled.';
+        } catch (Exception $e) {
+            $restoreError = 'Unable to restore reservation: ' . $e->getMessage();
+        }
+    }
+}
 
 // Load filtered reservations
 try {
@@ -149,6 +228,16 @@ try {
         <?php if (!empty($updatedMsg)): ?>
             <div class="alert alert-success">
                 <?= htmlspecialchars($updatedMsg) ?>
+            </div>
+        <?php endif; ?>
+        <?php if (!empty($restoredMsg)): ?>
+            <div class="alert alert-success">
+                <?= htmlspecialchars($restoredMsg) ?>
+            </div>
+        <?php endif; ?>
+        <?php if (!empty($restoreError)): ?>
+            <div class="alert alert-danger">
+                <?= htmlspecialchars($restoreError) ?>
             </div>
         <?php endif; ?>
 
@@ -251,6 +340,27 @@ try {
                                                class="btn btn-sm btn-outline-primary">
                                                 Edit
                                             </a>
+                                        <?php endif; ?>
+                                        <?php if ($status === 'missed'): ?>
+                                            <form method="post" action="<?= h($actionUrl) ?>">
+                                                <input type="hidden" name="action" value="restore_missed">
+                                                <input type="hidden" name="reservation_id" value="<?= (int)$r['id'] ?>">
+                                                <?php if ($qRaw !== ''): ?>
+                                                    <input type="hidden" name="q" value="<?= h($qRaw) ?>">
+                                                <?php endif; ?>
+                                                <?php if ($fromRaw !== ''): ?>
+                                                    <input type="hidden" name="from" value="<?= h($fromRaw) ?>">
+                                                <?php endif; ?>
+                                                <?php if ($toRaw !== ''): ?>
+                                                    <input type="hidden" name="to" value="<?= h($toRaw) ?>">
+                                                <?php endif; ?>
+                                                <?php foreach ($baseQuery as $k => $v): ?>
+                                                    <input type="hidden" name="<?= h($k) ?>" value="<?= h($v) ?>">
+                                                <?php endforeach; ?>
+                                                <button class="btn btn-sm btn-outline-success" type="submit">
+                                                    Re-enable
+                                                </button>
+                                            </form>
                                         <?php endif; ?>
                                         <form method="post"
                                               action="delete_reservation.php"
