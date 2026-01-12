@@ -502,7 +502,7 @@ form .form-select {
 
 .reservation-history-table th:nth-child(2),
 .reservation-history-table td:nth-child(2) {
-    width: 120px;
+    width: 100px;
 }
 
 .reservation-history-table th:nth-child(3),
