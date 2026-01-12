@@ -530,6 +530,10 @@ form .form-select {
     word-break: break-word;
 }
 
+.actions-cell .d-flex {
+    flex-wrap: wrap;
+}
+
 .items-section-body {
     max-height: 120px;
     min-height: 80px;
@@ -540,6 +544,65 @@ form .form-select {
 
 .items-section-body--scroll {
     overscroll-behavior: contain;
+}
+
+@media (max-width: 980px) {
+    .reservation-history-table {
+        table-layout: auto;
+    }
+
+    .reservation-history-table thead {
+        display: none;
+    }
+
+    .reservation-history-table tbody,
+    .reservation-history-table tr,
+    .reservation-history-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .reservation-history-table tr {
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        padding: 0.5rem 0.75rem;
+        background: #ffffff;
+        margin-bottom: 0.75rem;
+    }
+
+    .reservation-history-table td {
+        padding: 0.45rem 0;
+        border-top: 1px dashed rgba(15, 23, 42, 0.08);
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .reservation-history-table td:first-child {
+        border-top: none;
+    }
+
+    .reservation-history-table td::before {
+        content: attr(data-label);
+        min-width: 120px;
+        font-weight: 600;
+        color: var(--muted);
+    }
+
+    .reservation-history-table td.items-cell,
+    .reservation-history-table td.actions-cell {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .reservation-history-table td.items-cell::before,
+    .reservation-history-table td.actions-cell::before {
+        margin-bottom: 0.35rem;
+    }
+
+    .items-cell-content {
+        max-height: none;
+    }
 }
 
 /* Settings page: make each field block stand out */
