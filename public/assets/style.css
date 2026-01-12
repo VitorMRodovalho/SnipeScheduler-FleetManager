@@ -574,19 +574,16 @@ form .form-select {
     }
 
     .reservation-history-table tr {
-        border: 1px solid var(--border);
-        border-radius: 0.75rem;
-        padding: 0.5rem 0.75rem;
-        background: #ffffff;
-        margin-bottom: 0.75rem;
+        border-bottom: 1px solid var(--border);
+        padding: 0.35rem 0;
+        background: transparent;
+        margin-bottom: 0.5rem;
     }
 
     .reservation-history-table td {
-        padding: 0.45rem 0;
+        padding: 0.35rem 0;
         border-top: 1px dashed rgba(15, 23, 42, 0.08);
-        display: flex;
-        align-items: flex-start;
-        gap: 0.75rem;
+        display: block;
     }
 
     .reservation-history-table td:first-child {
@@ -595,20 +592,20 @@ form .form-select {
 
     .reservation-history-table td::before {
         content: attr(data-label);
-        min-width: 90px;
+        display: block;
+        margin-bottom: 0.2rem;
         font-weight: 600;
         color: var(--muted);
     }
 
     .reservation-history-table td.items-cell,
     .reservation-history-table td.actions-cell {
-        flex-direction: column;
-        align-items: flex-start;
+        padding-bottom: 0.5rem;
     }
 
     .reservation-history-table td.items-cell::before,
     .reservation-history-table td.actions-cell::before {
-        margin-bottom: 0.35rem;
+        margin-bottom: 0.2rem;
     }
 
     .items-cell-content {
