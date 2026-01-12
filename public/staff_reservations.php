@@ -351,9 +351,20 @@ try {
                                 $itemsText = $itemsLines ? implode('<br>', array_map('h', $itemsLines)) : '';
                                 $status     = strtolower((string)($r['status'] ?? ''));
                                 if (!empty($r['asset_name_cache'])) {
-                                    $assetText = h($r['asset_name_cache']);
-                                    $assetsHtml = '<div class="mt-1"><strong>Assets:</strong> ' . $assetText . '</div>';
+                                    $assetRaw = (string)$r['asset_name_cache'];
+                                    $assetParts = array_values(array_filter(array_map('trim', explode(',', $assetRaw)), 'strlen'));
+                                    $assetLines = $assetParts ? implode('<br>', array_map('h', $assetParts)) : h($assetRaw);
+                                    $assetsHtml = '<details class="items-section mt-2">'
+                                        . '<summary><strong>Assets Assigned:</strong></summary>'
+                                        . '<div class="mt-1">' . $assetLines . '</div>'
+                                        . '</details>';
                                     $itemsText = $itemsText !== '' ? $itemsText . $assetsHtml : $assetsHtml;
+                                }
+                                if ($itemsText !== '') {
+                                    $itemsText = '<details class="items-section" open>'
+                                        . '<summary><strong>Models Reserved:</strong></summary>'
+                                        . '<div class="mt-1">' . $itemsText . '</div>'
+                                        . '</details>';
                                 }
                             ?>
                             <tr>
