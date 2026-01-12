@@ -495,38 +495,39 @@ form .form-select {
 
 .reservation-history-table th:nth-child(1),
 .reservation-history-table td:nth-child(1) {
-    width: 70px;
+    width: 60px;
 }
 
 .reservation-history-table th:nth-child(2),
 .reservation-history-table td:nth-child(2) {
-    width: 180px;
+    width: 150px;
 }
 
 .reservation-history-table th:nth-child(3),
 .reservation-history-table td:nth-child(3) {
-    width: 35%;
+    width: 30%;
 }
 
 .reservation-history-table th:nth-child(4),
 .reservation-history-table td:nth-child(4),
 .reservation-history-table th:nth-child(5),
 .reservation-history-table td:nth-child(5) {
-    width: 130px;
+    width: 115px;
 }
 
 .reservation-history-table th:nth-child(6),
 .reservation-history-table td:nth-child(6) {
-    width: 110px;
+    width: 90px;
 }
 
 .reservation-history-table th:nth-child(7),
 .reservation-history-table td:nth-child(7) {
-    width: 190px;
+    width: 160px;
 }
 
 .items-cell {
     padding-top: 0.5rem;
+    word-break: break-word;
 }
 
 .items-section-body {
