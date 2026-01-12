@@ -383,8 +383,8 @@ input[type="checkbox"] {
 }
 
 .reservation-model-image {
-    width: 56px;
-    height: 56px;
+    width: 168px;
+    height: 168px;
     border-radius: 0.6rem;
     border: 1px solid var(--border);
     background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.08), rgba(255, 255, 255, 0.95));
@@ -413,7 +413,7 @@ input[type="checkbox"] {
 }
 
 .reservation-model-cell {
-    width: 220px;
+    width: 320px;
     background: rgba(var(--primary-rgb), 0.03);
 }
 
