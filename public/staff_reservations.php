@@ -360,7 +360,8 @@ try {
                                 $assetsHtml = '';
                                 if (!empty($r['asset_name_cache'])) {
                                     $assetRaw = (string)$r['asset_name_cache'];
-                                    $assetParts = array_values(array_filter(array_map('trim', explode(',', $assetRaw)), 'strlen'));
+                                    $assetParts = preg_split('/,(?![^()]*\\))/', $assetRaw);
+                                    $assetParts = array_values(array_filter(array_map('trim', $assetParts), 'strlen'));
                                     $assetLis = [];
                                     $sourceParts = $assetParts ?: [$assetRaw];
                                     foreach ($sourceParts as $part) {
