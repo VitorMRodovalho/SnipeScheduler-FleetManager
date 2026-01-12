@@ -389,15 +389,15 @@ try {
                                 $itemsText = $modelsHtml . $assetsHtml;
                             ?>
                             <tr>
-                                <td>#<?= (int)$r['id'] ?></td>
-                                <td><?= h($r['user_name'] ?? '(Unknown)') ?></td>
-                                <td class="items-cell">
+                                <td data-label="ID">#<?= (int)$r['id'] ?></td>
+                                <td data-label="User Name"><?= h($r['user_name'] ?? '(Unknown)') ?></td>
+                                <td data-label="Items Reserved" class="items-cell">
                                     <?= $itemsText !== '' ? '<div class="items-cell-content">' . $itemsText . '</div>' : '' ?>
                                 </td>
-                                <td><?= uk_datetime($r['start_datetime'] ?? '') ?></td>
-                                <td><?= uk_datetime($r['end_datetime'] ?? '') ?></td>
-                                <td><?= h($r['status'] ?? '') ?></td>
-                                <td class="actions-cell">
+                                <td data-label="Start"><?= uk_datetime($r['start_datetime'] ?? '') ?></td>
+                                <td data-label="End"><?= uk_datetime($r['end_datetime'] ?? '') ?></td>
+                                <td data-label="Status"><?= h($r['status'] ?? '') ?></td>
+                                <td data-label="Actions" class="actions-cell">
                                     <div class="d-flex gap-2">
                                         <a href="reservation_detail.php?id=<?= (int)$r['id'] ?>"
                                            class="btn btn-sm btn-outline-secondary btn-action">
