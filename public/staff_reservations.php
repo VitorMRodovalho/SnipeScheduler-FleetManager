@@ -380,7 +380,7 @@ try {
                                                     <input type="hidden" name="<?= h($k) ?>" value="<?= h($v) ?>">
                                                 <?php endforeach; ?>
                                                 <button class="btn btn-sm btn-outline-success" type="submit">
-                                                    Re-enable
+                                                    Restore
                                                 </button>
                                             </form>
                                         <?php endif; ?>
