@@ -22,6 +22,44 @@ if (!empty($baseQuery)) {
     $actionUrl .= '?' . http_build_query($baseQuery);
 }
 
+if (isset($_GET['ajax']) && $_GET['ajax'] === 'model_search') {
+    header('Content-Type: application/json');
+    $q = trim($_GET['q'] ?? '');
+    if (strlen($q) < 2) {
+        echo json_encode(['results' => []]);
+        exit;
+    }
+    try {
+        $resp = snipeit_request('GET', 'models', [
+            'search' => $q,
+            'limit'  => 20,
+        ]);
+        $rows = $resp['rows'] ?? [];
+        $results = [];
+        foreach ($rows as $row) {
+            if (empty($row['requestable'])) {
+                continue;
+            }
+            $mid = (int)($row['id'] ?? 0);
+            $name = $row['name'] ?? '';
+            if ($mid <= 0 || $name === '') {
+                continue;
+            }
+            $manu = $row['manufacturer']['name'] ?? '';
+            $label = $manu !== '' ? $name . ' — ' . $manu : $name;
+            $results[] = [
+                'id'    => $mid,
+                'name'  => $name,
+                'label' => $label,
+            ];
+        }
+        echo json_encode(['results' => $results]);
+    } catch (Exception $e) {
+        echo json_encode(['results' => []]);
+    }
+    exit;
+}
+
 function datetime_local_value(?string $isoDatetime): string
 {
     if (!$isoDatetime) {
@@ -35,6 +73,9 @@ function datetime_local_value(?string $isoDatetime): string
 }
 
 $errors = [];
+$addModelId = 0;
+$addQtyRaw = '';
+$addModelLabel = '';
 
 $id = (int)($_GET['id'] ?? $_POST['id'] ?? 0);
 if ($id <= 0) {
@@ -79,10 +120,22 @@ try {
     $errors[] = 'Error loading reservation items: ' . $e->getMessage();
 }
 
+$displayItems = $items;
+$displayQty = [];
+foreach ($items as $item) {
+    $mid = (int)($item['model_id'] ?? 0);
+    if ($mid > 0) {
+        $displayQty[$mid] = (int)($item['quantity'] ?? 0);
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $startRaw = $_POST['start_datetime'] ?? '';
     $endRaw   = $_POST['end_datetime'] ?? '';
     $qtyInput = $_POST['qty'] ?? [];
+    $addModelId = (int)($_POST['add_model_id'] ?? 0);
+    $addQtyRaw  = trim((string)($_POST['add_qty'] ?? ''));
+    $addQtyInt  = (int)$addQtyRaw;
 
     $startTs = strtotime($startRaw);
     $endTs   = strtotime($endRaw);
@@ -97,59 +150,95 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    if (empty($items)) {
-        $errors[] = 'This reservation has no items to edit.';
+    $existingModels = [];
+    $modelNameMap = [];
+    $updatedItems = [];
+
+    foreach ($items as $item) {
+        $mid = (int)($item['model_id'] ?? 0);
+        $qty = isset($qtyInput[$mid]) ? (int)$qtyInput[$mid] : (int)($item['quantity'] ?? 0);
+
+        if ($mid <= 0) {
+            continue;
+        }
+
+        if ($qty < 0) {
+            $errors[] = 'Quantities must be zero or greater.';
+            break;
+        }
+
+        $existingModels[$mid] = true;
+        $modelNameMap[$mid] = $item['model_name_cache'] ?? ('Model #' . $mid);
+        $updatedItems[$mid] = $qty;
+        $displayQty[$mid] = $qty;
     }
 
-    $updatedItems = [];
-    $totalQty = 0;
+    if ($addModelId > 0 || $addQtyInt > 0) {
+        if ($addModelId <= 0 || $addQtyInt <= 0) {
+            $errors[] = 'Select a model and quantity to add.';
+        } else {
+            try {
+                $addModel = get_model($addModelId);
+                if (empty($addModel['id'])) {
+                    throw new Exception('Model not found in Snipe-IT.');
+                }
+                $addModelLabel = $addModel['name'] ?? ('Model #' . $addModelId);
+                $modelNameMap[$addModelId] = $addModelLabel;
+                $updatedItems[$addModelId] = ($updatedItems[$addModelId] ?? 0) + $addQtyInt;
+                $displayQty[$addModelId] = $updatedItems[$addModelId];
+
+                if (empty($existingModels[$addModelId])) {
+                    $displayItems[] = [
+                        'model_id' => $addModelId,
+                        'quantity' => $updatedItems[$addModelId],
+                        'model_name_cache' => $addModelLabel,
+                    ];
+                }
+            } catch (Exception $e) {
+                $errors[] = 'Unable to add model: ' . $e->getMessage();
+            }
+        }
+    }
 
     if (empty($errors)) {
-        foreach ($items as $item) {
-            $mid = (int)($item['model_id'] ?? 0);
-            $qty = isset($qtyInput[$mid]) ? (int)$qtyInput[$mid] : 0;
-
-            if ($mid <= 0) {
+        foreach ($updatedItems as $mid => $qty) {
+            if ($qty <= 0) {
                 continue;
             }
+            $modelName = $modelNameMap[$mid] ?? ('Model #' . $mid);
 
-            if ($qty < 0) {
-                $errors[] = 'Quantities must be zero or greater.';
-                break;
+            $sql = '
+                SELECT COALESCE(SUM(ri.quantity), 0) AS booked_qty
+                FROM reservation_items ri
+                JOIN reservations r ON r.id = ri.reservation_id
+                WHERE ri.model_id = :model_id
+                  AND r.status IN (\'pending\',\'confirmed\')
+                  AND r.id <> :res_id
+                  AND (r.start_datetime < :end AND r.end_datetime > :start)
+            ';
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([
+                ':model_id' => $mid,
+                ':res_id'   => $id,
+                ':start'    => $start,
+                ':end'      => $end,
+            ]);
+            $row = $stmt->fetch();
+            $existingBooked = $row ? (int)$row['booked_qty'] : 0;
+
+            $totalRequestable = count_requestable_assets_by_model($mid);
+            $activeCheckedOut = count_checked_out_assets_by_model($mid);
+            $availableNow = $totalRequestable > 0 ? max(0, $totalRequestable - $activeCheckedOut) : 0;
+
+            if ($totalRequestable > 0 && $existingBooked + $qty > $availableNow) {
+                $errors[] = 'Not enough units available for "' . $modelName . '" in that time period.';
             }
+        }
+    }
 
-            if ($qty > 0) {
-                $modelName = $item['model_name_cache'] ?? ('Model #' . $mid);
-
-                $sql = '
-                    SELECT COALESCE(SUM(ri.quantity), 0) AS booked_qty
-                    FROM reservation_items ri
-                    JOIN reservations r ON r.id = ri.reservation_id
-                    WHERE ri.model_id = :model_id
-                      AND r.status IN (\'pending\',\'confirmed\')
-                      AND r.id <> :res_id
-                      AND (r.start_datetime < :end AND r.end_datetime > :start)
-                ';
-                $stmt = $pdo->prepare($sql);
-                $stmt->execute([
-                    ':model_id' => $mid,
-                    ':res_id'   => $id,
-                    ':start'    => $start,
-                    ':end'      => $end,
-                ]);
-                $row = $stmt->fetch();
-                $existingBooked = $row ? (int)$row['booked_qty'] : 0;
-
-                $totalRequestable = count_requestable_assets_by_model($mid);
-                $activeCheckedOut = count_checked_out_assets_by_model($mid);
-                $availableNow = $totalRequestable > 0 ? max(0, $totalRequestable - $activeCheckedOut) : 0;
-
-                if ($totalRequestable > 0 && $existingBooked + $qty > $availableNow) {
-                    $errors[] = 'Not enough units available for "' . $modelName . '" in that time period.';
-                }
-            }
-
-            $updatedItems[$mid] = $qty;
+    $totalQty = 0;
+    foreach ($updatedItems as $qty) {
+        if ($qty > 0) {
             $totalQty += $qty;
         }
     }
@@ -180,6 +269,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 WHERE reservation_id = :res_id
                   AND model_id = :model_id
             ');
+            $insertItem = $pdo->prepare('
+                INSERT INTO reservation_items (
+                    reservation_id, model_id, model_name_cache, quantity
+                ) VALUES (
+                    :res_id, :model_id, :model_name, :qty
+                )
+            ');
             $deleteItem = $pdo->prepare('
                 DELETE FROM reservation_items
                 WHERE reservation_id = :res_id
@@ -192,11 +288,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ':res_id'   => $id,
                         ':model_id' => $mid,
                     ]);
-                } else {
+                } elseif (!empty($existingModels[$mid])) {
                     $updateItem->execute([
                         ':qty'      => $qty,
                         ':res_id'   => $id,
                         ':model_id' => $mid,
+                    ]);
+                } else {
+                    $insertItem->execute([
+                        ':res_id'     => $id,
+                        ':model_id'   => $mid,
+                        ':model_name' => $modelNameMap[$mid] ?? ('Model #' . $mid),
+                        ':qty'        => $qty,
                     ]);
                 }
             }
@@ -218,6 +321,10 @@ $startValue = datetime_local_value($reservation['start_datetime'] ?? '');
 $endValue   = datetime_local_value($reservation['end_datetime'] ?? '');
 
 $active = 'staff_reservations.php';
+$ajaxBase = 'reservation_edit.php?id=' . (int)$id;
+if ($from !== '') {
+    $ajaxBase .= '&from=' . urlencode($from);
+}
 ?>
 <!DOCTYPE html>
 <html>
@@ -292,7 +399,7 @@ $active = 'staff_reservations.php';
                     </div>
                 </div>
 
-                <?php if (empty($items)): ?>
+                <?php if (empty($displayItems)): ?>
                     <div class="alert alert-warning mb-0">
                         No items are attached to this reservation.
                     </div>
@@ -306,10 +413,10 @@ $active = 'staff_reservations.php';
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($items as $item): ?>
+                                <?php foreach ($displayItems as $item): ?>
                                     <?php
                                         $mid = (int)($item['model_id'] ?? 0);
-                                        $qty = (int)($item['quantity'] ?? 0);
+                                        $qty = $displayQty[$mid] ?? (int)($item['quantity'] ?? 0);
                                         $name = $item['model_name_cache'] ?? ('Model #' . $mid);
                                     ?>
                                     <tr>
@@ -328,6 +435,35 @@ $active = 'staff_reservations.php';
                     </div>
                 <?php endif; ?>
 
+                <div class="row g-3 align-items-end mt-2">
+                    <div class="col-md-6">
+                        <label class="form-label">Add model (optional)</label>
+                        <div class="position-relative model-autocomplete-wrapper">
+                            <input type="text"
+                                   class="form-control model-autocomplete"
+                                   placeholder="Search by model name..."
+                                   autocomplete="off"
+                                   value="<?= h($addModelLabel) ?>">
+                            <input type="hidden"
+                                   name="add_model_id"
+                                   class="model-autocomplete-id"
+                                   value="<?= $addModelId > 0 ? (int)$addModelId : '' ?>">
+                            <div class="list-group position-absolute w-100 shadow-sm"
+                                 data-model-suggestions
+                                 style="display: none; z-index: 20;"></div>
+                        </div>
+                        <div class="form-text">Select a model from the list to add it.</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Add quantity</label>
+                        <input type="number"
+                               name="add_qty"
+                               class="form-control"
+                               min="1"
+                               value="<?= h($addQtyRaw) ?>">
+                    </div>
+                </div>
+
                 <div class="d-flex justify-content-end gap-2 mt-3">
                     <a href="<?= h($actionUrl) ?>" class="btn btn-outline-secondary">Cancel</a>
                     <button type="submit" class="btn btn-primary">Save changes</button>
@@ -337,5 +473,83 @@ $active = 'staff_reservations.php';
     </div>
 </div>
 <?php layout_footer(); ?>
+<script>
+(function () {
+    const wrappers = document.querySelectorAll('.model-autocomplete-wrapper');
+    wrappers.forEach((wrapper) => {
+        const input = wrapper.querySelector('.model-autocomplete');
+        const hidden = wrapper.querySelector('.model-autocomplete-id');
+        const list = wrapper.querySelector('[data-model-suggestions]');
+        if (!input || !hidden || !list) return;
+
+        let timer = null;
+        let lastQuery = '';
+
+        input.addEventListener('input', () => {
+            const q = input.value.trim();
+            hidden.value = '';
+            if (q.length < 2) {
+                hideSuggestions();
+                return;
+            }
+            if (timer) clearTimeout(timer);
+            timer = setTimeout(() => fetchSuggestions(q), 250);
+        });
+
+        input.addEventListener('blur', () => {
+            setTimeout(hideSuggestions, 150);
+        });
+
+        function fetchSuggestions(q) {
+            lastQuery = q;
+            fetch('<?= h($ajaxBase) ?>&ajax=model_search&q=' + encodeURIComponent(q), {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+                .then((res) => res.ok ? res.json() : Promise.reject())
+                .then((data) => {
+                    if (lastQuery !== q) return;
+                    renderSuggestions(data.results || []);
+                })
+                .catch(() => {
+                    renderSuggestions([]);
+                });
+        }
+
+        function renderSuggestions(items) {
+            list.innerHTML = '';
+            if (!items || !items.length) {
+                hideSuggestions();
+                return;
+            }
+
+            items.forEach((item) => {
+                const label = item.label || item.name || '';
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'list-group-item list-group-item-action';
+                btn.textContent = label;
+                btn.dataset.id = item.id || '';
+                btn.dataset.label = label;
+
+                btn.addEventListener('click', () => {
+                    input.value = btn.dataset.label;
+                    hidden.value = btn.dataset.id;
+                    hideSuggestions();
+                    input.focus();
+                });
+
+                list.appendChild(btn);
+            });
+
+            list.style.display = 'block';
+        }
+
+        function hideSuggestions() {
+            list.style.display = 'none';
+            list.innerHTML = '';
+        }
+    });
+})();
+</script>
 </body>
 </html>
