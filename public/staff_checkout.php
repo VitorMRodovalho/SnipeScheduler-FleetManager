@@ -687,48 +687,83 @@ $isStaff = !empty($currentUser['is_admin']);
                                 $proxiedImage = $imagePath !== ''
                                     ? 'image_proxy.php?src=' . urlencode($imagePath)
                                     : '';
+                                $rowspan = max(1, $qty);
                             ?>
                             <div class="mb-3">
-                                <div class="reservation-model-header">
-                                    <?php if ($proxiedImage !== ''): ?>
-                                        <img src="<?= h($proxiedImage) ?>"
-                                             alt="<?= h($item['name'] ?? ('Model #' . $mid)) ?>"
-                                             class="reservation-model-image">
+                                <table class="table table-sm align-middle reservation-model-table">
+                                    <tbody>
+                                    <?php if (empty($options)): ?>
+                                        <tr>
+                                            <td class="reservation-model-cell" rowspan="<?= $rowspan ?>">
+                                                <div class="reservation-model-header">
+                                                    <?php if ($proxiedImage !== ''): ?>
+                                                        <img src="<?= h($proxiedImage) ?>"
+                                                             alt="<?= h($item['name'] ?? ('Model #' . $mid)) ?>"
+                                                             class="reservation-model-image">
+                                                    <?php else: ?>
+                                                        <div class="reservation-model-image reservation-model-image--placeholder">
+                                                            No image
+                                                        </div>
+                                                    <?php endif; ?>
+                                                    <div class="reservation-model-title">
+                                                        <div class="form-label mb-1">
+                                                            <?= h($item['name'] ?? ('Model #' . $mid)) ?> (need <?= $qty ?>)
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="alert alert-warning mb-0">
+                                                    No assets found in Snipe-IT for this model.
+                                                </div>
+                                            </td>
+                                        </tr>
                                     <?php else: ?>
-                                        <div class="reservation-model-image reservation-model-image--placeholder">
-                                            No image
-                                        </div>
+                                        <?php for ($i = 0; $i < $qty; $i++): ?>
+                                            <tr>
+                                                <?php if ($i === 0): ?>
+                                                    <td class="reservation-model-cell" rowspan="<?= $rowspan ?>">
+                                                        <div class="reservation-model-header">
+                                                            <?php if ($proxiedImage !== ''): ?>
+                                                                <img src="<?= h($proxiedImage) ?>"
+                                                                     alt="<?= h($item['name'] ?? ('Model #' . $mid)) ?>"
+                                                                     class="reservation-model-image">
+                                                            <?php else: ?>
+                                                                <div class="reservation-model-image reservation-model-image--placeholder">
+                                                                    No image
+                                                                </div>
+                                                            <?php endif; ?>
+                                                            <div class="reservation-model-title">
+                                                                <div class="form-label mb-1">
+                                                                    <?= h($item['name'] ?? ('Model #' . $mid)) ?> (need <?= $qty ?>)
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                <?php endif; ?>
+                                                <td>
+                                                    <select class="form-select"
+                                                            name="selected_assets[<?= $mid ?>][]"
+                                                            data-model-select="<?= $mid ?>">
+                                                        <option value="">-- Select asset --</option>
+                                                        <?php foreach ($options as $opt): ?>
+                                                            <?php
+                                                            $aid   = (int)($opt['id'] ?? 0);
+                                                            $atag  = $opt['asset_tag'] ?? ('ID ' . $aid);
+                                                            $aname = $opt['name'] ?? '';
+                                                            $label = $aname !== ''
+                                                                ? trim($atag . ' – ' . $aname)
+                                                                : $atag;
+                                                            ?>
+                                                            <option value="<?= $aid ?>"><?= h($label) ?></option>
+                                                        <?php endforeach; ?>
+                                                    </select>
+                                                </td>
+                                            </tr>
+                                        <?php endfor; ?>
                                     <?php endif; ?>
-                                    <div class="reservation-model-title">
-                                        <div class="form-label mb-1">
-                                            <?= h($item['name'] ?? ('Model #' . $mid)) ?> (need <?= $qty ?>)
-                                        </div>
-                                    </div>
-                                </div>
-                                <?php if (empty($options)): ?>
-                                    <div class="alert alert-warning mb-0">
-                                        No assets found in Snipe-IT for this model.
-                                    </div>
-                                <?php else: ?>
-                                    <?php for ($i = 0; $i < $qty; $i++): ?>
-                                        <select class="form-select mb-2"
-                                                name="selected_assets[<?= $mid ?>][]"
-                                                data-model-select="<?= $mid ?>">
-                                            <option value="">-- Select asset --</option>
-                                            <?php foreach ($options as $opt): ?>
-                                                <?php
-                                                $aid   = (int)($opt['id'] ?? 0);
-                                                $atag  = $opt['asset_tag'] ?? ('ID ' . $aid);
-                                                $aname = $opt['name'] ?? '';
-                                                $label = $aname !== ''
-                                                    ? trim($atag . ' – ' . $aname)
-                                                    : $atag;
-                                                ?>
-                                                <option value="<?= $aid ?>"><?= h($label) ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    <?php endfor; ?>
-                                <?php endif; ?>
+                                    </tbody>
+                                </table>
                             </div>
 <?php endforeach; ?>
 
