@@ -529,10 +529,11 @@ form .form-select {
     padding-top: 0.5rem;
 }
 
-.items-cell-content {
-    max-height: 140px;
+.items-section-scroll {
+    max-height: 120px;
     overflow: auto;
     padding-right: 4px;
+    margin-bottom: 0.65rem;
 }
 
 /* Settings page: make each field block stand out */

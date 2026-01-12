@@ -367,7 +367,13 @@ try {
                                         . '<div class="mt-1">' . $assetLines . '</div>'
                                         . '</details>';
                                 }
-                                $itemsText = $modelsHtml . $assetsHtml;
+                                $itemsText = '';
+                                if ($modelsHtml !== '') {
+                                    $itemsText .= '<div class="items-section-scroll">' . $modelsHtml . '</div>';
+                                }
+                                if ($assetsHtml !== '') {
+                                    $itemsText .= $assetsHtml;
+                                }
                             ?>
                             <tr>
                                 <td>#<?= (int)$r['id'] ?></td>
