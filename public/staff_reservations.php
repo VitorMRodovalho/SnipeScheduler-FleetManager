@@ -349,7 +349,15 @@ try {
                                         : $name;
                                 }
                                 $itemsText = $itemsLines ? implode('<br>', array_map('h', $itemsLines)) : '';
+                                $modelsHtml = '';
                                 $status     = strtolower((string)($r['status'] ?? ''));
+                                if ($itemsText !== '') {
+                                    $modelsHtml = '<details class="items-section" open>'
+                                        . '<summary><strong>Models Reserved:</strong></summary>'
+                                        . '<div class="mt-1">' . $itemsText . '</div>'
+                                        . '</details>';
+                                }
+                                $assetsHtml = '';
                                 if (!empty($r['asset_name_cache'])) {
                                     $assetRaw = (string)$r['asset_name_cache'];
                                     $assetParts = array_values(array_filter(array_map('trim', explode(',', $assetRaw)), 'strlen'));
@@ -358,14 +366,8 @@ try {
                                         . '<summary><strong>Assets Assigned:</strong></summary>'
                                         . '<div class="mt-1">' . $assetLines . '</div>'
                                         . '</details>';
-                                    $itemsText = $itemsText !== '' ? $itemsText . $assetsHtml : $assetsHtml;
                                 }
-                                if ($itemsText !== '') {
-                                    $itemsText = '<details class="items-section" open>'
-                                        . '<summary><strong>Models Reserved:</strong></summary>'
-                                        . '<div class="mt-1">' . $itemsText . '</div>'
-                                        . '</details>';
-                                }
+                                $itemsText = $modelsHtml . $assetsHtml;
                             ?>
                             <tr>
                                 <td>#<?= (int)$r['id'] ?></td>
