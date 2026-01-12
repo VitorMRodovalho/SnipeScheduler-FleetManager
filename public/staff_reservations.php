@@ -79,6 +79,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'resto
 
             $start = $reservation['start_datetime'] ?? '';
             $end   = $reservation['end_datetime'] ?? '';
+            $nowDt = new DateTime();
+            $newStart = $nowDt->format('Y-m-d H:i:s');
+            $newEnd = $end;
+            if ($start !== '' && $end !== '') {
+                $oldStartDt = new DateTime($start);
+                $oldEndDt = new DateTime($end);
+                $durationSeconds = max(0, $oldEndDt->getTimestamp() - $oldStartDt->getTimestamp());
+                if ($durationSeconds > 0) {
+                    $newEnd = date('Y-m-d H:i:s', $nowDt->getTimestamp() + $durationSeconds);
+                }
+            }
+            if ($newEnd === '' || strtotime($newEnd) <= strtotime($newStart)) {
+                $startDt = new DateTime($newStart);
+                $fallbackEnd = (clone $startDt)->modify('+1 day')->setTime(9, 0, 0);
+                $newEnd = $fallbackEnd->format('Y-m-d H:i:s');
+            }
 
             $itemsStmt = $pdo->prepare('
                 SELECT model_id, quantity, model_name_cache
@@ -112,8 +128,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'resto
                 $stmt = $pdo->prepare($sql);
                 $stmt->execute([
                     ':model_id' => $mid,
-                    ':start'    => $start,
-                    ':end'      => $end,
+                    ':start'    => $newStart,
+                    ':end'      => $newEnd,
                 ]);
                 $row = $stmt->fetch();
                 $existingBooked = $row ? (int)$row['booked_qty'] : 0;
@@ -129,10 +145,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'resto
 
             $upd = $pdo->prepare("
                 UPDATE reservations
-                SET status = 'pending'
+                SET status = 'pending',
+                    start_datetime = :start,
+                    end_datetime = :end
                 WHERE id = :id
             ");
-            $upd->execute([':id' => $restoreId]);
+            $upd->execute([
+                ':id'    => $restoreId,
+                ':start' => $newStart,
+                ':end'   => $newEnd,
+            ]);
             $restoredMsg = 'Reservation #' . $restoreId . ' has been re-enabled.';
         } catch (Exception $e) {
             $restoreError = 'Unable to restore reservation: ' . $e->getMessage();
