@@ -351,8 +351,9 @@ try {
                                 $itemsText = $itemsLines ? implode('<br>', array_map('h', $itemsLines)) : '';
                                 $status     = strtolower((string)($r['status'] ?? ''));
                                 if (!empty($r['asset_name_cache'])) {
-                                    $extra = 'Assets: ' . $r['asset_name_cache'];
-                                    $itemsText = $itemsText ? $itemsText . ' | ' . $extra : $extra;
+                                    $assetText = h($r['asset_name_cache']);
+                                    $assetsHtml = '<div class="mt-1"><strong>Assets:</strong> ' . $assetText . '</div>';
+                                    $itemsText = $itemsText !== '' ? $itemsText . $assetsHtml : $assetsHtml;
                                 }
                             ?>
                             <tr>
