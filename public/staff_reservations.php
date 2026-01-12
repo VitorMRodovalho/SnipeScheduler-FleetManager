@@ -354,12 +354,12 @@ try {
                                 <td>
                                     <div class="d-flex gap-2">
                                         <a href="reservation_detail.php?id=<?= (int)$r['id'] ?>"
-                                           class="btn btn-sm btn-outline-secondary">
+                                           class="btn btn-sm btn-outline-secondary btn-action">
                                             View
                                         </a>
                                         <?php if ($status === 'pending'): ?>
                                             <a href="reservation_edit.php?id=<?= (int)$r['id'] ?><?= h($editSuffix) ?>"
-                                               class="btn btn-sm btn-outline-primary">
+                                               class="btn btn-sm btn-outline-primary btn-action">
                                                 Edit
                                             </a>
                                         <?php endif; ?>
@@ -379,7 +379,7 @@ try {
                                                 <?php foreach ($baseQuery as $k => $v): ?>
                                                     <input type="hidden" name="<?= h($k) ?>" value="<?= h($v) ?>">
                                                 <?php endforeach; ?>
-                                                <button class="btn btn-sm btn-outline-success" type="submit">
+                                                <button class="btn btn-sm btn-outline-success btn-action" type="submit">
                                                     Restore
                                                 </button>
                                             </form>
@@ -390,7 +390,7 @@ try {
                                             <input type="hidden"
                                                    name="reservation_id"
                                                    value="<?= (int)$r['id'] ?>">
-                                            <button class="btn btn-sm btn-outline-danger" type="submit">
+                                            <button class="btn btn-sm btn-outline-danger btn-action" type="submit">
                                                 Delete
                                             </button>
                                         </form>
