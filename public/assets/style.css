@@ -474,13 +474,13 @@ form .form-select {
 }
 
 .items-section summary::after {
-    content: "+";
+    content: ">";
     font-weight: 700;
     color: var(--primary-strong);
 }
 
 .items-section[open] summary::after {
-    content: "–";
+    content: "v";
 }
 
 /* Reservation history table sizing */
