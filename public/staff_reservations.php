@@ -322,7 +322,7 @@ try {
                 <?php foreach ($baseQuery as $k => $v): ?>
                     <input type="hidden" name="<?= h($k) ?>" value="<?= h($v) ?>">
                 <?php endforeach; ?>
-                <div class="col-md-4 col-lg-4">
+                <div class="col-12 col-lg">
                     <input type="text"
                            name="q"
                            class="form-control form-control-lg"
@@ -333,7 +333,7 @@ try {
                     <input type="date"
                            name="from"
                            class="form-control form-control-lg"
-                           style="width: 11ch;"
+                           style="min-width: 160px;"
                            value="<?= htmlspecialchars($fromRaw) ?>"
                            placeholder="From date">
                 </div>
@@ -341,12 +341,12 @@ try {
                     <input type="date"
                            name="to"
                            class="form-control form-control-lg"
-                           style="width: 11ch;"
+                           style="min-width: 160px;"
                            value="<?= htmlspecialchars($toRaw) ?>"
                            placeholder="To date">
                 </div>
-                <div class="col-md-2 col-lg-2">
-                    <select name="sort" class="form-select form-select-lg" aria-label="Sort reservations">
+                <div class="col-auto">
+                    <select name="sort" class="form-select form-select-lg" aria-label="Sort reservations" style="min-width: 240px;">
                         <option value="start_desc" <?= $sort === 'start_desc' ? 'selected' : '' ?>>Start (newest first)</option>
                         <option value="start_asc" <?= $sort === 'start_asc' ? 'selected' : '' ?>>Start (oldest first)</option>
                         <option value="end_desc" <?= $sort === 'end_desc' ? 'selected' : '' ?>>End (latest first)</option>
@@ -360,7 +360,7 @@ try {
                     </select>
                 </div>
                 <div class="col-auto">
-                    <select name="per_page" class="form-select form-select-lg" style="width: 12ch;">
+                    <select name="per_page" class="form-select form-select-lg" style="min-width: 180px;">
                         <?php foreach ($perPageOptions as $opt): ?>
                             <option value="<?= $opt ?>" <?= $perPage === $opt ? 'selected' : '' ?>>
                                 <?= $opt ?> per page
