@@ -248,12 +248,10 @@ if ($selectedReservationId) {
                     continue;
                 }
                 $normalizedSelections[$mid] = [];
-                foreach ($choices as $choice) {
-                    $aid = (int)$choice;
-                    if ($aid > 0) {
-                        $normalizedSelections[$mid][] = $aid;
-                    }
+                foreach ($choices as $idx => $choice) {
+                    $normalizedSelections[$mid][(int)$idx] = (int)$choice;
                 }
+                $normalizedSelections[$mid] = array_values($normalizedSelections[$mid]);
             }
             $presetSelections = $normalizedSelections;
         } elseif (is_array($storedSelections)) {
@@ -331,12 +329,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         continue;
                     }
                     $normalizedSelections[$mid] = [];
-                    foreach ($choices as $choice) {
-                        $aid = (int)$choice;
-                        if ($aid > 0) {
-                            $normalizedSelections[$mid][] = $aid;
-                        }
+                    foreach ($choices as $idx => $choice) {
+                        $normalizedSelections[$mid][(int)$idx] = (int)$choice;
                     }
+                    $normalizedSelections[$mid] = array_values($normalizedSelections[$mid]);
                 }
             }
 
@@ -348,6 +344,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } else {
                     array_pop($normalizedSelections[$removeModelId]);
                 }
+                $normalizedSelections[$removeModelId] = array_values($normalizedSelections[$removeModelId]);
             }
             if ($selectedReservationId) {
                 $_SESSION['reservation_selected_assets'][$selectedReservationId] = $normalizedSelections;
