@@ -540,8 +540,8 @@ function count_checked_out_assets_by_model(int $modelId): int
         throw new InvalidArgumentException('Model ID must be positive.');
     }
 
-    require_once SRC_PATH . '/db.php';
     global $pdo;
+    require_once SRC_PATH . '/db.php';
 
     $stmt = $pdo->prepare("
         SELECT COUNT(*)
@@ -857,8 +857,8 @@ function fetch_checked_out_assets_from_snipeit(bool $overdueOnly = false, int $m
  */
 function list_checked_out_assets(bool $overdueOnly = false): array
 {
-    require_once SRC_PATH . '/db.php';
     global $pdo;
+    require_once SRC_PATH . '/db.php';
 
     $sql = "
         SELECT
