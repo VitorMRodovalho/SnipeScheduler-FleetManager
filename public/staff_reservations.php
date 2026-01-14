@@ -359,8 +359,8 @@ try {
                         <option value="id_asc" <?= $sort === 'id_asc' ? 'selected' : '' ?>>Reservation ID (low → high)</option>
                     </select>
                 </div>
-                <div class="col-md-2 col-lg-2">
-                    <select name="per_page" class="form-select form-select-lg">
+                <div class="col-auto">
+                    <select name="per_page" class="form-select form-select-lg" style="width: 12ch;">
                         <?php foreach ($perPageOptions as $opt): ?>
                             <option value="<?= $opt ?>" <?= $perPage === $opt ? 'selected' : '' ?>>
                                 <?= $opt ?> per page
