@@ -450,6 +450,16 @@ document.addEventListener('DOMContentLoaded', function () {
     document.addEventListener('submit', () => {
         sessionStorage.setItem(scrollKey, String(window.scrollY));
     });
+    document.addEventListener('click', (event) => {
+        const link = event.target.closest('a');
+        if (!link) {
+            return;
+        }
+        const href = link.getAttribute('href') || '';
+        if (href.includes('page=')) {
+            sessionStorage.setItem(scrollKey, String(window.scrollY));
+        }
+    });
 
     const selectAll = document.getElementById('select-all-assets');
     if (selectAll) {
