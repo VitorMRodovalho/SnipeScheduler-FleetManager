@@ -437,6 +437,20 @@ function layout_checked_out_url(string $base, array $params): string
         <?php endif; ?>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const scrollKey = 'checked_out_scroll_y';
+    const savedY = sessionStorage.getItem(scrollKey);
+    if (savedY !== null) {
+        const y = parseInt(savedY, 10);
+        if (!Number.isNaN(y)) {
+            window.scrollTo(0, y);
+        }
+        sessionStorage.removeItem(scrollKey);
+    }
+
+    document.addEventListener('submit', () => {
+        sessionStorage.setItem(scrollKey, String(window.scrollY));
+    });
+
     const selectAll = document.getElementById('select-all-assets');
     if (selectAll) {
         selectAll.addEventListener('change', () => {
