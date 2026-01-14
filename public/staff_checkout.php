@@ -763,12 +763,6 @@ $isStaff = !empty($currentUser['is_admin']);
                                                             <span><?= h($item['name'] ?? ('Model #' . $mid)) ?> (need <?= $qty ?>)</span>
                                                             <div class="d-flex gap-2">
                                                                 <button type="submit"
-                                                                        name="remove_model_id"
-                                                                        value="<?= $mid ?>"
-                                                                        class="btn btn-sm btn-outline-danger">
-                                                                    Remove one
-                                                                </button>
-                                                                <button type="submit"
                                                                         name="remove_model_id_all"
                                                                         value="<?= $mid ?>"
                                                                         class="btn btn-sm btn-outline-danger">
@@ -803,42 +797,44 @@ $isStaff = !empty($currentUser['is_admin']);
                                                             <div class="reservation-model-title">
                                                                 <div class="form-label mb-1 d-flex align-items-center justify-content-between gap-2">
                                                                     <span><?= h($item['name'] ?? ('Model #' . $mid)) ?> (need <?= $qty ?>)</span>
-                                                                    <div class="d-flex gap-2">
-                                                                        <button type="submit"
-                                                                                name="remove_model_id"
-                                                                                value="<?= $mid ?>"
-                                                                                class="btn btn-sm btn-outline-danger">
-                                                                            Remove one
-                                                                        </button>
-                                                                        <button type="submit"
-                                                                                name="remove_model_id_all"
-                                                                                value="<?= $mid ?>"
-                                                                                class="btn btn-sm btn-outline-danger">
-                                                                            Remove all
-                                                                        </button>
-                                                                    </div>
+                                                            <div class="d-flex gap-2">
+                                                                <button type="submit"
+                                                                        name="remove_model_id_all"
+                                                                        value="<?= $mid ?>"
+                                                                        class="btn btn-sm btn-outline-danger">
+                                                                    Remove all
+                                                                </button>
+                                                            </div>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </td>
                                                 <?php endif; ?>
                                                 <td>
-                                                    <select class="form-select"
-                                                            name="selected_assets[<?= $mid ?>][]"
-                                                            data-model-select="<?= $mid ?>">
-                                                        <option value="">-- Select asset --</option>
-                                                        <?php foreach ($options as $opt): ?>
-                                                            <?php
-                                                            $aid   = (int)($opt['id'] ?? 0);
-                                                            $atag  = $opt['asset_tag'] ?? ('ID ' . $aid);
-                                                            $aname = $opt['name'] ?? '';
-                                                            $label = $aname !== ''
-                                                                ? trim($atag . ' – ' . $aname)
-                                                                : $atag;
-                                                            ?>
-                                                            <option value="<?= $aid ?>"><?= h($label) ?></option>
-                                                        <?php endforeach; ?>
-                                                    </select>
+                                                    <div class="d-flex gap-2 align-items-center">
+                                                        <select class="form-select"
+                                                                name="selected_assets[<?= $mid ?>][]"
+                                                                data-model-select="<?= $mid ?>">
+                                                            <option value="">-- Select asset --</option>
+                                                            <?php foreach ($options as $opt): ?>
+                                                                <?php
+                                                                $aid   = (int)($opt['id'] ?? 0);
+                                                                $atag  = $opt['asset_tag'] ?? ('ID ' . $aid);
+                                                                $aname = $opt['name'] ?? '';
+                                                                $label = $aname !== ''
+                                                                    ? trim($atag . ' – ' . $aname)
+                                                                    : $atag;
+                                                                ?>
+                                                                <option value="<?= $aid ?>"><?= h($label) ?></option>
+                                                            <?php endforeach; ?>
+                                                        </select>
+                                                        <button type="submit"
+                                                                name="remove_model_id"
+                                                                value="<?= $mid ?>"
+                                                                class="btn btn-sm btn-outline-danger">
+                                                            Remove
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         <?php endfor; ?>
