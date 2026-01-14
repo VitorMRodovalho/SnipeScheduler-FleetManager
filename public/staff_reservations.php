@@ -303,7 +303,7 @@ try {
             }
         ?>
         <!-- Filters -->
-        <form class="row g-2 mb-3" method="get" action="<?= h($actionUrl) ?>">
+        <form class="row g-2 mb-2" method="get" action="<?= h($actionUrl) ?>">
             <?php foreach ($baseQuery as $k => $v): ?>
                 <input type="hidden" name="<?= h($k) ?>" value="<?= h($v) ?>">
             <?php endforeach; ?>
@@ -338,7 +338,7 @@ try {
                 </select>
             </div>
             <div class="col-md-1 d-flex gap-2">
-                <button class="btn btn-primary btn-sm w-100" type="submit">Filter</button>
+                <button class="btn btn-primary w-100" type="submit">Filter</button>
             </div>
             <div class="col-md-2 d-flex gap-2">
                 <?php
@@ -350,6 +350,7 @@ try {
                 <a href="<?= h($clearUrl) ?>" class="btn btn-outline-secondary btn-sm w-100">Clear</a>
             </div>
         </form>
+        <hr class="my-4">
 
         <?php if (empty($reservations)): ?>
             <div class="alert alert-info">
