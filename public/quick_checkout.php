@@ -185,13 +185,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new Exception('Matched user has no valid ID.');
                 }
 
-                // Check for active reservations on these models right now
+                // Check for active reservations on these models right now, but only warn when
+                // reserved qty would exceed available stock after this checkout.
                 $reservationConflicts = [];
+                $checkoutModelCounts = [];
                 foreach ($checkoutAssets as $asset) {
                     $mid = (int)($asset['model_id'] ?? 0);
                     if ($mid > 0) {
-                        $conf = qc_current_reservations_for_model($pdo, $mid);
-                        if (!empty($conf)) {
+                        $checkoutModelCounts[$mid] = ($checkoutModelCounts[$mid] ?? 0) + 1;
+                    }
+                }
+                foreach ($checkoutModelCounts as $mid => $checkoutQty) {
+                    $conf = qc_current_reservations_for_model($pdo, (int)$mid);
+                    if (empty($conf)) {
+                        continue;
+                    }
+
+                    $reservedQty = 0;
+                    foreach ($conf as $row) {
+                        $reservedQty += (int)($row['quantity'] ?? 0);
+                    }
+
+                    $availabilityUnknown = false;
+                    try {
+                        $requestableTotal = count_requestable_assets_by_model((int)$mid);
+                        $checkedOut = count_checked_out_assets_by_model((int)$mid);
+                        $available = max(0, $requestableTotal - $checkedOut);
+                    } catch (Throwable $e) {
+                        $availabilityUnknown = true;
+                        $available = 0;
+                    }
+
+                    $shouldWarn = $availabilityUnknown ? true : (($reservedQty + $checkoutQty) > $available);
+                    if (!$shouldWarn) {
+                        continue;
+                    }
+
+                    foreach ($checkoutAssets as $asset) {
+                        if ((int)($asset['model_id'] ?? 0) === (int)$mid) {
                             $reservationConflicts[$asset['id']] = $conf;
                         }
                     }
