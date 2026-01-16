@@ -37,7 +37,6 @@ $eventLabels = [
 
 $metadataLabels = [
     'checked_out_to' => 'Checked out to',
-    'snipe_user_id' => 'Snipe-IT User ID',
     'assets' => 'Assets',
     'checked_in_from' => 'Checked in from',
     'note' => 'Note',
@@ -50,7 +49,7 @@ $metadataLabels = [
     'items' => 'Items',
 ];
 
-function format_activity_metadata(?string $metadataJson, array $labelMap): array
+function format_activity_metadata(?string $metadataJson, array $labelMap, ?DateTimeZone $tz = null): array
 {
     if (!$metadataJson) {
         return [];
@@ -74,6 +73,17 @@ function format_activity_metadata(?string $metadataJson, array $labelMap): array
             $value = '';
         } else {
             $value = (string)$value;
+            if ($value !== '' && in_array($key, ['start', 'end'], true)) {
+                try {
+                    $dt = new DateTime($value);
+                    if ($tz) {
+                        $dt->setTimezone($tz);
+                    }
+                    $value = $dt->format('d/m/Y g:i A');
+                } catch (Throwable $e) {
+                    // Keep raw value on parse errors.
+                }
+            }
         }
 
         if ($value === '') {
@@ -357,7 +367,7 @@ try {
                                     }
 
                                     $metadataText = trim((string)($row['metadata'] ?? ''));
-                                    $metadataLines = format_activity_metadata($metadataText, $metadataLabels);
+                                    $metadataLines = format_activity_metadata($metadataText, $metadataLabels, $tz);
                                     if ($subjectLabel !== '') {
                                         array_unshift($metadataLines, 'Subject: ' . $subjectLabel);
                                     }
