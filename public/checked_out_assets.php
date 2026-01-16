@@ -3,6 +3,7 @@ require_once __DIR__ . '/../src/bootstrap.php';
 require_once SRC_PATH . '/auth.php';
 require_once SRC_PATH . '/snipeit_client.php';
 require_once SRC_PATH . '/db.php';
+require_once SRC_PATH . '/activity_log.php';
 require_once SRC_PATH . '/layout.php';
 
 function format_display_date($val): string
@@ -130,6 +131,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 update_asset_expected_checkin($renewId, $normalized);
                 $messages[] = "Extended expected check-in to " . format_display_datetime($normalized) . " for asset #{$renewId}.";
+                activity_log_event('asset_renewed', 'Checked out asset renewed', [
+                    'subject_type' => 'asset',
+                    'subject_id'   => $renewId,
+                    'metadata'     => [
+                        'expected_checkin' => $normalized,
+                    ],
+                ]);
             } catch (Throwable $e) {
                 $error = 'Could not renew asset: ' . $e->getMessage();
             }
@@ -157,6 +165,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
                 $messages[] = "Extended expected check-in to " . format_display_datetime($bulkExpected) . " for {$count} asset(s).";
+                $assetIds = array_values(array_filter(array_map('intval', $bulkIds), static function (int $id): bool {
+                    return $id > 0;
+                }));
+                activity_log_event('assets_renewed', 'Checked out assets renewed', [
+                    'metadata' => [
+                        'asset_ids' => $assetIds,
+                        'expected_checkin' => $bulkExpected,
+                        'count' => $count,
+                    ],
+                ]);
             } catch (Throwable $e) {
                 $error = 'Could not renew selected assets: ' . $e->getMessage();
             }

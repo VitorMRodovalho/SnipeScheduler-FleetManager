@@ -7,6 +7,7 @@
 
 require_once __DIR__ . '/../src/bootstrap.php';
 require_once SRC_PATH . '/db.php';
+require_once SRC_PATH . '/activity_log.php';
 
 $config = load_config();
 
@@ -38,11 +39,38 @@ $sql = "
        AND start_datetime < (NOW() - INTERVAL :mins MINUTE)
 ";
 
+$pdo->beginTransaction();
+
+$selectStmt = $pdo->prepare("
+    SELECT id
+      FROM reservations
+     WHERE status IN ('pending', 'confirmed')
+       AND start_datetime < (NOW() - INTERVAL :mins MINUTE)
+");
+$selectStmt->bindValue(':mins', $cutoffMinutes, PDO::PARAM_INT);
+$selectStmt->execute();
+$missedIds = $selectStmt->fetchAll(PDO::FETCH_COLUMN);
+
 $stmt = $pdo->prepare($sql);
 $stmt->bindValue(':mins', $cutoffMinutes, PDO::PARAM_INT);
 $stmt->execute();
 
 $affected = $stmt->rowCount();
+
+$pdo->commit();
+
+foreach ($missedIds as $missedId) {
+    $resId = (int)$missedId;
+    if ($resId > 0) {
+        activity_log_event('reservation_missed', 'Reservation marked as missed', [
+            'subject_type' => 'reservation',
+            'subject_id'   => $resId,
+            'metadata'     => [
+                'cutoff_minutes' => $cutoffMinutes,
+            ],
+        ]);
+    }
+}
 
 echo sprintf(
     "[%s] Marked %d reservation(s) as missed (cutoff %d minutes)\n",

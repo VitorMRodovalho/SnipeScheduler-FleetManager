@@ -3,6 +3,7 @@ require_once __DIR__ . '/../src/bootstrap.php';
 require_once SRC_PATH . '/auth.php';
 require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/booking_helpers.php';
+require_once SRC_PATH . '/activity_log.php';
 require_once SRC_PATH . '/layout.php';
 
 $active    = basename($_SERVER['PHP_SELF']);
@@ -176,6 +177,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'resto
                 ':end'   => $newEnd,
             ]);
             $restoredMsg = 'Reservation #' . $restoreId . ' has been re-enabled.';
+
+            activity_log_event('reservation_restored', 'Reservation restored from missed', [
+                'subject_type' => 'reservation',
+                'subject_id'   => $restoreId,
+                'metadata'     => [
+                    'start' => $newStart,
+                    'end'   => $newEnd,
+                ],
+            ]);
         } catch (Exception $e) {
             $restoreError = 'Unable to restore reservation: ' . $e->getMessage();
         }

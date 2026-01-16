@@ -30,15 +30,23 @@ $eventLabels = [
     'reservation_updated' => 'Reservation Updated',
     'reservation_deleted' => 'Reservation Deleted',
     'reservation_cancelled' => 'Reservation Cancelled',
+    'reservation_missed' => 'Reservation Missed',
+    'reservation_restored' => 'Reservation Restored',
     'reservation_checked_out' => 'Reservation Checked Out',
     'quick_checkout' => 'Quick Checkout',
     'quick_checkin' => 'Quick Checkin',
+    'asset_renewed' => 'Asset Renewed',
+    'assets_renewed' => 'Assets Renewed',
 ];
 
 $metadataLabels = [
     'checked_out_to' => 'Checked out to',
     'assets' => 'Assets',
     'checked_in_from' => 'Checked in from',
+    'asset_ids' => 'Asset IDs',
+    'expected_checkin' => 'Expected check-in',
+    'count' => 'Count',
+    'cutoff_minutes' => 'Cutoff minutes',
     'note' => 'Note',
     'provider' => 'Provider',
     'start' => 'Start',
@@ -73,7 +81,7 @@ function format_activity_metadata(?string $metadataJson, array $labelMap, ?DateT
             $value = '';
         } else {
             $value = (string)$value;
-            if ($value !== '' && in_array($key, ['start', 'end'], true)) {
+            if ($value !== '' && in_array($key, ['start', 'end', 'expected_checkin'], true)) {
                 try {
                     $dt = new DateTime($value);
                     if ($tz) {
