@@ -25,36 +25,9 @@ $showLdap      = $ldapEnabled;
 $loginError = $_SESSION['login_error'] ?? '';
 unset($_SESSION['login_error']);
 
-$isSafeReturnTo = static function (string $path): bool {
-    if ($path === '' || $path === '/') {
-        return false;
-    }
-    if (preg_match('/^\w+:/', $path)) {
-        return false;
-    }
-    if (strpos($path, '//') === 0) {
-        return false;
-    }
-    return true;
-};
-$returnToRaw = trim($_GET['return_to'] ?? '');
-$returnTo = $isSafeReturnTo($returnToRaw) ? $returnToRaw : '';
-if ($returnTo !== '') {
-    $_SESSION['login_return_to'] = $returnTo;
-} elseif (!empty($_SESSION['login_return_to'])) {
-    $returnTo = (string)$_SESSION['login_return_to'];
-    if (!$isSafeReturnTo($returnTo)) {
-        $returnTo = '';
-    }
-}
-
 // Already logged in? Go to dashboard
 if (!empty($_SESSION['user']['email'])) {
-    if ($returnTo !== '') {
-        header('Location: ' . $returnTo);
-    } else {
-        header('Location: index.php');
-    }
+    header('Location: index.php');
     exit;
 }
 ?>
@@ -89,9 +62,6 @@ if (!empty($_SESSION['user']['email'])) {
         <?php if ($showLdap): ?>
             <form method="post" action="login_process.php" class="card p-3 mt-3">
                 <input type="hidden" name="provider" value="ldap">
-                <?php if ($returnTo !== ''): ?>
-                    <input type="hidden" name="return_to" value="<?= h($returnTo) ?>">
-                <?php endif; ?>
                 <div class="mb-3">
                     <label for="email" class="form-label">Email address</label>
                     <input type="email"
@@ -117,8 +87,7 @@ if (!empty($_SESSION['user']['email'])) {
                 </button>
 
                 <?php if ($showGoogle): ?>
-                    <?php $googleUrl = 'login_process.php?provider=google' . ($returnTo !== '' ? '&return_to=' . urlencode($returnTo) : ''); ?>
-                    <a href="<?= h($googleUrl) ?>" class="btn btn-outline-dark w-100 mt-3 d-flex align-items-center justify-content-center gap-2">
+                    <a href="login_process.php?provider=google" class="btn btn-outline-dark w-100 mt-3 d-flex align-items-center justify-content-center gap-2">
                         <svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 533.5 544.3">
                             <path fill="#EA4335" d="M533.5 278.4c0-18.6-1.5-37.3-4.8-55.5H272v105h147.6c-6.3 34-25 62.8-53.3 82.1l86.2 67.2c50.6-46.6 80-115.3 80-198.8z"/>
                             <path fill="#34A853" d="M272 544.3c71.8 0 132-23.5 176-64.1l-86.2-67.2c-24 16.4-54.8 26-89.8 26-69 0-127.5-46.5-148.4-108.9l-90 69.4C72.8 483.3 163.1 544.3 272 544.3z"/>
@@ -130,8 +99,7 @@ if (!empty($_SESSION['user']['email'])) {
                 <?php endif; ?>
 
                 <?php if ($showMicrosoft): ?>
-                    <?php $msUrl = 'login_process.php?provider=microsoft' . ($returnTo !== '' ? '&return_to=' . urlencode($returnTo) : ''); ?>
-                    <a href="<?= h($msUrl) ?>" class="btn btn-outline-dark w-100 mt-2 d-flex align-items-center justify-content-center gap-2">
+                    <a href="login_process.php?provider=microsoft" class="btn btn-outline-dark w-100 mt-2 d-flex align-items-center justify-content-center gap-2">
                         <svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 23 23">
                             <rect width="10.5" height="10.5" x="0.5" y="0.5" fill="#F35325"/>
                             <rect width="10.5" height="10.5" x="12" y="0.5" fill="#81BC06"/>
@@ -144,8 +112,7 @@ if (!empty($_SESSION['user']['email'])) {
             </form>
         <?php elseif ($showGoogle || $showMicrosoft): ?>
             <?php if ($showGoogle): ?>
-                <?php $googleUrl = 'login_process.php?provider=google' . ($returnTo !== '' ? '&return_to=' . urlencode($returnTo) : ''); ?>
-                <a href="<?= h($googleUrl) ?>" class="btn btn-outline-dark w-100 mt-3 d-flex align-items-center justify-content-center gap-2">
+                <a href="login_process.php?provider=google" class="btn btn-outline-dark w-100 mt-3 d-flex align-items-center justify-content-center gap-2">
                     <svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 533.5 544.3">
                         <path fill="#EA4335" d="M533.5 278.4c0-18.6-1.5-37.3-4.8-55.5H272v105h147.6c-6.3 34-25 62.8-53.3 82.1l86.2 67.2c50.6-46.6 80-115.3 80-198.8z"/>
                         <path fill="#34A853" d="M272 544.3c71.8 0 132-23.5 176-64.1l-86.2-67.2c-24 16.4-54.8 26-89.8 26-69 0-127.5-46.5-148.4-108.9l-90 69.4C72.8 483.3 163.1 544.3 272 544.3z"/>
@@ -156,8 +123,7 @@ if (!empty($_SESSION['user']['email'])) {
                 </a>
             <?php endif; ?>
             <?php if ($showMicrosoft): ?>
-                <?php $msUrl = 'login_process.php?provider=microsoft' . ($returnTo !== '' ? '&return_to=' . urlencode($returnTo) : ''); ?>
-                <a href="<?= h($msUrl) ?>" class="btn btn-outline-dark w-100 mt-2 d-flex align-items-center justify-content-center gap-2">
+                <a href="login_process.php?provider=microsoft" class="btn btn-outline-dark w-100 mt-2 d-flex align-items-center justify-content-center gap-2">
                     <svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 23 23">
                         <rect width="10.5" height="10.5" x="0.5" y="0.5" fill="#F35325"/>
                         <rect width="10.5" height="10.5" x="12" y="0.5" fill="#81BC06"/>

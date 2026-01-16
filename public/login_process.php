@@ -43,31 +43,6 @@ $googleCheckoutEmails = $normalizeEmailList($authCfg['google_checkout_emails'] ?
 $msAdminEmails = $normalizeEmailList($authCfg['microsoft_admin_emails'] ?? []);
 $msCheckoutEmails = $normalizeEmailList($authCfg['microsoft_checkout_emails'] ?? []);
 
-$isSafeReturnTo = static function (string $path): bool {
-    if ($path === '' || $path === '/') {
-        return false;
-    }
-    if (preg_match('/^\w+:/', $path)) {
-        return false;
-    }
-    if (strpos($path, '//') === 0) {
-        return false;
-    }
-    return true;
-};
-$returnToRaw = (string)($_POST['return_to'] ?? $_GET['return_to'] ?? '');
-if ($returnToRaw !== '' && $isSafeReturnTo($returnToRaw)) {
-    $_SESSION['login_return_to'] = $returnToRaw;
-}
-$finalRedirect = static function () use ($isSafeReturnTo): string {
-    $returnTo = $_SESSION['login_return_to'] ?? '';
-    unset($_SESSION['login_return_to']);
-    if (is_string($returnTo) && $returnTo !== '' && $isSafeReturnTo($returnTo)) {
-        return $returnTo;
-    }
-    return 'index.php';
-};
-
 $provider = strtolower($_GET['provider'] ?? $_POST['provider'] ?? 'ldap');
 
 $ensureProviderParam = static function (string $uri, string $provider): string {
@@ -306,7 +281,7 @@ if ($provider === 'google') {
         ],
     ]);
 
-    header('Location: ' . $finalRedirect());
+    header('Location: index.php');
     exit;
 }
 
@@ -509,7 +484,7 @@ if ($provider === 'microsoft') {
         ],
     ]);
 
-    header('Location: ' . $finalRedirect());
+    header('Location: index.php');
     exit;
 }
 
@@ -719,5 +694,5 @@ activity_log_event('user_login', 'User logged in', [
 
 ldap_unbind($ldap);
 
-header('Location: ' . $finalRedirect());
+header('Location: index.php');
 exit;

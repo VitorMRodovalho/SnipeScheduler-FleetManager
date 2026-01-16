@@ -13,13 +13,7 @@ $loginProcessPath = defined('AUTH_LOGIN_PROCESS_PATH') ? AUTH_LOGIN_PROCESS_PATH
 // If no logged-in user, redirect to login.php (except on login pages themselves)
 if (empty($_SESSION['user'])) {
     if (!in_array($script, [basename($loginPath), basename($loginProcessPath)], true)) {
-        $returnTo = $_SERVER['REQUEST_URI'] ?? '';
-        $separator = strpos($loginPath, '?') === false ? '?' : '&';
-        $location = $loginPath;
-        if ($returnTo !== '') {
-            $location .= $separator . 'return_to=' . rawurlencode($returnTo);
-        }
-        header('Location: ' . $location);
+        header('Location: ' . $loginPath);
         exit;
     }
     // On login pages, do nothing more
