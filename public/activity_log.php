@@ -368,8 +368,13 @@ try {
 
                                     $metadataText = trim((string)($row['metadata'] ?? ''));
                                     $metadataLines = format_activity_metadata($metadataText, $metadataLabels, $tz);
-                                    if ($subjectLabel !== '') {
-                                        array_unshift($metadataLines, 'Subject: ' . $subjectLabel);
+                                    $subjectDetailHtml = '';
+                                    if ($subjectLabel !== '' && ($row['subject_type'] ?? '') === 'reservation' && $subjectId !== '') {
+                                        $reservationId = (int)$subjectId;
+                                        if ($reservationId > 0) {
+                                            $subjectDetailHtml = 'Reservation Number: <a href="reservation_detail.php?id='
+                                                . $reservationId . '">#' . $reservationId . '</a>';
+                                        }
                                     }
                                     ?>
                                     <tr>
@@ -378,6 +383,9 @@ try {
                                         <td><?= h($actorLabel) ?></td>
                                         <td>
                                             <div class="fw-semibold"><?= h((string)($row['message'] ?? '')) ?></div>
+                                            <?php if ($subjectDetailHtml !== ''): ?>
+                                                <div class="text-muted small"><?= $subjectDetailHtml ?></div>
+                                            <?php endif; ?>
                                             <?php if (!empty($metadataLines)): ?>
                                                 <div class="text-muted small">
                                                     <?php foreach ($metadataLines as $line): ?>
