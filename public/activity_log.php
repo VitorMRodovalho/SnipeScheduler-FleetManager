@@ -369,12 +369,15 @@ try {
                                     $metadataText = trim((string)($row['metadata'] ?? ''));
                                     $metadataLines = format_activity_metadata($metadataText, $metadataLabels, $tz);
                                     $subjectDetailHtml = '';
-                                    if ($subjectLabel !== '' && ($row['subject_type'] ?? '') === 'reservation' && $subjectId !== ''
-                                        && ($row['event_type'] ?? '') !== 'reservation_deleted') {
+                                    if ($subjectLabel !== '' && ($row['subject_type'] ?? '') === 'reservation' && $subjectId !== '') {
                                         $reservationId = (int)$subjectId;
                                         if ($reservationId > 0) {
-                                            $subjectDetailHtml = 'Reservation Number: <a href="reservation_detail.php?id='
-                                                . $reservationId . '">#' . $reservationId . '</a>';
+                                            if (($row['event_type'] ?? '') === 'reservation_deleted') {
+                                                $subjectDetailHtml = 'Reservation Number: #' . $reservationId;
+                                            } else {
+                                                $subjectDetailHtml = 'Reservation Number: <a href="reservation_detail.php?id='
+                                                    . $reservationId . '">#' . $reservationId . '</a>';
+                                            }
                                         }
                                     }
                                     ?>
