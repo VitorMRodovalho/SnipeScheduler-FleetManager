@@ -368,9 +368,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     layout_send_notification($staffEmail, $staffDisplayName, 'Assets checked in', $bodyLines);
                 }
 
+                $checkedInFrom = array_keys($summaryBuckets);
                 activity_log_event('quick_checkin', 'Quick checkin completed', [
                     'metadata' => [
                         'assets' => $assetTags,
+                        'checked_in_from' => $checkedInFrom,
                         'note'   => $note,
                     ],
                 ]);

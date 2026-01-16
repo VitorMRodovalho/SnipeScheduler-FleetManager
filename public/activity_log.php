@@ -39,6 +39,7 @@ $metadataLabels = [
     'checked_out_to' => 'Checked out to',
     'snipe_user_id' => 'Snipe-IT User ID',
     'assets' => 'Assets',
+    'checked_in_from' => 'Checked in from',
     'note' => 'Note',
     'provider' => 'Provider',
     'start' => 'Start',
