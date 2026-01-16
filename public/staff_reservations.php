@@ -178,10 +178,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'resto
             ]);
             $restoredMsg = 'Reservation #' . $restoreId . ' has been re-enabled.';
 
+            $assetLabels = [];
+            foreach ($items as $item) {
+                $name = trim((string)($item['model_name_cache'] ?? ''));
+                $qty = (int)($item['quantity'] ?? 0);
+                if ($name === '') {
+                    $name = 'Item';
+                }
+                $assetLabels[] = $qty > 1 ? ($name . ' (x' . $qty . ')') : $name;
+            }
+
             activity_log_event('reservation_restored', 'Reservation restored from missed', [
                 'subject_type' => 'reservation',
                 'subject_id'   => $restoreId,
                 'metadata'     => [
+                    'assets' => $assetLabels,
                     'start' => $newStart,
                     'end'   => $newEnd,
                 ],

@@ -43,7 +43,6 @@ $metadataLabels = [
     'checked_out_to' => 'Checked out to',
     'assets' => 'Assets',
     'checked_in_from' => 'Checked in from',
-    'asset_ids' => 'Asset IDs',
     'expected_checkin' => 'Expected check-in',
     'count' => 'Count',
     'cutoff_minutes' => 'Cutoff minutes',

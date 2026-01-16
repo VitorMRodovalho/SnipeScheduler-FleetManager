@@ -59,6 +59,35 @@ $affected = $stmt->rowCount();
 
 $pdo->commit();
 
+// Build asset summaries per reservation for logging.
+$assetsByReservation = [];
+$missedIdInts = array_values(array_filter(array_map('intval', $missedIds), static function (int $id): bool {
+    return $id > 0;
+}));
+if (!empty($missedIdInts)) {
+    $placeholders = implode(',', array_fill(0, count($missedIdInts), '?'));
+    $itemsStmt = $pdo->prepare("
+        SELECT reservation_id, model_name_cache, quantity
+          FROM reservation_items
+         WHERE reservation_id IN ({$placeholders})
+    ");
+    $itemsStmt->execute($missedIdInts);
+    $rows = $itemsStmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($rows as $row) {
+        $rid = (int)($row['reservation_id'] ?? 0);
+        if ($rid <= 0) {
+            continue;
+        }
+        $name = trim((string)($row['model_name_cache'] ?? ''));
+        $qty = (int)($row['quantity'] ?? 0);
+        if ($name === '') {
+            $name = 'Item';
+        }
+        $label = $qty > 1 ? ($name . ' (x' . $qty . ')') : $name;
+        $assetsByReservation[$rid][] = $label;
+    }
+}
+
 foreach ($missedIds as $missedId) {
     $resId = (int)$missedId;
     if ($resId > 0) {
@@ -66,6 +95,7 @@ foreach ($missedIds as $missedId) {
             'subject_type' => 'reservation',
             'subject_id'   => $resId,
             'metadata'     => [
+                'assets' => $assetsByReservation[$resId] ?? [],
                 'cutoff_minutes' => $cutoffMinutes,
             ],
         ]);
