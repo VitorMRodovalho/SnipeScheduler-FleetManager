@@ -629,7 +629,7 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
                 <a class="nav-link active" href="settings.php">Settings</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="application_log.php">Application Log</a>
+                <a class="nav-link" href="activity_log.php">Activity Log</a>
             </li>
         </ul>
 

@@ -51,7 +51,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Application Log – SnipeScheduler</title>
+    <title>Activity Log – SnipeScheduler</title>
 
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
@@ -63,7 +63,7 @@ try {
     <div class="page-shell">
         <?= layout_logo_tag() ?>
         <div class="page-header">
-            <h1>Application Log</h1>
+            <h1>Activity Log</h1>
             <div class="page-subtitle">
                 Review recent activity across the application.
             </div>
@@ -87,7 +87,7 @@ try {
                 <a class="nav-link" href="settings.php">Settings</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link active" href="application_log.php">Application Log</a>
+                <a class="nav-link active" href="activity_log.php">Activity Log</a>
             </li>
         </ul>
 
