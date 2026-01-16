@@ -99,6 +99,28 @@ CREATE TABLE IF NOT EXISTS checked_out_asset_cache (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------
+-- Activity log
+-- ------------------------------------------------------
+CREATE TABLE IF NOT EXISTS activity_log (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    event_type VARCHAR(64) NOT NULL,
+    actor_user_id VARCHAR(64) DEFAULT NULL,
+    actor_name VARCHAR(255) DEFAULT NULL,
+    actor_email VARCHAR(255) DEFAULT NULL,
+    subject_type VARCHAR(64) DEFAULT NULL,
+    subject_id VARCHAR(64) DEFAULT NULL,
+    message VARCHAR(255) NOT NULL,
+    metadata TEXT DEFAULT NULL,
+    ip_address VARCHAR(45) DEFAULT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id),
+    KEY idx_activity_event (event_type),
+    KEY idx_activity_actor (actor_user_id),
+    KEY idx_activity_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------
 -- Optional: simple schema versioning
 -- ------------------------------------------------------
 CREATE TABLE IF NOT EXISTS schema_version (

@@ -62,17 +62,29 @@ return [
         'google_oauth_enabled' => false,
         'microsoft_oauth_enabled' => false,
         // Accepts a single CN string or an array of CNs
-        'staff_group_cn' => [
-            // 'ICT Staff',
-            // 'Another Staff Group',
+        'admin_group_cn' => [
+            // 'ICT Admins',
+            // 'Another Admin Group',
         ],
-        // Optional: treat these Google accounts as staff when using Google OAuth
-        'google_staff_emails' => [
+        'checkout_group_cn' => [
+            // 'Checkout Staff',
+            // 'Equipment Desk',
+        ],
+        // Optional: treat these Google accounts as administrators
+        'google_admin_emails' => [
             // 'admin@example.com',
         ],
-        // Optional: treat these Microsoft accounts as staff when using Microsoft OAuth
-        'microsoft_staff_emails' => [
+        // Optional: treat these Google accounts as checkout staff
+        'google_checkout_emails' => [
+            // 'staff@example.com',
+        ],
+        // Optional: treat these Microsoft accounts as administrators
+        'microsoft_admin_emails' => [
             // 'admin@example.com',
+        ],
+        // Optional: treat these Microsoft accounts as checkout staff
+        'microsoft_checkout_emails' => [
+            // 'staff@example.com',
         ],
     ],
 

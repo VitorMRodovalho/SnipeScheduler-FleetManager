@@ -3,10 +3,12 @@ require_once __DIR__ . '/../src/bootstrap.php';
 require_once SRC_PATH . '/auth.php';
 require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/booking_helpers.php';
+require_once SRC_PATH . '/activity_log.php';
 require_once SRC_PATH . '/layout.php';
 
 $active    = basename($_SERVER['PHP_SELF']);
-$isStaff   = !empty($currentUser['is_admin']);
+$isAdmin   = !empty($currentUser['is_admin']);
+$isStaff   = !empty($currentUser['is_staff']) || $isAdmin;
 $embedded  = defined('RESERVATIONS_EMBED');
 $pageBase  = $embedded ? 'reservations.php' : 'staff_reservations.php';
 $baseQuery = $embedded ? ['tab' => 'history'] : [];
@@ -37,7 +39,7 @@ function uk_datetime(?string $isoDatetime): string
 }
 
 // Only staff/admin allowed
-if (empty($currentUser['is_admin'])) {
+if (!$isStaff) {
     http_response_code(403);
     echo 'Access denied.';
     exit;
@@ -175,6 +177,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'resto
                 ':end'   => $newEnd,
             ]);
             $restoredMsg = 'Reservation #' . $restoreId . ' has been re-enabled.';
+
+            $assetLabels = [];
+            foreach ($items as $item) {
+                $name = trim((string)($item['model_name_cache'] ?? ''));
+                $qty = (int)($item['quantity'] ?? 0);
+                if ($name === '') {
+                    $name = 'Item';
+                }
+                $assetLabels[] = $qty > 1 ? ($name . ' (x' . $qty . ')') : $name;
+            }
+
+            activity_log_event('reservation_restored', 'Reservation restored from missed', [
+                'subject_type' => 'reservation',
+                'subject_id'   => $restoreId,
+                'metadata'     => [
+                    'assets' => $assetLabels,
+                    'start' => $newStart,
+                    'end'   => $newEnd,
+                ],
+            ]);
         } catch (Exception $e) {
             $restoreError = 'Unable to restore reservation: ' . $e->getMessage();
         }
@@ -262,7 +284,7 @@ try {
 
         <!-- App navigation -->
         <?php if (!$embedded): ?>
-            <?= layout_render_nav($active, $isStaff) ?>
+            <?= layout_render_nav($active, $isStaff, $isAdmin) ?>
         <?php endif; ?>
 
         <!-- Top bar -->

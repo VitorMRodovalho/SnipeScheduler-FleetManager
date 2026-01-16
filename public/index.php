@@ -5,7 +5,8 @@ require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/layout.php';
 
 $active  = basename($_SERVER['PHP_SELF']);
-$isStaff = !empty($currentUser['is_admin']);
+$isAdmin = !empty($currentUser['is_admin']);
+$isStaff = !empty($currentUser['is_staff']) || $isAdmin;
 ?>
 <!DOCTYPE html>
 <html>
@@ -29,7 +30,7 @@ $isStaff = !empty($currentUser['is_admin']);
             </div>
         </div>
 
-        <?= layout_render_nav($active, $isStaff) ?>
+        <?= layout_render_nav($active, $isStaff, $isAdmin) ?>
 
         <div class="top-bar mb-3">
             <div class="top-bar-user">

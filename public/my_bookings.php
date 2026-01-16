@@ -30,7 +30,8 @@ function uk_datetime(?string $isoDatetime): string
 }
 
 $active        = basename($_SERVER['PHP_SELF']);
-$isStaff       = !empty($currentUser['is_admin']);
+$isAdmin       = !empty($currentUser['is_admin']);
+$isStaff       = !empty($currentUser['is_staff']) || $isAdmin;
 $currentUserId = (string)($currentUser['id'] ?? '');
 
 $userName = trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''));
@@ -113,7 +114,7 @@ if (!empty($_GET['deleted'])) {
         </div>
 
         <!-- App navigation -->
-        <?= layout_render_nav($active, $isStaff) ?>
+        <?= layout_render_nav($active, $isStaff, $isAdmin) ?>
 
         <!-- Top bar -->
         <div class="top-bar mb-3">

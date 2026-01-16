@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../src/bootstrap.php';
 require_once SRC_PATH . '/auth.php';
 require_once SRC_PATH . '/db.php';
+require_once SRC_PATH . '/activity_log.php';
 require_once SRC_PATH . '/snipeit_client.php';
 require_once SRC_PATH . '/layout.php';
 
@@ -90,6 +91,19 @@ $insert->execute([
     ':asset_name_cache' => 'Pending checkout',
     ':start_datetime'   => $start,
     ':end_datetime'     => $end,
+]);
+
+$reservationId = (int)$pdo->lastInsertId();
+activity_log_event('reservation_submitted', 'Reservation submitted', [
+    'subject_type' => 'reservation',
+    'subject_id'   => $reservationId,
+    'metadata'     => [
+        'asset_id'   => $assetId,
+        'asset_name' => $assetName,
+        'start'      => $start,
+        'end'        => $end,
+        'booked_for' => $userEmail,
+    ],
 ]);
 ?>
 <!DOCTYPE html>

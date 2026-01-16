@@ -4,7 +4,8 @@ require_once SRC_PATH . '/auth.php';
 require_once SRC_PATH . '/layout.php';
 
 $active  = basename($_SERVER['PHP_SELF']);
-$isStaff = !empty($currentUser['is_admin']);
+$isAdmin = !empty($currentUser['is_admin']);
+$isStaff = !empty($currentUser['is_staff']) || $isAdmin;
 
 if (!$isStaff) {
     http_response_code(403);
@@ -92,7 +93,7 @@ if (!$tabFile || !is_file($tabFile)) {
             </div>
         </div>
 
-        <?= layout_render_nav($active, $isStaff) ?>
+            <?= layout_render_nav($active, $isStaff, $isAdmin) ?>
 
         <div class="top-bar mb-3">
             <div class="top-bar-user">

@@ -133,7 +133,7 @@ if (!function_exists('layout_render_nav')) {
     /**
      * Render the main app navigation. Highlights the active page and hides staff-only items for non-staff users.
      */
-    function layout_render_nav(string $active, bool $isStaff): string
+    function layout_render_nav(string $active, bool $isStaff, bool $isAdmin = false): string
     {
         $links = [
             ['href' => 'index.php',          'label' => 'Dashboard',           'staff' => false],
@@ -142,12 +142,16 @@ if (!function_exists('layout_render_nav')) {
             ['href' => 'reservations.php',   'label' => 'Reservations',        'staff' => true],
             ['href' => 'quick_checkout.php', 'label' => 'Quick Checkout',      'staff' => true],
             ['href' => 'quick_checkin.php',  'label' => 'Quick Checkin',       'staff' => true],
-            ['href' => 'settings.php',       'label' => 'Settings',            'staff' => true],
+            ['href' => 'activity_log.php',   'label' => 'Admin',               'staff' => false, 'admin_only' => true],
         ];
 
         $html = '<nav class="app-nav">';
         foreach ($links as $link) {
-            if ($link['staff'] && !$isStaff) {
+            if (!empty($link['admin_only'])) {
+                if (!$isAdmin) {
+                    continue;
+                }
+            } elseif ($link['staff'] && !$isStaff) {
                 continue;
             }
 

@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../src/bootstrap.php';
 require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/auth.php';
+require_once SRC_PATH . '/activity_log.php';
 
 $reservationId = (int)($_POST['reservation_id'] ?? 0);
 $email         = trim($_POST['email'] ?? '');
@@ -45,6 +46,14 @@ $upd = $pdo->prepare("
     WHERE id = :id
 ");
 $upd->execute([':id' => $reservationId]);
+
+activity_log_event('reservation_cancelled', 'Reservation cancelled', [
+    'subject_type' => 'reservation',
+    'subject_id'   => $reservationId,
+    'metadata'     => [
+        'email' => $email,
+    ],
+]);
 
 header('Location: my_bookings.php?email=' . urlencode($email) . '&cancelled=1');
 exit;

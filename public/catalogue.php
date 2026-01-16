@@ -7,7 +7,8 @@ require_once SRC_PATH . '/layout.php';
 
 $config   = load_config();
 $authCfg  = $config['auth'] ?? [];
-$isStaff  = !empty($currentUser['is_admin']);
+$isAdmin  = !empty($currentUser['is_admin']);
+$isStaff  = !empty($currentUser['is_staff']) || $isAdmin;
 $ldapEnabled = array_key_exists('ldap_enabled', $authCfg) ? !empty($authCfg['ldap_enabled']) : true;
 $googleEnabled = !empty($authCfg['google_oauth_enabled']);
 $msEnabled     = !empty($authCfg['microsoft_oauth_enabled']);
@@ -662,7 +663,7 @@ if (!empty($allowedCategoryMap) && !empty($categories)) {
         </div>
 
         <!-- App navigation -->
-        <?= layout_render_nav($active, $isStaff) ?>
+        <?= layout_render_nav($active, $isStaff, $isAdmin) ?>
 
         <?php if ($blockCatalogueOverdue): ?>
             <div id="overdue-warning" class="alert alert-warning<?= $overdueErr ? '' : ' d-none' ?>">

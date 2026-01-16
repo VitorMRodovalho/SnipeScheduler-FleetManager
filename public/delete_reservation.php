@@ -5,8 +5,10 @@
 require_once __DIR__ . '/../src/bootstrap.php';
 require_once SRC_PATH . '/auth.php';
 require_once SRC_PATH . '/db.php';
+require_once SRC_PATH . '/activity_log.php';
 
 $isAdmin       = !empty($currentUser['is_admin']);
+$isStaff       = !empty($currentUser['is_staff']) || $isAdmin;
 $currentUserId = (string)($currentUser['id'] ?? '');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -42,7 +44,7 @@ $ownsReservation = $currentUserId !== ''
     && isset($reservation['user_id'])
     && (string)$reservation['user_id'] === $currentUserId;
 
-if (!$isAdmin && !$ownsReservation) {
+if (!$isStaff && !$ownsReservation) {
     http_response_code(403);
     echo 'Access denied.';
     exit;
@@ -61,6 +63,11 @@ try {
     $stmt->execute([':id' => $resId]);
 
     $pdo->commit();
+
+    activity_log_event('reservation_deleted', 'Reservation deleted', [
+        'subject_type' => 'reservation',
+        'subject_id'   => $resId,
+    ]);
 } catch (Exception $e) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
@@ -71,7 +78,7 @@ try {
 }
 
 // Redirect back with a “deleted” flag
-$redirect = $isAdmin
+$redirect = $isStaff
     ? 'staff_reservations.php?deleted=' . $resId
     : 'my_bookings.php?deleted=' . $resId;
 

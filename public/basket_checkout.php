@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../src/bootstrap.php';
 require_once SRC_PATH . '/auth.php';
 require_once SRC_PATH . '/db.php';
+require_once SRC_PATH . '/activity_log.php';
 require_once SRC_PATH . '/snipeit_client.php';
 require_once SRC_PATH . '/layout.php';
 
@@ -154,6 +155,17 @@ try {
 
     $pdo->commit();
     $_SESSION['basket'] = []; // clear basket
+
+    activity_log_event('reservation_submitted', 'Reservation submitted', [
+        'subject_type' => 'reservation',
+        'subject_id'   => $reservationId,
+        'metadata'     => [
+            'items'     => $totalRequestedItems,
+            'start'     => $start,
+            'end'       => $end,
+            'booked_for'=> $userEmail,
+        ],
+    ]);
 
 } catch (Exception $e) {
     $pdo->rollBack();

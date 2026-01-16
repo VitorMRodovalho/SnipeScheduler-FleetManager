@@ -3,7 +3,45 @@ require_once __DIR__ . '/../src/bootstrap.php';
 require_once SRC_PATH . '/auth.php';
 require_once SRC_PATH . '/snipeit_client.php';
 require_once SRC_PATH . '/db.php';
+require_once SRC_PATH . '/activity_log.php';
 require_once SRC_PATH . '/layout.php';
+
+function load_asset_labels(PDO $pdo, array $assetIds): array
+{
+    $assetIds = array_values(array_filter(array_map('intval', $assetIds), static function (int $id): bool {
+        return $id > 0;
+    }));
+    if (empty($assetIds)) {
+        return [];
+    }
+
+    $placeholders = implode(',', array_fill(0, count($assetIds), '?'));
+    $stmt = $pdo->prepare("
+        SELECT asset_id, asset_tag, asset_name, model_name
+          FROM checked_out_asset_cache
+         WHERE asset_id IN ({$placeholders})
+    ");
+    $stmt->execute($assetIds);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $labels = [];
+    foreach ($rows as $row) {
+        $assetId = (int)($row['asset_id'] ?? 0);
+        if ($assetId <= 0) {
+            continue;
+        }
+        $tag = trim((string)($row['asset_tag'] ?? ''));
+        $name = trim((string)($row['asset_name'] ?? ''));
+        $model = trim((string)($row['model_name'] ?? ''));
+        if ($tag === '') {
+            $tag = 'Asset #' . $assetId;
+        }
+        $suffix = $model !== '' ? $model : $name;
+        $labels[$assetId] = $suffix !== '' ? ($tag . ' (' . $suffix . ')') : $tag;
+    }
+
+    return $labels;
+}
 
 function format_display_date($val): string
 {
@@ -70,7 +108,8 @@ function expected_to_timestamp($value): ?int
 }
 
 $active    = basename($_SERVER['PHP_SELF']);
-$isStaff   = !empty($currentUser['is_admin']);
+$isAdmin   = !empty($currentUser['is_admin']);
+$isStaff   = !empty($currentUser['is_staff']) || $isAdmin;
 $embedded  = defined('RESERVATIONS_EMBED');
 $pageBase  = $embedded ? 'reservations.php' : 'checked_out_assets.php';
 $baseQuery = $embedded ? ['tab' => 'checked_out'] : [];
@@ -129,6 +168,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 update_asset_expected_checkin($renewId, $normalized);
                 $messages[] = "Extended expected check-in to " . format_display_datetime($normalized) . " for asset #{$renewId}.";
+                $labels = load_asset_labels($pdo, [$renewId]);
+                $label = $labels[$renewId] ?? ('Asset #' . $renewId);
+                activity_log_event('asset_renewed', 'Checked out asset renewed', [
+                    'subject_type' => 'asset',
+                    'subject_id'   => $renewId,
+                    'metadata'     => [
+                        'assets' => [$label],
+                        'expected_checkin' => $normalized,
+                    ],
+                ]);
             } catch (Throwable $e) {
                 $error = 'Could not renew asset: ' . $e->getMessage();
             }
@@ -156,6 +205,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
                 $messages[] = "Extended expected check-in to " . format_display_datetime($bulkExpected) . " for {$count} asset(s).";
+                $assetIds = array_values(array_filter(array_map('intval', $bulkIds), static function (int $id): bool {
+                    return $id > 0;
+                }));
+                $labels = load_asset_labels($pdo, $assetIds);
+                $assetLabels = array_values(array_filter(array_map(static function (int $id) use ($labels): string {
+                    return $labels[$id] ?? ('Asset #' . $id);
+                }, $assetIds)));
+                activity_log_event('assets_renewed', 'Checked out assets renewed', [
+                    'metadata' => [
+                        'assets' => $assetLabels,
+                        'expected_checkin' => $bulkExpected,
+                        'count' => $count,
+                    ],
+                ]);
             } catch (Throwable $e) {
                 $error = 'Could not renew selected assets: ' . $e->getMessage();
             }
@@ -322,7 +385,7 @@ function layout_checked_out_url(string $base, array $params): string
         </div>
 
         <?php if (!$embedded): ?>
-            <?= layout_render_nav($active, $isStaff) ?>
+            <?= layout_render_nav($active, $isStaff, $isAdmin) ?>
         <?php endif; ?>
 
         <?php

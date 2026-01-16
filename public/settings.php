@@ -7,9 +7,10 @@ require_once SRC_PATH . '/snipeit_client.php';
 require_once SRC_PATH . '/email.php';
 
 $active  = basename($_SERVER['PHP_SELF']);
-$isStaff = !empty($currentUser['is_admin']);
+$isAdmin = !empty($currentUser['is_admin']);
+$isStaff = !empty($currentUser['is_staff']) || $isAdmin;
 
-if (!$isStaff) {
+if (!$isAdmin) {
     http_response_code(403);
     echo 'Access denied.';
     exit;
@@ -313,13 +314,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $auth['ldap_enabled']        = isset($_POST['auth_ldap_enabled']);
     $auth['google_oauth_enabled'] = isset($_POST['auth_google_enabled']);
     $auth['microsoft_oauth_enabled'] = isset($_POST['auth_microsoft_enabled']);
-    $staffCnsRaw   = $post('staff_group_cn', '');
-    $staffGroupCns = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $staffCnsRaw))));
-    $auth['staff_group_cn'] = $staffGroupCns;
-    $googleStaffRaw = $post('google_staff_emails', '');
-    $auth['google_staff_emails'] = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $googleStaffRaw))));
-    $msStaffRaw = $post('microsoft_staff_emails', '');
-    $auth['microsoft_staff_emails'] = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $msStaffRaw))));
+    $adminCnsRaw     = $post('admin_group_cn', '');
+    $checkoutCnsRaw  = $post('checkout_group_cn', '');
+    $adminGroupCns    = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $adminCnsRaw))));
+    $checkoutGroupCns = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $checkoutCnsRaw))));
+    $auth['admin_group_cn'] = $adminGroupCns;
+    $auth['checkout_group_cn'] = $checkoutGroupCns;
+
+    $googleAdminRaw = $post('google_admin_emails', '');
+    $googleCheckoutRaw = $post('google_checkout_emails', '');
+    $googleAdminList = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $googleAdminRaw))));
+    $googleCheckoutList = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $googleCheckoutRaw))));
+    $auth['google_admin_emails'] = $googleAdminList;
+    $auth['google_checkout_emails'] = $googleCheckoutList;
+
+    $msAdminRaw = $post('microsoft_admin_emails', '');
+    $msCheckoutRaw = $post('microsoft_checkout_emails', '');
+    $msAdminList = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $msAdminRaw))));
+    $msCheckoutList = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $msCheckoutRaw))));
+    $auth['microsoft_admin_emails'] = $msAdminList;
+    $auth['microsoft_checkout_emails'] = $msCheckoutList;
 
     $google = $config['google_oauth'] ?? [];
     $google['client_id']     = $post('google_client_id', $google['client_id'] ?? '');
@@ -497,23 +511,41 @@ function layout_textarea_value(string $value): string
     return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
 }
 
-$staffGroupList = $cfg(['auth', 'staff_group_cn'], []);
-if (!is_array($staffGroupList)) {
-    $staffGroupList = [];
+$adminGroupList = $cfg(['auth', 'admin_group_cn'], []);
+if (!is_array($adminGroupList)) {
+    $adminGroupList = [];
 }
-$staffGroupText = implode("\n", $staffGroupList);
+$adminGroupText = implode("\n", $adminGroupList);
 
-$googleStaffList = $cfg(['auth', 'google_staff_emails'], []);
-if (!is_array($googleStaffList)) {
-    $googleStaffList = [];
+$checkoutGroupList = $cfg(['auth', 'checkout_group_cn'], []);
+if (!is_array($checkoutGroupList)) {
+    $checkoutGroupList = [];
 }
-$googleStaffText = implode("\n", $googleStaffList);
+$checkoutGroupText = implode("\n", $checkoutGroupList);
 
-$msStaffList = $cfg(['auth', 'microsoft_staff_emails'], []);
-if (!is_array($msStaffList)) {
-    $msStaffList = [];
+$googleAdminList = $cfg(['auth', 'google_admin_emails'], []);
+if (!is_array($googleAdminList)) {
+    $googleAdminList = [];
 }
-$msStaffText = implode("\n", $msStaffList);
+$googleAdminText = implode("\n", $googleAdminList);
+
+$googleCheckoutList = $cfg(['auth', 'google_checkout_emails'], []);
+if (!is_array($googleCheckoutList)) {
+    $googleCheckoutList = [];
+}
+$googleCheckoutText = implode("\n", $googleCheckoutList);
+
+$msAdminList = $cfg(['auth', 'microsoft_admin_emails'], []);
+if (!is_array($msAdminList)) {
+    $msAdminList = [];
+}
+$msAdminText = implode("\n", $msAdminList);
+
+$msCheckoutList = $cfg(['auth', 'microsoft_checkout_emails'], []);
+if (!is_array($msCheckoutList)) {
+    $msCheckoutList = [];
+}
+$msCheckoutText = implode("\n", $msCheckoutList);
 
 $googleAllowedDomains = $cfg(['google_oauth', 'allowed_domains'], []);
 if (!is_array($googleAllowedDomains)) {
@@ -550,7 +582,7 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Settings – SnipeScheduler</title>
+    <title>Admin – SnipeScheduler</title>
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="assets/style.css">
@@ -561,13 +593,13 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
     <div class="page-shell">
         <?= layout_logo_tag($config) ?>
         <div class="page-header">
-            <h1>Settings</h1>
+            <h1>Admin</h1>
             <div class="page-subtitle">
-                Staff-only configuration for database, LDAP, Snipe-IT, and app options. Leave secret fields blank to keep existing values.
+                Administrator-only configuration for database, LDAP, Snipe-IT, and app options. Leave secret fields blank to keep existing values.
             </div>
         </div>
 
-        <?= layout_render_nav($active, $isStaff) ?>
+        <?= layout_render_nav($active, $isStaff, $isAdmin) ?>
 
         <div class="top-bar mb-3">
             <div class="top-bar-user">
@@ -592,9 +624,18 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
             </div>
         <?php endif; ?>
 
-        <form method="post" action="settings.php" class="row g-3 settings-form" id="settings-form">
+        <ul class="nav nav-tabs reservations-subtabs mb-3">
+            <li class="nav-item">
+                <a class="nav-link" href="activity_log.php">Activity Log</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" href="settings.php">Settings</a>
+            </li>
+        </ul>
+
+        <form method="post" action="<?= h($active) ?>" class="row g-3 settings-form" id="settings-form">
             <div class="col-12">
-                <div class="card">
+                <div class="card" id="admin-settings">
                     <div class="card-body">
                         <h5 class="card-title mb-1">Database</h5>
                         <p class="text-muted small mb-3">Connection for the booking app tables (not the Snipe-IT DB). Password is optional to update; leave blank to keep the current value.</p>
@@ -664,7 +705,7 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
             </div>
 
             <div class="col-12">
-                <div class="card">
+                <div class="card" id="admin-access">
                     <div class="card-body">
                         <h5 class="card-title mb-1">Authentication</h5>
                         <p class="text-muted small mb-3">Configure sign-in methods below. Toggle each method on/off and add its settings.</p>
@@ -702,9 +743,14 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
                                 </div>
                             </div>
                             <div class="col-12">
-                                <label class="form-label">LDAP/AD Admin Group(s)</label>
-                                <textarea name="staff_group_cn" rows="3" class="form-control" placeholder="ICT Staff&#10;Another Group"><?= layout_textarea_value($staffGroupText) ?></textarea>
-                                <div class="form-text">Comma or newline separated group names that should be treated as staff.</div>
+                                <label class="form-label">LDAP/AD Administrators Group(s)</label>
+                                <textarea name="admin_group_cn" rows="3" class="form-control" placeholder="ICT Admins&#10;Another Admin Group"><?= layout_textarea_value($adminGroupText) ?></textarea>
+                                <div class="form-text">Comma or newline separated group names with full admin access.</div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">LDAP/AD Checkout Staff Group(s)</label>
+                                <textarea name="checkout_group_cn" rows="3" class="form-control" placeholder="Checkout Staff&#10;Equipment Desk"><?= layout_textarea_value($checkoutGroupText) ?></textarea>
+                                <div class="form-text">Comma or newline separated group names for staff who can use all features except Admin.</div>
                             </div>
                         </div>
                         <div class="d-flex justify-content-between align-items-center mt-3">
@@ -745,9 +791,14 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
                                 <div class="form-text">Comma or newline separated. Leave empty to allow any Google account.</div>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Google staff/admin emails (optional)</label>
-                                <textarea name="google_staff_emails" rows="3" class="form-control" placeholder="admin1@example.com&#10;admin2@example.com"><?= layout_textarea_value($googleStaffText) ?></textarea>
-                                <div class="form-text">Comma or newline separated addresses that should be treated as staff when signing in with Google.</div>
+                                <label class="form-label">Google administrator emails (optional)</label>
+                                <textarea name="google_admin_emails" rows="3" class="form-control" placeholder="admin1@example.com&#10;admin2@example.com"><?= layout_textarea_value($googleAdminText) ?></textarea>
+                                <div class="form-text">Comma or newline separated addresses with full admin access.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Google checkout staff emails (optional)</label>
+                                <textarea name="google_checkout_emails" rows="3" class="form-control" placeholder="staff1@example.com&#10;staff2@example.com"><?= layout_textarea_value($googleCheckoutText) ?></textarea>
+                                <div class="form-text">Comma or newline separated addresses that can access staff features (excluding Admin).</div>
                             </div>
                         </div>
                         <div class="d-flex justify-content-between align-items-center mt-3">
@@ -793,9 +844,14 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
                                 <div class="form-text">Comma or newline separated. Leave empty to allow any Microsoft account.</div>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Staff/admin emails (optional)</label>
-                                <textarea name="microsoft_staff_emails" rows="3" class="form-control" placeholder="admin1@example.com&#10;admin2@example.com"><?= layout_textarea_value($msStaffText) ?></textarea>
-                                <div class="form-text">Comma or newline separated addresses that should be treated as staff when signing in with Microsoft.</div>
+                                <label class="form-label">Microsoft administrator emails (optional)</label>
+                                <textarea name="microsoft_admin_emails" rows="3" class="form-control" placeholder="admin1@example.com&#10;admin2@example.com"><?= layout_textarea_value($msAdminText) ?></textarea>
+                                <div class="form-text">Comma or newline separated addresses with full admin access.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Microsoft checkout staff emails (optional)</label>
+                                <textarea name="microsoft_checkout_emails" rows="3" class="form-control" placeholder="staff1@example.com&#10;staff2@example.com"><?= layout_textarea_value($msCheckoutText) ?></textarea>
+                                <div class="form-text">Comma or newline separated addresses that can access staff features (excluding Admin).</div>
                             </div>
                         </div>
                         <div class="d-flex justify-content-between align-items-center mt-3">

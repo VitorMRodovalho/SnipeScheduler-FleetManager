@@ -354,20 +354,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$installLocked) {
         $googleClientSecret = $_POST['google_client_secret'] ?? '';
         $googleRedirectUri = $post('google_redirect_uri', '');
         $googleDomainsRaw  = $post('google_allowed_domains', '');
-        $googleStaffRaw    = $post('google_staff_emails', '');
+        $googleAdminRaw    = $post('google_admin_emails', '');
+        $googleCheckoutRaw = $post('google_checkout_emails', '');
         $googleAllowedDomains = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $googleDomainsRaw))));
-        $googleStaffEmails    = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $googleStaffRaw))));
+        $googleAdminEmails    = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $googleAdminRaw))));
+        $googleCheckoutEmails = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $googleCheckoutRaw))));
         $msClientId    = $post('microsoft_client_id', '');
         $msClientSecret = $_POST['microsoft_client_secret'] ?? '';
         $msTenant       = $post('microsoft_tenant', '');
         $msRedirectUri  = $post('microsoft_redirect_uri', '');
         $msDomainsRaw   = $post('microsoft_allowed_domains', '');
-        $msStaffRaw     = $post('microsoft_staff_emails', '');
+        $msAdminRaw     = $post('microsoft_admin_emails', '');
+        $msCheckoutRaw  = $post('microsoft_checkout_emails', '');
         $msAllowedDomains = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $msDomainsRaw))));
-        $msStaffEmails    = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $msStaffRaw))));
+        $msAdminEmails    = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $msAdminRaw))));
+        $msCheckoutEmails = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $msCheckoutRaw))));
 
         // Defaults for omitted settings
-        $staffCns    = [];
+        $adminCns   = [];
+        $checkoutCns = [];
         $timezone    = 'Europe/Jersey';
         $debug       = true;
         $logoUrl     = '';
@@ -402,9 +407,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$installLocked) {
         $newConfig['auth']['ldap_enabled']           = $authLdapEnabled;
         $newConfig['auth']['google_oauth_enabled']   = $authGoogleEnabled;
         $newConfig['auth']['microsoft_oauth_enabled'] = isset($_POST['auth_microsoft_enabled']);
-        $newConfig['auth']['staff_group_cn']         = $staffCns;
-        $newConfig['auth']['google_staff_emails']    = $googleStaffEmails;
-        $newConfig['auth']['microsoft_staff_emails'] = $msStaffEmails;
+        $newConfig['auth']['admin_group_cn']         = $adminCns;
+        $newConfig['auth']['checkout_group_cn']      = $checkoutCns;
+        $newConfig['auth']['google_admin_emails']    = $googleAdminEmails;
+        $newConfig['auth']['google_checkout_emails'] = $googleCheckoutEmails;
+        $newConfig['auth']['microsoft_admin_emails'] = $msAdminEmails;
+        $newConfig['auth']['microsoft_checkout_emails'] = $msCheckoutEmails;
         $newConfig['google_oauth'] = [
             'client_id'       => $googleClientId,
             'client_secret'   => $googleClientSecret,
@@ -548,21 +556,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$installLocked) {
 $pref = static function (array $path, $fallback = '') use ($prefillConfig) {
     return installer_value($prefillConfig, $path, $fallback);
 };
-$staffPref = $pref(['auth', 'staff_group_cn'], []);
-if (!is_array($staffPref)) {
-    $staffPref = [];
+$adminPref = $pref(['auth', 'admin_group_cn'], []);
+if (!is_array($adminPref)) {
+    $adminPref = [];
 }
-$staffText = implode("\n", $staffPref);
-$googleStaffPref = $pref(['auth', 'google_staff_emails'], []);
-if (!is_array($googleStaffPref)) {
-    $googleStaffPref = [];
+$adminText = implode("\n", $adminPref);
+$checkoutPref = $pref(['auth', 'checkout_group_cn'], []);
+if (!is_array($checkoutPref)) {
+    $checkoutPref = [];
 }
-$googleStaffText = implode("\n", $googleStaffPref);
-$msStaffPref = $pref(['auth', 'microsoft_staff_emails'], []);
-if (!is_array($msStaffPref)) {
-    $msStaffPref = [];
+$checkoutText = implode("\n", $checkoutPref);
+$googleAdminPref = $pref(['auth', 'google_admin_emails'], []);
+if (!is_array($googleAdminPref)) {
+    $googleAdminPref = [];
 }
-$msStaffText = implode("\n", $msStaffPref);
+$googleAdminText = implode("\n", $googleAdminPref);
+$googleCheckoutPref = $pref(['auth', 'google_checkout_emails'], []);
+if (!is_array($googleCheckoutPref)) {
+    $googleCheckoutPref = [];
+}
+$googleCheckoutText = implode("\n", $googleCheckoutPref);
+$msAdminPref = $pref(['auth', 'microsoft_admin_emails'], []);
+if (!is_array($msAdminPref)) {
+    $msAdminPref = [];
+}
+$msAdminText = implode("\n", $msAdminPref);
+$msCheckoutPref = $pref(['auth', 'microsoft_checkout_emails'], []);
+if (!is_array($msCheckoutPref)) {
+    $msCheckoutPref = [];
+}
+$msCheckoutText = implode("\n", $msCheckoutPref);
 $googleDomainsPref = $pref(['google_oauth', 'allowed_domains'], []);
 if (!is_array($googleDomainsPref)) {
     $googleDomainsPref = [];
@@ -797,9 +820,14 @@ $msRedirectDefault = $host
                                 </div>
                             </div>
                             <div class="col-12">
-                                <label class="form-label">LDAP/AD Admin Group(s)</label>
-                                <textarea name="staff_group_cn" rows="3" class="form-control" placeholder="ICT Staff&#10;Another Group"><?= installer_h($staffText) ?></textarea>
-                                <div class="form-text">Comma or newline separated group names that should be treated as staff.</div>
+                                <label class="form-label">LDAP/AD Administrators Group(s)</label>
+                                <textarea name="admin_group_cn" rows="3" class="form-control" placeholder="ICT Admins&#10;Another Admin Group"><?= installer_h($adminText) ?></textarea>
+                                <div class="form-text">Comma or newline separated group names with full admin access.</div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">LDAP/AD Checkout Staff Group(s)</label>
+                                <textarea name="checkout_group_cn" rows="3" class="form-control" placeholder="Checkout Staff&#10;Equipment Desk"><?= installer_h($checkoutText) ?></textarea>
+                                <div class="form-text">Comma or newline separated group names for staff who can use all features except Admin.</div>
                             </div>
                         </div>
                         <div class="d-flex justify-content-between align-items-center mt-3">
@@ -840,9 +868,14 @@ $msRedirectDefault = $host
                                 <div class="form-text">Comma or newline separated. Leave empty to allow any Google account.</div>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Google staff/admin emails (optional)</label>
-                                <textarea name="google_staff_emails" rows="3" class="form-control" placeholder="admin1@example.com&#10;admin2@example.com"><?= installer_h($googleStaffText) ?></textarea>
-                                <div class="form-text">Comma or newline separated addresses that should be treated as staff when signing in with Google.</div>
+                                <label class="form-label">Google administrator emails (optional)</label>
+                                <textarea name="google_admin_emails" rows="3" class="form-control" placeholder="admin1@example.com&#10;admin2@example.com"><?= installer_h($googleAdminText) ?></textarea>
+                                <div class="form-text">Comma or newline separated addresses with full admin access.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Google checkout staff emails (optional)</label>
+                                <textarea name="google_checkout_emails" rows="3" class="form-control" placeholder="staff1@example.com&#10;staff2@example.com"><?= installer_h($googleCheckoutText) ?></textarea>
+                                <div class="form-text">Comma or newline separated addresses that can access staff features (excluding Admin).</div>
                             </div>
                         </div>
                         <div class="d-flex justify-content-between align-items-center mt-3">
@@ -888,9 +921,14 @@ $msRedirectDefault = $host
                                 <div class="form-text">Comma or newline separated. Leave empty to allow any Microsoft account.</div>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Staff/admin emails (optional)</label>
-                                <textarea name="microsoft_staff_emails" rows="3" class="form-control" placeholder="admin1@example.com&#10;admin2@example.com"><?= installer_h($msStaffText) ?></textarea>
-                                <div class="form-text">Comma or newline separated addresses that should be treated as staff when signing in with Microsoft.</div>
+                                <label class="form-label">Microsoft administrator emails (optional)</label>
+                                <textarea name="microsoft_admin_emails" rows="3" class="form-control" placeholder="admin1@example.com&#10;admin2@example.com"><?= installer_h($msAdminText) ?></textarea>
+                                <div class="form-text">Comma or newline separated addresses with full admin access.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Microsoft checkout staff emails (optional)</label>
+                                <textarea name="microsoft_checkout_emails" rows="3" class="form-control" placeholder="staff1@example.com&#10;staff2@example.com"><?= installer_h($msCheckoutText) ?></textarea>
+                                <div class="form-text">Comma or newline separated addresses that can access staff features (excluding Admin).</div>
                             </div>
                         </div>
                         <div class="d-flex justify-content-between align-items-center mt-3">

@@ -2,10 +2,12 @@
 require_once __DIR__ . '/../src/bootstrap.php';
 require_once SRC_PATH . '/auth.php';
 require_once SRC_PATH . '/db.php';
+require_once SRC_PATH . '/activity_log.php';
 require_once SRC_PATH . '/snipeit_client.php';
 require_once SRC_PATH . '/layout.php';
 
-$isStaff = !empty($currentUser['is_admin']);
+$isAdmin = !empty($currentUser['is_admin']);
+$isStaff = !empty($currentUser['is_staff']) || $isAdmin;
 $currentUserId = (string)($currentUser['id'] ?? '');
 
 $from      = $_GET['from'] ?? ($_POST['from'] ?? '');
@@ -359,6 +361,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $pdo->commit();
 
+            activity_log_event('reservation_updated', 'Reservation updated', [
+                'subject_type' => 'reservation',
+                'subject_id'   => $id,
+                'metadata'     => [
+                    'start' => $start,
+                    'end'   => $end,
+                ],
+            ]);
+
             $redirect = $actionUrl;
             $glue = strpos($redirect, '?') === false ? '?' : '&';
             header('Location: ' . $redirect . $glue . 'updated=' . $id);
@@ -418,7 +429,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
 
-        <?= layout_render_nav($active, $isStaff) ?>
+        <?= layout_render_nav($active, $isStaff, $isAdmin) ?>
 
         <div class="top-bar mb-3">
             <div class="top-bar-user">

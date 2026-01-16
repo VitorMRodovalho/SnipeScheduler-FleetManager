@@ -6,7 +6,8 @@ require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/booking_helpers.php';
 require_once SRC_PATH . '/layout.php';
 
-$isStaff = !empty($currentUser['is_admin']);
+$isAdmin = !empty($currentUser['is_admin']);
+$isStaff = !empty($currentUser['is_staff']) || $isAdmin;
 
 /**
  * Convert YYYY-MM-DD → DD/MM/YYYY.
@@ -32,7 +33,7 @@ function uk_datetime(?string $isoDatetime): string
     return $dt ? $dt->format('d/m/Y') : $isoDatetime;
 }
 
-if (empty($currentUser['is_admin'])) {
+if (!$isStaff) {
     http_response_code(403);
     echo 'Access denied.';
     exit;
@@ -66,7 +67,6 @@ if (!$reservation) {
 $items = get_reservation_items_with_names($pdo, $id);
 
 $active  = 'staff_reservations.php'; // Treat detail view as part of booking history.
-$isStaff = !empty($currentUser['is_admin']);
 ?>
 <!DOCTYPE html>
 <html>
@@ -92,7 +92,7 @@ $isStaff = !empty($currentUser['is_admin']);
         </div>
 
         <!-- App navigation -->
-        <?= layout_render_nav($active, $isStaff) ?>
+        <?= layout_render_nav($active, $isStaff, $isAdmin) ?>
 
         <div class="top-bar mb-3">
             <div class="top-bar-user">

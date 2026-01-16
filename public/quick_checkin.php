@@ -6,13 +6,15 @@ require_once __DIR__ . '/../src/bootstrap.php';
 require_once SRC_PATH . '/auth.php';
 require_once SRC_PATH . '/snipeit_client.php';
 require_once SRC_PATH . '/db.php';
+require_once SRC_PATH . '/activity_log.php';
 require_once SRC_PATH . '/email.php';
 require_once SRC_PATH . '/layout.php';
 
 $active  = basename($_SERVER['PHP_SELF']);
-$isStaff = !empty($currentUser['is_admin']);
+$isAdmin = !empty($currentUser['is_admin']);
+$isStaff = !empty($currentUser['is_staff']) || $isAdmin;
 
-if (empty($currentUser['is_admin'])) {
+if (!$isStaff) {
     http_response_code(403);
     echo 'Access denied.';
     exit;
@@ -365,6 +367,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     layout_send_notification($staffEmail, $staffDisplayName, 'Assets checked in', $bodyLines);
                 }
+
+                $checkedInFrom = array_keys($summaryBuckets);
+                activity_log_event('quick_checkin', 'Quick checkin completed', [
+                    'metadata' => [
+                        'assets' => $assetTags,
+                        'checked_in_from' => $checkedInFrom,
+                        'note'   => $note,
+                    ],
+                ]);
             }
             if ($hadCheckinAssets) {
                 $checkinAssets = [];
@@ -395,7 +406,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
 
-        <?= layout_render_nav($active, $isStaff) ?>
+        <?= layout_render_nav($active, $isStaff, $isAdmin) ?>
 
         <?php if (!empty($messages)): ?>
             <div class="alert alert-success">

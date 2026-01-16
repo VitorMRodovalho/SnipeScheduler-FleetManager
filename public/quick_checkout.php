@@ -6,6 +6,7 @@ require_once __DIR__ . '/../src/bootstrap.php';
 require_once SRC_PATH . '/auth.php';
 require_once SRC_PATH . '/snipeit_client.php';
 require_once SRC_PATH . '/db.php';
+require_once SRC_PATH . '/activity_log.php';
 require_once SRC_PATH . '/email.php';
 require_once SRC_PATH . '/layout.php';
 
@@ -64,9 +65,10 @@ function qc_current_reservations_for_model(PDO $pdo, int $modelId): array
 }
 
 $active  = basename($_SERVER['PHP_SELF']);
-$isStaff = !empty($currentUser['is_admin']);
+$isAdmin = !empty($currentUser['is_admin']);
+$isStaff = !empty($currentUser['is_staff']) || $isAdmin;
 
-if (empty($currentUser['is_admin'])) {
+if (!$isStaff) {
     http_response_code(403);
     echo 'Access denied.';
     exit;
@@ -316,6 +318,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $errors[] = 'Quick checkout completed, but could not record reservation history: ' . $e->getMessage();
                     }
 
+                    activity_log_event('quick_checkout', 'Quick checkout completed', [
+                        'subject_type' => 'reservation',
+                        'subject_id'   => $reservationId ?? null,
+                        'metadata'     => [
+                            'checked_out_to' => $userName,
+                            'assets'         => $assetTags,
+                            'start'          => $reservationStart,
+                            'end'            => $reservationEnd,
+                            'note'           => $note,
+                        ],
+                    ]);
+
                     // Email notifications
                     $userEmail  = $user['email'] ?? '';
                     $staffEmail = $currentUser['email'] ?? '';
@@ -373,7 +387,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
 
-        <?= layout_render_nav($active, $isStaff) ?>
+        <?= layout_render_nav($active, $isStaff, $isAdmin) ?>
 
         <?php if (!empty($messages)): ?>
             <div class="alert alert-success">
