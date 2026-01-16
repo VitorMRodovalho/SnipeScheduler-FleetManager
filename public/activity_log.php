@@ -376,7 +376,7 @@ try {
                                                 $subjectDetailHtml = 'Reservation Number: #' . $reservationId;
                                             } else {
                                                 $subjectDetailHtml = 'Reservation Number: <a href="reservation_detail.php?id='
-                                                    . $reservationId . '">#' . $reservationId . '</a>';
+                                                    . $reservationId . '" target="_blank" rel="noopener noreferrer">#' . $reservationId . '</a>';
                                             }
                                         }
                                     }
