@@ -33,35 +33,14 @@ $normalizeEmailList = static function ($raw): array {
     return array_values(array_filter(array_map('strtolower', array_map('trim', $raw))));
 };
 
-$legacyStaffCns = $normalizeList($authCfg['staff_group_cn'] ?? '');
 $adminCns = $normalizeList($authCfg['admin_group_cn'] ?? []);
 $checkoutCns = $normalizeList($authCfg['checkout_group_cn'] ?? []);
-if (empty($adminCns) && !empty($legacyStaffCns)) {
-    $adminCns = $legacyStaffCns;
-}
-if (empty($checkoutCns) && !empty($legacyStaffCns)) {
-    $checkoutCns = $legacyStaffCns;
-}
 
-$googleStaffEmails = $normalizeEmailList($authCfg['google_staff_emails'] ?? []);
 $googleAdminEmails = $normalizeEmailList($authCfg['google_admin_emails'] ?? []);
 $googleCheckoutEmails = $normalizeEmailList($authCfg['google_checkout_emails'] ?? []);
-if (empty($googleAdminEmails) && !empty($googleStaffEmails)) {
-    $googleAdminEmails = $googleStaffEmails;
-}
-if (empty($googleCheckoutEmails) && !empty($googleStaffEmails)) {
-    $googleCheckoutEmails = $googleStaffEmails;
-}
 
-$msStaffEmails = $normalizeEmailList($authCfg['microsoft_staff_emails'] ?? []);
 $msAdminEmails = $normalizeEmailList($authCfg['microsoft_admin_emails'] ?? []);
 $msCheckoutEmails = $normalizeEmailList($authCfg['microsoft_checkout_emails'] ?? []);
-if (empty($msAdminEmails) && !empty($msStaffEmails)) {
-    $msAdminEmails = $msStaffEmails;
-}
-if (empty($msCheckoutEmails) && !empty($msStaffEmails)) {
-    $msCheckoutEmails = $msStaffEmails;
-}
 
 $provider = strtolower($_GET['provider'] ?? $_POST['provider'] ?? 'ldap');
 

@@ -70,11 +70,6 @@ return [
             // 'Checkout Staff',
             // 'Equipment Desk',
         ],
-        // Legacy fallback: if the above are empty, these groups are treated as both roles.
-        'staff_group_cn' => [
-            // 'ICT Staff',
-            // 'Another Staff Group',
-        ],
         // Optional: treat these Google accounts as administrators
         'google_admin_emails' => [
             // 'admin@example.com',
@@ -83,10 +78,6 @@ return [
         'google_checkout_emails' => [
             // 'staff@example.com',
         ],
-        // Legacy fallback for Google OAuth (maps to both roles if admin/checkout lists are empty)
-        'google_staff_emails' => [
-            // 'admin@example.com',
-        ],
         // Optional: treat these Microsoft accounts as administrators
         'microsoft_admin_emails' => [
             // 'admin@example.com',
@@ -94,10 +85,6 @@ return [
         // Optional: treat these Microsoft accounts as checkout staff
         'microsoft_checkout_emails' => [
             // 'staff@example.com',
-        ],
-        // Legacy fallback for Microsoft OAuth (maps to both roles if admin/checkout lists are empty)
-        'microsoft_staff_emails' => [
-            // 'admin@example.com',
         ],
     ],
 

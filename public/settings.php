@@ -320,7 +320,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $checkoutGroupCns = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $checkoutCnsRaw))));
     $auth['admin_group_cn'] = $adminGroupCns;
     $auth['checkout_group_cn'] = $checkoutGroupCns;
-    $auth['staff_group_cn'] = array_values(array_unique(array_merge($adminGroupCns, $checkoutGroupCns)));
 
     $googleAdminRaw = $post('google_admin_emails', '');
     $googleCheckoutRaw = $post('google_checkout_emails', '');
@@ -328,7 +327,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $googleCheckoutList = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $googleCheckoutRaw))));
     $auth['google_admin_emails'] = $googleAdminList;
     $auth['google_checkout_emails'] = $googleCheckoutList;
-    $auth['google_staff_emails'] = array_values(array_unique(array_merge($googleAdminList, $googleCheckoutList)));
 
     $msAdminRaw = $post('microsoft_admin_emails', '');
     $msCheckoutRaw = $post('microsoft_checkout_emails', '');
@@ -336,7 +334,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $msCheckoutList = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $msCheckoutRaw))));
     $auth['microsoft_admin_emails'] = $msAdminList;
     $auth['microsoft_checkout_emails'] = $msCheckoutList;
-    $auth['microsoft_staff_emails'] = array_values(array_unique(array_merge($msAdminList, $msCheckoutList)));
 
     $google = $config['google_oauth'] ?? [];
     $google['client_id']     = $post('google_client_id', $google['client_id'] ?? '');
@@ -514,52 +511,39 @@ function layout_textarea_value(string $value): string
     return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
 }
 
-$staffGroupList = $cfg(['auth', 'staff_group_cn'], []);
-if (!is_array($staffGroupList)) {
-    $staffGroupList = [];
-}
-
 $adminGroupList = $cfg(['auth', 'admin_group_cn'], []);
-if (!is_array($adminGroupList) || empty($adminGroupList)) {
-    $adminGroupList = $staffGroupList;
+if (!is_array($adminGroupList)) {
+    $adminGroupList = [];
 }
 $adminGroupText = implode("\n", $adminGroupList);
 
 $checkoutGroupList = $cfg(['auth', 'checkout_group_cn'], []);
-if (!is_array($checkoutGroupList) || empty($checkoutGroupList)) {
-    $checkoutGroupList = $staffGroupList;
+if (!is_array($checkoutGroupList)) {
+    $checkoutGroupList = [];
 }
 $checkoutGroupText = implode("\n", $checkoutGroupList);
 
-$googleStaffList = $cfg(['auth', 'google_staff_emails'], []);
-if (!is_array($googleStaffList)) {
-    $googleStaffList = [];
-}
 $googleAdminList = $cfg(['auth', 'google_admin_emails'], []);
-if (!is_array($googleAdminList) || empty($googleAdminList)) {
-    $googleAdminList = $googleStaffList;
+if (!is_array($googleAdminList)) {
+    $googleAdminList = [];
 }
 $googleAdminText = implode("\n", $googleAdminList);
 
 $googleCheckoutList = $cfg(['auth', 'google_checkout_emails'], []);
-if (!is_array($googleCheckoutList) || empty($googleCheckoutList)) {
-    $googleCheckoutList = $googleStaffList;
+if (!is_array($googleCheckoutList)) {
+    $googleCheckoutList = [];
 }
 $googleCheckoutText = implode("\n", $googleCheckoutList);
 
-$msStaffList = $cfg(['auth', 'microsoft_staff_emails'], []);
-if (!is_array($msStaffList)) {
-    $msStaffList = [];
-}
 $msAdminList = $cfg(['auth', 'microsoft_admin_emails'], []);
-if (!is_array($msAdminList) || empty($msAdminList)) {
-    $msAdminList = $msStaffList;
+if (!is_array($msAdminList)) {
+    $msAdminList = [];
 }
 $msAdminText = implode("\n", $msAdminList);
 
 $msCheckoutList = $cfg(['auth', 'microsoft_checkout_emails'], []);
-if (!is_array($msCheckoutList) || empty($msCheckoutList)) {
-    $msCheckoutList = $msStaffList;
+if (!is_array($msCheckoutList)) {
+    $msCheckoutList = [];
 }
 $msCheckoutText = implode("\n", $msCheckoutList);
 
