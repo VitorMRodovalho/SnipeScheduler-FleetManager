@@ -35,6 +35,55 @@ $eventLabels = [
     'quick_checkin' => 'Quick Checkin',
 ];
 
+$metadataLabels = [
+    'checked_out_to' => 'Checked out to',
+    'snipe_user_id' => 'Snipe-IT User ID',
+    'assets' => 'Assets',
+    'note' => 'Note',
+    'provider' => 'Provider',
+    'start' => 'Start',
+    'end' => 'End',
+    'booked_for' => 'Booked for',
+    'asset_id' => 'Asset ID',
+    'asset_name' => 'Asset name',
+    'items' => 'Items',
+];
+
+function format_activity_metadata(?string $metadataJson, array $labelMap): array
+{
+    if (!$metadataJson) {
+        return [];
+    }
+
+    $decoded = json_decode($metadataJson, true);
+    if (!is_array($decoded)) {
+        return [];
+    }
+
+    $lines = [];
+    foreach ($decoded as $key => $value) {
+        $label = $labelMap[$key] ?? ucwords(str_replace('_', ' ', (string)$key));
+        if (is_array($value)) {
+            $value = implode(', ', array_map(static function ($item): string {
+                return is_scalar($item) ? (string)$item : json_encode($item, JSON_UNESCAPED_SLASHES);
+            }, $value));
+        } elseif (is_bool($value)) {
+            $value = $value ? 'Yes' : 'No';
+        } elseif ($value === null) {
+            $value = '';
+        } else {
+            $value = (string)$value;
+        }
+
+        if ($value === '') {
+            continue;
+        }
+        $lines[] = $label . ': ' . $value;
+    }
+
+    return $lines;
+}
+
 $qRaw    = trim($_GET['q'] ?? '');
 $eventRaw = trim($_GET['event_type'] ?? '');
 $fromRaw = trim($_GET['from'] ?? '');
@@ -308,6 +357,7 @@ try {
                                     }
 
                                     $metadataText = trim((string)($row['metadata'] ?? ''));
+                                    $metadataLines = format_activity_metadata($metadataText, $metadataLabels);
                                     ?>
                                     <tr>
                                         <td class="text-nowrap"><?= h($displayTime) ?></td>
@@ -316,7 +366,13 @@ try {
                                         <td><?= h($subjectLabel !== '' ? $subjectLabel : '-') ?></td>
                                         <td>
                                             <div class="fw-semibold"><?= h((string)($row['message'] ?? '')) ?></div>
-                                            <?php if ($metadataText !== ''): ?>
+                                            <?php if (!empty($metadataLines)): ?>
+                                                <div class="text-muted small">
+                                                    <?php foreach ($metadataLines as $line): ?>
+                                                        <div><?= h($line) ?></div>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            <?php elseif ($metadataText !== ''): ?>
                                                 <div class="text-muted small"><code><?= h($metadataText) ?></code></div>
                                             <?php endif; ?>
                                         </td>
