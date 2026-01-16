@@ -104,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'run')
 <body class="p-4">
 <div class="container">
     <div class="page-shell">
-        <?= layout_logo_tag() ?>
+        <?= str_replace('href="index.php"', 'href="../public/index.php"', layout_logo_tag()) ?>
         <div class="page-header">
             <h1>Database Upgrade</h1>
             <div class="page-subtitle">
