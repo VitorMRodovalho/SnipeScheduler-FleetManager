@@ -29,6 +29,7 @@ $installed = is_file($configPath) || is_file($legacyConfigPath);
             </div>
             <p>Do you want to run the database upgrade?</p>
             <a class="btn btn-primary" href="upgrade/">Go to upgrade</a>
+            <a class="btn btn-outline-danger ms-2" href="install.php">Run installer again</a>
         <?php else: ?>
             <div class="alert alert-warning">
                 No config.php found. Continue with installation.
