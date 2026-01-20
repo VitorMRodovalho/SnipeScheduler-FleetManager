@@ -59,3 +59,44 @@ function upgrade_apply_v0_8_0_beta(string $configFile, array $config, array &$me
 
     return $config;
 }
+
+if (PHP_SAPI === 'cli' && realpath($_SERVER['SCRIPT_FILENAME'] ?? '') === __FILE__) {
+    $appRoot = realpath(__DIR__ . '/..') ?: (__DIR__ . '/..');
+    $defaultConfig = $appRoot . '/config/config.php';
+    $legacyConfig = $appRoot . '/config.php';
+
+    $configFile = $argv[1] ?? '';
+    if ($configFile === '') {
+        $configFile = is_file($defaultConfig) ? $defaultConfig : (is_file($legacyConfig) ? $legacyConfig : '');
+    }
+
+    $messages = [];
+    $errors = [];
+    $config = [];
+
+    if ($configFile === '' || !is_file($configFile)) {
+        fwrite(STDERR, "config.php not found. Provide a path as the first argument.\n");
+        exit(1);
+    }
+
+    try {
+        $config = require $configFile;
+        if (!is_array($config)) {
+            $config = [];
+        }
+    } catch (Throwable $e) {
+        fwrite(STDERR, "Failed to load config.php: " . $e->getMessage() . "\n");
+        exit(1);
+    }
+
+    upgrade_apply_v0_8_0_beta($configFile, $config, $messages, $errors);
+
+    foreach ($messages as $msg) {
+        fwrite(STDOUT, $msg . "\n");
+    }
+    foreach ($errors as $err) {
+        fwrite(STDERR, $err . "\n");
+    }
+
+    exit(!empty($errors) ? 1 : 0);
+}

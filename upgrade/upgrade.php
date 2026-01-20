@@ -8,11 +8,14 @@ require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/layout.php';
 require_once SRC_PATH . '/config_writer.php';
 
-$isAdmin = !empty($currentUser['is_admin']);
-if (!$isAdmin) {
-    http_response_code(403);
-    echo 'Access denied.';
-    exit;
+$isCli = PHP_SAPI === 'cli';
+if (!$isCli) {
+    $isAdmin = !empty($currentUser['is_admin']);
+    if (!$isAdmin) {
+        http_response_code(403);
+        echo 'Access denied.';
+        exit;
+    }
 }
 
 $versionFile = APP_ROOT . '/version.txt';
@@ -60,7 +63,28 @@ foreach ($upgradeFiles as $file) {
 $messages = [];
 $errors = [];
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'run') {
+$runCli = $isCli && in_array(($_SERVER['argv'][1] ?? 'run'), ['run', 'yes'], true);
+$confirmRunCli = false;
+if ($isCli) {
+    if (!empty($pending)) {
+        fwrite(STDOUT, "Pending upgrades:\n");
+        foreach ($pending as $item) {
+            fwrite(STDOUT, ' - ' . $item['version'] . PHP_EOL);
+        }
+    } else {
+        fwrite(STDOUT, "No pending upgrade scripts found.\n");
+    }
+
+    if ($runCli && !empty($pending)) {
+        fwrite(STDOUT, "Run these upgrades now? [y/N]: ");
+        $answer = trim((string)fgets(STDIN));
+        $confirmRunCli = in_array(strtolower($answer), ['y', 'yes'], true);
+        if (!$confirmRunCli) {
+            fwrite(STDOUT, "Aborted.\n");
+        }
+    }
+}
+if (($isCli && $confirmRunCli) || (!$isCli && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'run')) {
     if (empty($pending)) {
         $messages[] = 'No pending upgrade scripts found.';
     } else {
@@ -117,6 +141,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'run')
             ];
         }
     }
+}
+if ($isCli) {
+    foreach ($messages as $msg) {
+        fwrite(STDOUT, $msg . PHP_EOL);
+    }
+    foreach ($errors as $err) {
+        fwrite(STDERR, $err . PHP_EOL);
+    }
+    if ($runCli && !empty($pending) && !$confirmRunCli) {
+        exit(1);
+    }
+    exit(!empty($errors) ? 1 : 0);
 }
 ?>
 <!DOCTYPE html>
