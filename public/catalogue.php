@@ -570,12 +570,53 @@ $perPage = defined('CATALOGUE_ITEMS_PER_PAGE')
     ? (int)CATALOGUE_ITEMS_PER_PAGE
     : 12;
 
-// ---------------------------------------------------------------------
-// Load categories from Snipe-IT
-// ---------------------------------------------------------------------
+// Deferred loading of categories/models happens after initial render flush.
 $categories   = [];
 $categoryErr  = '';
 $allowedCategoryMap = [];
+$allowedCategoryIds = [];
+$models      = [];
+$modelErr    = '';
+$totalModels = 0;
+$totalPages  = 1;
+$nowIso      = date('Y-m-d H:i:s');
+$windowStartIso = $windowActive ? date('Y-m-d H:i:s', $windowStartTs) : '';
+$windowEndIso   = $windowActive ? date('Y-m-d H:i:s', $windowEndTs) : '';
+$checkedOutCounts = [];
+?>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Catalogue – Book Equipment</title>
+
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/style.css">
+    <?= layout_theme_styles() ?>
+</head>
+<body class="p-4"
+      data-catalogue-overdue="<?= $blockCatalogueOverdue ? '1' : '0' ?>"
+      data-date-format="<?= h(app_get_date_format()) ?>"
+      data-time-format="<?= h(app_get_time_format()) ?>">
+<div id="catalogue-loading" class="loading-overlay" aria-live="polite" aria-busy="true">
+    <div class="loading-card">
+        <div class="loading-spinner" aria-hidden="true"></div>
+        <div class="loading-text">Fetching assets...</div>
+    </div>
+</div>
+<?php
+@ini_set('output_buffering', 'off');
+@ini_set('zlib.output_compression', '0');
+if (function_exists('ob_flush')) {
+    @ob_flush();
+}
+@flush();
+
+// ---------------------------------------------------------------------
+// Load categories from Snipe-IT (deferred so loader shows immediately)
+// ---------------------------------------------------------------------
 try {
     $categories = get_model_categories();
 } catch (Throwable $e) {
@@ -585,7 +626,6 @@ try {
 
 // Optional admin-controlled allowlist for categories shown in the filter
 $allowedCfg = $config['catalogue']['allowed_categories'] ?? [];
-$allowedCategoryIds = [];
 if (is_array($allowedCfg)) {
     foreach ($allowedCfg as $cid) {
         if (ctype_digit((string)$cid) || is_int($cid)) {
@@ -597,22 +637,8 @@ if (is_array($allowedCfg)) {
 }
 
 // ---------------------------------------------------------------------
-// Load models from Snipe-IT
+// Load models from Snipe-IT (deferred so loader shows immediately)
 // ---------------------------------------------------------------------
-$models      = [];
-$modelErr    = '';
-$totalModels = 0;
-$totalPages  = 1;
-$nowIso      = date('Y-m-d H:i:s');
-$windowStartIso = $windowActive ? date('Y-m-d H:i:s', $windowStartTs) : '';
-$windowEndIso   = $windowActive ? date('Y-m-d H:i:s', $windowEndTs) : '';
-$checkedOutCounts = [];
-
-// If allowlist is set, ignore any pre-selected category that's not allowed
-if (!empty($allowedCategoryMap) && $category !== null && !isset($allowedCategoryMap[$category])) {
-    $category = null;
-}
-
 try {
     $data = get_bookable_models($page, $search ?? '', $category, $sort, $perPage, $allowedCategoryIds);
 
@@ -663,28 +689,6 @@ if (!empty($allowedCategoryMap) && !empty($categories)) {
     }));
 }
 ?>
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Catalogue – Book Equipment</title>
-
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="assets/style.css">
-    <?= layout_theme_styles() ?>
-</head>
-<body class="p-4"
-      data-catalogue-overdue="<?= $blockCatalogueOverdue ? '1' : '0' ?>"
-      data-date-format="<?= h(app_get_date_format()) ?>"
-      data-time-format="<?= h(app_get_time_format()) ?>">
-<div id="catalogue-loading" class="loading-overlay" aria-live="polite" aria-busy="true">
-    <div class="loading-card">
-        <div class="loading-spinner" aria-hidden="true"></div>
-        <div class="loading-text">Fetching assets...</div>
-    </div>
-</div>
 <div class="container">
     <div class="page-shell">
         <?= layout_logo_tag() ?>
