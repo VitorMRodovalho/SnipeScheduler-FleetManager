@@ -868,10 +868,10 @@ if (!empty($allowedCategoryMap) && !empty($categories)) {
                            value="<?= h($windowEndRaw) ?>">
                 </div>
                 <div class="col-md-4 d-grid d-md-flex gap-2">
-                    <button class="btn btn-outline-secondary mt-3 mt-md-0" type="button" id="catalogue-today-btn">
+                    <button class="btn btn-primary btn-lg w-100 flex-md-fill mt-3 mt-md-0" type="button" id="catalogue-today-btn">
                         Today
                     </button>
-                    <button class="btn btn-outline-primary mt-3 mt-md-0" type="submit">
+                    <button class="btn btn-primary btn-lg w-100 flex-md-fill mt-3 mt-md-0" type="submit">
                         Update availability
                     </button>
                 </div>
