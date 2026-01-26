@@ -5,28 +5,14 @@ require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/booking_helpers.php';
 require_once SRC_PATH . '/layout.php';
 
-/**
- * Convert YYYY-MM-DD → DD/MM/YYYY.
- */
-function uk_date(?string $isoDate): string
+function display_date(?string $isoDate): string
 {
-    if (!$isoDate) {
-        return '';
-    }
-    $dt = DateTime::createFromFormat('Y-m-d', $isoDate);
-    return $dt ? $dt->format('d/m/Y') : $isoDate;
+    return app_format_date($isoDate);
 }
 
-/**
- * Convert YYYY-MM-DD HH:MM:SS → DD/MM/YYYY.
- */
-function uk_datetime(?string $isoDatetime): string
+function display_datetime(?string $isoDatetime): string
 {
-    if (!$isoDatetime) {
-        return '';
-    }
-    $dt = DateTime::createFromFormat('Y-m-d H:i:s', $isoDatetime);
-    return $dt ? $dt->format('d/m/Y') : $isoDatetime;
+    return app_format_datetime($isoDatetime);
 }
 
 $active        = basename($_SERVER['PHP_SELF']);
@@ -182,8 +168,8 @@ if (!empty($_GET['deleted'])) {
                                     <td><?= h($row['asset_tag'] ?? '') ?></td>
                                     <td><?= h($row['asset_name'] ?? '') ?></td>
                                     <td><?= h($row['model_name'] ?? '') ?></td>
-                                    <td><?= h(uk_datetime($row['last_checkout'] ?? '')) ?></td>
-                                    <td><?= h(uk_date($row['expected_checkin'] ?? '')) ?></td>
+                                    <td><?= h(display_datetime($row['last_checkout'] ?? '')) ?></td>
+                                    <td><?= h(display_date($row['expected_checkin'] ?? '')) ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
@@ -213,10 +199,10 @@ if (!empty($_GET['deleted'])) {
                                 <?= h($res['user_name'] ?? $userName) ?><br>
 
                                 <strong>Start:</strong>
-                                <?= uk_datetime($res['start_datetime'] ?? '') ?><br>
+                                <?= display_datetime($res['start_datetime'] ?? '') ?><br>
 
                                 <strong>End:</strong>
-                                <?= uk_datetime($res['end_datetime'] ?? '') ?><br>
+                                <?= display_datetime($res['end_datetime'] ?? '') ?><br>
 
                                 <strong>Status:</strong>
                                 <?= h($res['status'] ?? '') ?><br>

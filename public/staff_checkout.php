@@ -86,30 +86,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 }
 
 // ---------------------------------------------------------------------
-// Helper: UK date/time display from Y-m-d H:i:s
+// Helper: app-configured date/time display
 // ---------------------------------------------------------------------
-function uk_datetime_display(?string $iso): string
+function display_datetime(?string $iso): string
 {
-    if (!$iso) {
-        return '';
-    }
-    $dt = DateTime::createFromFormat('Y-m-d H:i:s', $iso);
-    if (!$dt) {
-        return $iso;
-    }
-    return $dt->format('d/m/Y H:i');
-}
-
-function uk_datetime_display_12h(?string $iso): string
-{
-    if (!$iso) {
-        return '';
-    }
-    $dt = DateTime::createFromFormat('Y-m-d H:i:s', $iso);
-    if (!$dt) {
-        return $iso;
-    }
-    return $dt->format('d/m/Y h:i A');
+    return app_format_datetime($iso);
 }
 
 /**
@@ -662,7 +643,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $staffEmail = $currentUser['email'] ?? '';
                         $staffName  = trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''));
                         $dueDate    = $selectedReservation['end_datetime'] ?? '';
-                        $dueDisplay = $dueDate ? uk_datetime_display_12h($dueDate) : 'N/A';
+                        $dueDisplay = $dueDate ? display_datetime($dueDate) : 'N/A';
 
                         $assetLines = $assetsText !== '' ? $assetsText : implode(', ', array_filter($assetTags));
                         $bodyLines = [
@@ -867,8 +848,8 @@ $active  = basename($_SERVER['PHP_SELF']);
                         $resId   = (int)$res['id'];
                         $items   = get_reservation_items_with_names($pdo, $resId);
                         $summary = build_items_summary_text($items);
-                        $start   = uk_datetime_display($res['start_datetime'] ?? '');
-                        $end     = uk_datetime_display($res['end_datetime'] ?? '');
+                        $start   = display_datetime($res['start_datetime'] ?? '');
+                        $end     = display_datetime($res['end_datetime'] ?? '');
                                 ?>
                                 <option value="<?= $resId ?>" <?= $resId === $selectedReservationId ? 'selected' : '' ?>>
                                     #<?= $resId ?> – <?= h($res['user_name'] ?? '') ?> (<?= h($start) ?> → <?= h($end) ?>): <?= h($summary) ?>
@@ -885,7 +866,7 @@ $active  = basename($_SERVER['PHP_SELF']);
                 <?php if ($selectedReservation): ?>
                     <div class="mt-3 alert alert-info mb-0">
                         <div><strong>Selected:</strong> #<?= (int)$selectedReservation['id'] ?> – <?= h($selectedReservation['user_name'] ?? '') ?></div>
-                        <div>When: <?= h(uk_datetime_display($selectedReservation['start_datetime'] ?? '')) ?> → <?= h(uk_datetime_display($selectedReservation['end_datetime'] ?? '')) ?></div>
+                        <div>When: <?= h(display_datetime($selectedReservation['start_datetime'] ?? '')) ?> → <?= h(display_datetime($selectedReservation['end_datetime'] ?? '')) ?></div>
                         <?php if (!empty($selectedItems)): ?>
                             <div>Models &amp; quantities: <?= h(build_items_summary_text($selectedItems)) ?></div>
                         <?php else: ?>

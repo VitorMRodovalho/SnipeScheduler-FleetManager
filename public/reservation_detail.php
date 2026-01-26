@@ -9,28 +9,14 @@ require_once SRC_PATH . '/layout.php';
 $isAdmin = !empty($currentUser['is_admin']);
 $isStaff = !empty($currentUser['is_staff']) || $isAdmin;
 
-/**
- * Convert YYYY-MM-DD → DD/MM/YYYY.
- */
-function uk_date(?string $isoDate): string
+function display_date(?string $isoDate): string
 {
-    if (!$isoDate) {
-        return '';
-    }
-    $dt = DateTime::createFromFormat('Y-m-d', $isoDate);
-    return $dt ? $dt->format('d/m/Y') : $isoDate;
+    return app_format_date($isoDate);
 }
 
-/**
- * Convert YYYY-MM-DD HH:MM:SS → DD/MM/YYYY.
- */
-function uk_datetime(?string $isoDatetime): string
+function display_datetime(?string $isoDatetime): string
 {
-    if (!$isoDatetime) {
-        return '';
-    }
-    $dt = DateTime::createFromFormat('Y-m-d H:i:s', $isoDatetime);
-    return $dt ? $dt->format('d/m/Y') : $isoDatetime;
+    return app_format_datetime($isoDatetime);
 }
 
 if (!$isStaff) {
@@ -114,10 +100,10 @@ $active  = 'staff_reservations.php'; // Treat detail view as part of booking his
                     <?= h($reservation['user_name'] ?? '(Unknown)') ?><br>
 
                     <strong>Start:</strong>
-                    <?= uk_datetime($reservation['start_datetime'] ?? '') ?><br>
+                    <?= display_datetime($reservation['start_datetime'] ?? '') ?><br>
 
                     <strong>End:</strong>
-                    <?= uk_datetime($reservation['end_datetime'] ?? '') ?><br>
+                    <?= display_datetime($reservation['end_datetime'] ?? '') ?><br>
 
                     <strong>Status:</strong>
                     <?= h($reservation['status'] ?? '') ?><br>

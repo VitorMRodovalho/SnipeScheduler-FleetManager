@@ -20,13 +20,9 @@ $endRaw   = $_POST['end_datetime'] ?? $defaultEnd;
 $reservationConflicts = [];
 
 // Helpers
-function qc_format_uk(?string $iso): string
+function display_datetime(?string $iso): string
 {
-    if (!$iso) {
-        return '';
-    }
-    $dt = DateTime::createFromFormat('Y-m-d H:i:s', $iso);
-    return $dt ? $dt->format('d/m/Y H:i') : $iso;
+    return app_format_datetime($iso);
 }
 
 /**
@@ -369,7 +365,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $staffName  = trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''));
                         $staffDisplayName = $staffName !== '' ? $staffName : ($currentUser['email'] ?? 'Staff');
                         $assetLines = $assetsText;
-                        $dueDisplay = date('d/m/Y h:i A', $endTs);
+                        $dueDisplay = app_format_datetime($endTs);
                         $bodyLines = [
                             'Assets checked out:',
                             $assetLines,
@@ -541,8 +537,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                             <?php foreach ($reservationConflicts[$asset['id']] as $conf): ?>
                                                 Reserved by <?= h($conf['user_name'] ?? 'Unknown') ?>
                                                 (<?= h($conf['user_email'] ?? '') ?>)
-                                                from <?= h(qc_format_uk($conf['start_datetime'] ?? '')) ?>
-                                                to <?= h(qc_format_uk($conf['end_datetime'] ?? '')) ?>.
+                                                from <?= h(display_datetime($conf['start_datetime'] ?? '')) ?>
+                                                to <?= h(display_datetime($conf['end_datetime'] ?? '')) ?>.
                                                 Quantity: <?= (int)($conf['quantity'] ?? 0) ?>.
                                                 <br>
                                             <?php endforeach; ?>

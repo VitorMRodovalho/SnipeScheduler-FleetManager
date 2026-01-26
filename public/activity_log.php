@@ -82,11 +82,7 @@ function format_activity_metadata(?string $metadataJson, array $labelMap, ?DateT
             $value = (string)$value;
             if ($value !== '' && in_array($key, ['start', 'end', 'expected_checkin'], true)) {
                 try {
-                    $dt = new DateTime($value);
-                    if ($tz) {
-                        $dt->setTimezone($tz);
-                    }
-                    $value = $dt->format('d/m/Y g:i A');
+                    $value = app_format_datetime($value, null, $tz);
                 } catch (Throwable $e) {
                     // Keep raw value on parse errors.
                 }
@@ -363,11 +359,7 @@ try {
                                     $displayTime = $timestamp;
                                     if ($timestamp !== '') {
                                         try {
-                                            $dt = new DateTime($timestamp);
-                                            if ($tz) {
-                                                $dt->setTimezone($tz);
-                                            }
-                                            $displayTime = $dt->format('d/m/Y g:i A');
+                                            $displayTime = app_format_datetime($timestamp, null, $tz);
                                         } catch (Throwable $e) {
                                             $displayTime = $timestamp;
                                         }

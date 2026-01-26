@@ -123,6 +123,8 @@ return [
         'debug'    => true,
         'logo_url' => '', // optional: full URL or relative path to logo image
         'primary_color' => '#660000', // main UI colour for gradients/buttons
+        'date_format' => 'd/m/Y', // display format for dates (see settings for options)
+        'time_format' => 'H:i', // display format for times (12/24-hour options in settings)
         'missed_cutoff_minutes' => 60, // minutes after start time before marking reservation as missed
         'api_cache_ttl_seconds' => 60, // cache Snipe-IT GET responses for this many seconds
         'overdue_staff_email' => '', // overdue report recipients (comma/newline separated)

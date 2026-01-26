@@ -456,12 +456,7 @@ function format_overdue_date($val): string
     if (empty($val)) {
         return '';
     }
-    try {
-        $dt = new DateTime($val);
-        return $dt->format('d/m/Y');
-    } catch (Throwable $e) {
-        return (string)$val;
-    }
+    return app_format_date($val);
 }
 
 function normalize_lookup_key(?string $value): string

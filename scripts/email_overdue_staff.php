@@ -113,7 +113,7 @@ foreach ($assets as $a) {
     }
     $expRaw = $a['_expected_checkin_norm'] ?? ($a['expected_checkin'] ?? '');
     $expTs  = $expRaw ? strtotime($expRaw) : null;
-    $exp    = $expTs ? date('d/m/Y', $expTs) : 'unknown';
+    $exp    = $expTs ? app_format_date($expTs) : 'unknown';
     $daysOverdue = $expTs ? max(1, (int)floor((time() - $expTs) / 86400)) : 1;
 
     $lineUser = $userEmail !== '' ? "{$userEmail}" . ($userName !== '' ? " ({$userName})" : '') : 'Unknown';

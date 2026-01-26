@@ -202,9 +202,9 @@ if (!empty($basket)) {
                 <div class="alert alert-info">
                     Showing availability for:
                     <strong>
-                        <?= htmlspecialchars(date('d/m/Y H:i', strtotime($previewStart))) ?>
+                        <?= h(app_format_datetime($previewStart)) ?>
                         &ndash;
-                        <?= htmlspecialchars(date('d/m/Y H:i', strtotime($previewEnd))) ?>
+                        <?= h(app_format_datetime($previewEnd)) ?>
                     </strong>
                 </div>
             <?php else: ?>
