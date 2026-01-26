@@ -842,12 +842,11 @@ if (!empty($allowedCategoryMap) && !empty($categories)) {
             </div>
         </form>
 
-        <form class="filter-panel mb-4" method="get" action="catalogue.php" id="catalogue-window-form">
+        <form class="filter-panel filter-panel--compact mb-4" method="get" action="catalogue.php" id="catalogue-window-form">
             <div class="filter-panel__header d-flex align-items-center gap-3">
                 <span class="filter-panel__dot"></span>
                 <div class="filter-panel__title">RESERVATION WINDOW</div>
             </div>
-            <p class="text-muted small mb-3">Set dates to update availability automatically.</p>
             <input type="hidden" name="q" value="<?= h($searchRaw) ?>">
             <input type="hidden" name="category" value="<?= h($categoryRaw) ?>">
             <input type="hidden" name="sort" value="<?= h($sortRaw) ?>">
