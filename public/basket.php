@@ -335,3 +335,43 @@ if (!empty($basket)) {
 <?php layout_footer(); ?>
 </body>
 </html>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const startInput = document.querySelector('input[name="start_datetime"]');
+    const endInput = document.querySelector('input[name="end_datetime"]');
+
+    function toLocalDatetimeValue(date) {
+        const pad = function (n) { return String(n).padStart(2, '0'); };
+        return date.getFullYear()
+            + '-' + pad(date.getMonth() + 1)
+            + '-' + pad(date.getDate())
+            + 'T' + pad(date.getHours())
+            + ':' + pad(date.getMinutes());
+    }
+
+    function normalizeWindowEnd() {
+        if (!startInput || !endInput) return;
+        const startVal = startInput.value.trim();
+        const endVal = endInput.value.trim();
+        if (startVal === '' || endVal === '') return;
+        const startMs = Date.parse(startVal);
+        const endMs = Date.parse(endVal);
+        if (Number.isNaN(startMs) || Number.isNaN(endMs)) return;
+        if (endMs <= startMs) {
+            const startDate = new Date(startMs);
+            const nextDay = new Date(startDate);
+            nextDay.setDate(startDate.getDate() + 1);
+            nextDay.setHours(9, 0, 0, 0);
+            endInput.value = toLocalDatetimeValue(nextDay);
+        }
+    }
+
+    if (startInput && endInput) {
+        startInput.addEventListener('change', normalizeWindowEnd);
+        endInput.addEventListener('change', normalizeWindowEnd);
+        startInput.addEventListener('blur', normalizeWindowEnd);
+        endInput.addEventListener('blur', normalizeWindowEnd);
+    }
+});
+</script>

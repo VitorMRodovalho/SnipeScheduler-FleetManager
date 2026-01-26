@@ -1144,6 +1144,23 @@ document.addEventListener('DOMContentLoaded', function () {
         maybeSubmitWindow();
     }
 
+    function normalizeWindowEnd() {
+        if (!windowStartInput || !windowEndInput) return;
+        const startVal = windowStartInput.value.trim();
+        const endVal = windowEndInput.value.trim();
+        if (startVal === '' || endVal === '') return;
+        const startMs = Date.parse(startVal);
+        const endMs = Date.parse(endVal);
+        if (Number.isNaN(startMs) || Number.isNaN(endMs)) return;
+        if (endMs <= startMs) {
+            const startDate = new Date(startMs);
+            const nextDay = new Date(startDate);
+            nextDay.setDate(startDate.getDate() + 1);
+            nextDay.setHours(9, 0, 0, 0);
+            windowEndInput.value = toLocalDatetimeValue(nextDay);
+        }
+    }
+
     function applyOverdueBlock(items) {
         if (catalogueContent) {
             catalogueContent.classList.add('d-none');
@@ -1186,6 +1203,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     if (windowStartInput && windowEndInput) {
+        windowStartInput.addEventListener('change', normalizeWindowEnd);
+        windowEndInput.addEventListener('change', normalizeWindowEnd);
         windowStartInput.addEventListener('change', maybeSubmitWindow);
         windowEndInput.addEventListener('change', maybeSubmitWindow);
         windowStartInput.addEventListener('blur', maybeSubmitWindow);
