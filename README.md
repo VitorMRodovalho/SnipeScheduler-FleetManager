@@ -3,16 +3,23 @@
 
 # SnipeScheduler - An Asset Reservation/Checkout System for Snipe-IT
 
+- Please note - this app is still in an beta stage of development as a product. It has been built for production on a single site and has been working without issue, however please consider this an in-development product for now. Please do use it, report issues and request features, but consider it unsuitable for a high risk production environment until any bugs have been ironed out.  
+- There is also a standalone version of this app that has its own inventory database and doesn't require Snipe-IT. It is called KitGrab, and is available [here](https://github.com/JSY-Ben/KitGrab)
+
+
+## Donations
+
+While i will always provide my software for free, donations are extremely helpful for allowing me to continue making these apps, so any donation would be appreciated:
+
 [![Donate with PayPal to help me continue developing these apps!](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/donate/?business=5TRANVZF49AN6&no_recurring=0&item_name=Thank+you+for+any+donations%21+It+will+help+me+put+money+into+the+tools+I+use+to+develop+my+apps+and+services.&currency_code=GBP)
 
 
-- Please note - this app is still in an beta stage of development as a product. It has been built for production on a single site and has been working without issue, however please consider this an in-development product for now. Please do use it, report issues and request features, but consider it unsuitable for a high risk production environment until any bugs have been ironed out.  
-- There is also a standalone version of this app that has its own inventory database and doesn't require Snipe-IT. It is called KitGrab, and is available [here](https://github.com/JSY-Ben/KitGrab)
 
 ![Catalogue](https://github.com/user-attachments/assets/ead32453-1db3-4026-8a93-4f6d118ec1f1)
 
 ![Reservations](https://github.com/user-attachments/assets/8d4880c5-6203-4d5f-84e0-5c43d9672afa)
 
+# Introduction
 
 SnipeScheduler is a PHP/MySQL web app that layers equipment booking and checkout workflows on top of Snipe-IT. It has been very deliberately designed to use the Snipe-IT API for all functions and not the Snipe-IT database directly. This allows it to sit on a separate server to your Snipe-IT Installation, and doesn't require direct access to the Snipe-IT server from the user endpoint. As long as this app can access your Snipe-IT API from the server side, this app should function. Images from Snipe-IT are delivered via an image proxy.  
 
