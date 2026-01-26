@@ -24,6 +24,38 @@ $blockCatalogueOverdue = array_key_exists('block_catalogue_overdue', $appCfg)
     : true;
 $overdueCacheTtl = 0;
 
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && !isset($_GET['full'])) {
+    $query = $_GET;
+    $query['full'] = 1;
+    $fullUrl = 'catalogue.php' . (empty($query) ? '' : '?' . http_build_query($query));
+    ?>
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Catalogue – Book Equipment</title>
+        <link rel="stylesheet"
+              href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+        <link rel="stylesheet" href="assets/style.css">
+        <?= layout_theme_styles() ?>
+    </head>
+    <body class="p-4">
+        <div class="loading-overlay">
+            <div class="loading-card">
+                <div class="loading-spinner" aria-hidden="true"></div>
+                <div class="loading-text">Fetching assets...</div>
+            </div>
+        </div>
+        <script>
+            window.location.replace("<?= h($fullUrl) ?>");
+        </script>
+    </body>
+    </html>
+    <?php
+    exit;
+}
+
 if (($_GET['ajax'] ?? '') === 'overdue_check') {
     header('Content-Type: application/json');
     if (!$blockCatalogueOverdue) {
