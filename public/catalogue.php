@@ -867,7 +867,10 @@ if (!empty($allowedCategoryMap) && !empty($categories)) {
                            class="form-control form-control-lg"
                            value="<?= h($windowEndRaw) ?>">
                 </div>
-                <div class="col-md-4 d-grid">
+                <div class="col-md-4 d-grid d-md-flex gap-2">
+                    <button class="btn btn-outline-secondary mt-3 mt-md-0" type="button" id="catalogue-today-btn">
+                        Today
+                    </button>
                     <button class="btn btn-outline-primary mt-3 mt-md-0" type="submit">
                         Update availability
                     </button>
@@ -1104,6 +1107,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const windowStartInput = document.getElementById('catalogue_start_datetime');
     const windowEndInput = document.getElementById('catalogue_end_datetime');
     const windowForm = document.getElementById('catalogue-window-form');
+    const todayBtn = document.getElementById('catalogue-today-btn');
     let bookingTimer   = null;
     let bookingQuery   = '';
     let basketToastTimer = null;
@@ -1118,6 +1122,26 @@ document.addEventListener('DOMContentLoaded', function () {
         const endMs = Date.parse(endVal);
         if (Number.isNaN(startMs) || Number.isNaN(endMs) || endMs <= startMs) return;
         windowForm.submit();
+    }
+
+    function toLocalDatetimeValue(date) {
+        const pad = function (n) { return String(n).padStart(2, '0'); };
+        return date.getFullYear()
+            + '-' + pad(date.getMonth() + 1)
+            + '-' + pad(date.getDate())
+            + 'T' + pad(date.getHours())
+            + ':' + pad(date.getMinutes());
+    }
+
+    function setTodayWindow() {
+        if (!windowStartInput || !windowEndInput) return;
+        const now = new Date();
+        const tomorrow = new Date(now);
+        tomorrow.setDate(now.getDate() + 1);
+        tomorrow.setHours(9, 0, 0, 0);
+        windowStartInput.value = toLocalDatetimeValue(now);
+        windowEndInput.value = toLocalDatetimeValue(tomorrow);
+        maybeSubmitWindow();
     }
 
     function applyOverdueBlock(items) {
@@ -1166,6 +1190,9 @@ document.addEventListener('DOMContentLoaded', function () {
         windowEndInput.addEventListener('change', maybeSubmitWindow);
         windowStartInput.addEventListener('blur', maybeSubmitWindow);
         windowEndInput.addEventListener('blur', maybeSubmitWindow);
+    }
+    if (todayBtn) {
+        todayBtn.addEventListener('click', setTodayWindow);
     }
 
     const overdueEnabled = document.body.dataset.catalogueOverdue === '1';
