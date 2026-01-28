@@ -83,12 +83,12 @@ if (($_GET['ajax'] ?? '') === 'overdue_check') {
     }
 
     try {
-        $lookupKeys = array_values(array_filter(array_unique(array_map('normalize_lookup_key', [
+        $lookupKeys = build_lookup_keys(
             $activeUserEmail,
             $activeUserUsername,
             $activeUserDisplay,
-            $activeUserName,
-        ])), 'strlen'));
+            $activeUserName
+        );
 
         $snipeUserId = 0;
         $lookupQueries = array_values(array_filter(array_unique([
@@ -493,7 +493,53 @@ function format_overdue_date($val): string
 
 function normalize_lookup_key(?string $value): string
 {
-    return strtolower(trim($value ?? ''));
+    $value = trim((string)($value ?? ''));
+    if ($value === '') {
+        return '';
+    }
+
+    $lower = strtolower($value);
+    if (strpos($lower, '@') !== false) {
+        // Preserve emails/usernames with domains.
+        return $lower;
+    }
+
+    // Normalize names for more reliable matching.
+    $lower = preg_replace('/[(),]+/', ' ', $lower);
+    $lower = preg_replace('/\s+/', ' ', $lower);
+    return trim($lower);
+}
+
+function build_lookup_keys(string $email, string $username, string $display, string $name): array
+{
+    $raw = [$email, $username, $display, $name];
+    $keys = array_map('normalize_lookup_key', $raw);
+
+    $nameCandidates = array_filter([$name, $display], 'strlen');
+    foreach ($nameCandidates as $candidate) {
+        $candidate = trim($candidate);
+        if ($candidate === '') {
+            continue;
+        }
+        if (strpos($candidate, ',') !== false) {
+            $parts = array_map('trim', explode(',', $candidate, 2));
+            if (count($parts) === 2 && $parts[0] !== '' && $parts[1] !== '') {
+                $keys[] = normalize_lookup_key($parts[1] . ' ' . $parts[0]);
+            }
+        } else {
+            $parts = preg_split('/\s+/', $candidate);
+            if (count($parts) >= 2) {
+                $first = array_shift($parts);
+                $last = array_pop($parts);
+                if ($first !== '' && $last !== '') {
+                    $keys[] = normalize_lookup_key($last . ' ' . $first);
+                }
+            }
+        }
+    }
+
+    $keys = array_values(array_filter(array_unique($keys), 'strlen'));
+    return $keys;
 }
 
 function row_assigned_to_matches_user(array $row, array $keys, int $userId): bool
@@ -544,10 +590,17 @@ $skipOverdueCheck = !$blockCatalogueOverdue;
 $activeUserEmail = trim($activeUser['email'] ?? '');
 $activeUserUsername = trim($activeUser['username'] ?? '');
 $activeUserDisplay = trim($activeUser['display_name'] ?? '');
+$activeUserName = trim(trim($activeUser['first_name'] ?? '') . ' ' . trim($activeUser['last_name'] ?? ''));
 $cacheKey = strtolower(trim($activeUserEmail !== '' ? $activeUserEmail : ($activeUserUsername !== '' ? $activeUserUsername : $activeUserDisplay)));
 if ($cacheKey === '') {
     $cacheKey = 'user_' . (int)($activeUser['id'] ?? 0);
 }
+$lookupKeys = build_lookup_keys(
+    $activeUserEmail,
+    $activeUserUsername,
+    $activeUserDisplay,
+    $activeUserName
+);
 $cacheBucket = $_SESSION['overdue_check_cache'] ?? [];
 $cached = is_array($cacheBucket) && isset($cacheBucket[$cacheKey]) ? $cacheBucket[$cacheKey] : null;
 if (!$skipOverdueCheck && is_array($cached) && isset($cached['ts'], $cached['data']) && $overdueCacheTtl > 0 && (time() - (int)$cached['ts']) <= $overdueCacheTtl) {
