@@ -219,8 +219,7 @@ if (!empty($basket)) {
                 </div>
             <?php else: ?>
                 <div class="alert alert-secondary">
-                    Choose a start and end date below and click
-                    <strong>Check availability</strong> to see how many units are free for your dates.
+                    Choose a start and end date below to automatically refresh availability.
                 </div>
             <?php endif; ?>
 
@@ -285,24 +284,21 @@ if (!empty($basket)) {
                     <div class="availability-pill">Select reservation window</div>
                     <div class="text-muted small">Start defaults to now, end to tomorrow at 09:00</div>
                 </div>
-                <form method="get" action="basket.php">
-                    <div class="row g-3 align-items-end">
-                        <div class="col-md-4">
+                <form method="get" action="basket.php" id="basket-window-form">
+                    <div class="row g-3">
+                        <div class="col-md-6">
                             <label class="form-label fw-semibold">Start date &amp; time</label>
                             <input type="datetime-local" name="start_datetime"
+                                   id="basket_start_datetime"
                                    class="form-control form-control-lg"
                                    value="<?= htmlspecialchars($previewStartRaw) ?>">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label class="form-label fw-semibold">End date &amp; time</label>
                             <input type="datetime-local" name="end_datetime"
+                                   id="basket_end_datetime"
                                    class="form-control form-control-lg"
                                    value="<?= htmlspecialchars($previewEndRaw) ?>">
-                        </div>
-                        <div class="col-md-4 d-grid">
-                            <button class="btn btn-outline-primary mt-3 mt-md-0" type="submit">
-                                Check availability
-                            </button>
                         </div>
                     </div>
                 </form>
@@ -327,7 +323,7 @@ if (!empty($basket)) {
                 </button>
                 <?php if (!$previewStart || !$previewEnd): ?>
                     <span class="ms-2 text-danger small">
-                        Please check availability first.
+                        Please choose a valid reservation window.
                     </span>
                 <?php endif; ?>
             </form>
@@ -340,8 +336,13 @@ if (!empty($basket)) {
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const startInput = document.querySelector('input[name="start_datetime"]');
-    const endInput = document.querySelector('input[name="end_datetime"]');
+    const windowForm = document.getElementById('basket-window-form');
+    const startInput = document.getElementById('basket_start_datetime');
+    const endInput = document.getElementById('basket_end_datetime');
+    let windowSubmitInFlight = false;
+    let lastSubmittedWindow = (startInput && endInput)
+        ? (startInput.value.trim() + '|' + endInput.value.trim())
+        : '';
 
     function toLocalDatetimeValue(date) {
         const pad = function (n) { return String(n).padStart(2, '0'); };
@@ -369,11 +370,47 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    function maybeSubmitWindow() {
+        if (windowSubmitInFlight || !windowForm || !startInput || !endInput) return;
+        const startVal = startInput.value.trim();
+        const endVal = endInput.value.trim();
+        if (startVal === '' || endVal === '') return;
+        const startMs = Date.parse(startVal);
+        const endMs = Date.parse(endVal);
+        if (Number.isNaN(startMs) || Number.isNaN(endMs) || endMs <= startMs) return;
+        const windowKey = startVal + '|' + endVal;
+        if (windowKey === lastSubmittedWindow) return;
+        lastSubmittedWindow = windowKey;
+        windowSubmitInFlight = true;
+        windowForm.submit();
+    }
+
+    if (windowForm) {
+        windowForm.addEventListener('submit', function () {
+            if (startInput && endInput) {
+                lastSubmittedWindow = startInput.value.trim() + '|' + endInput.value.trim();
+            }
+            windowSubmitInFlight = true;
+        });
+    }
+
     if (startInput && endInput) {
-        startInput.addEventListener('change', normalizeWindowEnd);
-        endInput.addEventListener('change', normalizeWindowEnd);
-        startInput.addEventListener('blur', normalizeWindowEnd);
-        endInput.addEventListener('blur', normalizeWindowEnd);
+        startInput.addEventListener('change', function () {
+            normalizeWindowEnd();
+            maybeSubmitWindow();
+        });
+        endInput.addEventListener('change', function () {
+            normalizeWindowEnd();
+            maybeSubmitWindow();
+        });
+        startInput.addEventListener('blur', function () {
+            normalizeWindowEnd();
+            maybeSubmitWindow();
+        });
+        endInput.addEventListener('blur', function () {
+            normalizeWindowEnd();
+            maybeSubmitWindow();
+        });
     }
 });
 </script>
