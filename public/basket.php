@@ -51,7 +51,18 @@ if ($previewStartRaw && $previewEndRaw) {
     } else {
         $previewStart = date('Y-m-d H:i:s', $startTs);
         $previewEnd   = date('Y-m-d H:i:s', $endTs);
+        $_SESSION['reservation_window_start'] = $previewStartRaw;
+        $_SESSION['reservation_window_end']   = $previewEndRaw;
     }
+}
+
+$catalogueBackUrl = 'catalogue.php';
+if ($previewStartRaw !== '' && $previewEndRaw !== '') {
+    $catalogueBackUrl .= '?' . http_build_query([
+        'start_datetime' => $previewStartRaw,
+        'end_datetime'   => $previewEndRaw,
+        'prefetch'       => 1,
+    ]);
 }
 
 $models   = [];
@@ -180,7 +191,7 @@ if (!empty($basket)) {
                 (<?= h($currentUser['email'] ?? '') ?>)
             </div>
             <div class="top-bar-actions">
-                <a href="catalogue.php" class="btn btn-outline-primary">
+                <a href="<?= h($catalogueBackUrl) ?>" class="btn btn-outline-primary">
                     Back to catalogue
                 </a>
                 <a href="logout.php" class="btn btn-link btn-sm">Log out</a>
