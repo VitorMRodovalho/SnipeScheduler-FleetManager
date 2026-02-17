@@ -357,6 +357,55 @@ input[type="checkbox"] {
     background: linear-gradient(135deg, #ffffff, #f7fbff);
 }
 
+.model-card--details {
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.model-card--details::after {
+    content: "Open notes & bookings";
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 0.64rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #ffffff;
+    background: rgba(var(--primary-rgb), 0.9);
+    border-radius: 999px;
+    padding: 0.18rem 0.52rem;
+    opacity: 0;
+    transform: translateY(-3px);
+    transition: opacity 0.14s ease, transform 0.14s ease;
+    pointer-events: none;
+    z-index: 3;
+}
+
+.model-card--details:hover,
+.model-card--details:focus-visible {
+    transform: translateY(-4px);
+    border-color: rgba(var(--primary-rgb), 0.42);
+    box-shadow: 0 16px 32px rgba(var(--primary-rgb), 0.2);
+}
+
+.model-card--details:hover::after,
+.model-card--details:focus-visible::after {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.model-card--details:focus-visible {
+    outline: 3px solid rgba(var(--primary-rgb), 0.28);
+    outline-offset: 2px;
+}
+
+.model-card--details .add-to-basket-form {
+    position: relative;
+    z-index: 4;
+}
+
 /* Consistent, non-cropping image area for catalogue cards */
 .model-image-wrapper,
 .model-image-wrapper--placeholder {

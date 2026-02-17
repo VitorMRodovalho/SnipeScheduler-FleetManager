@@ -1457,7 +1457,12 @@ if (!empty($allowedCategoryMap) && !empty($categories)) {
                     }
                     ?>
                     <div class="col-md-4">
-                        <div class="card h-100 model-card">
+                        <div class="card h-100 model-card model-card--details"
+                             data-model-id="<?= $modelId ?>"
+                             data-model-name="<?= h($name) ?>"
+                             role="button"
+                             tabindex="0"
+                             aria-label="Open notes and bookings for <?= h($name) ?>">
                             <?php if ($proxiedImage !== ''): ?>
                                 <div class="model-image-wrapper">
                                     <img src="<?= htmlspecialchars($proxiedImage) ?>"
@@ -1493,13 +1498,6 @@ if (!empty($allowedCategoryMap) && !empty($categories)) {
                                         </div>
                                     <?php endif; ?>
                                 </p>
-
-                                <button type="button"
-                                        class="btn btn-sm btn-outline-primary w-100 mb-2 model-details-btn"
-                                        data-model-id="<?= $modelId ?>"
-                                        data-model-name="<?= h($name) ?>">
-                                    View notes &amp; bookings
-                                </button>
 
                                 <form method="post"
                                       action="basket_add.php"
@@ -1674,7 +1672,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const windowEndInput = document.getElementById('catalogue_end_datetime');
     const windowForm = document.getElementById('catalogue-window-form');
     const todayBtn = document.getElementById('catalogue-today-btn');
-    const modelDetailButtons = document.querySelectorAll('.model-details-btn');
+    const modelDetailCards = document.querySelectorAll('.model-card--details');
     const modelDetailsModal = document.getElementById('model-details-modal');
     const modelDetailsTitle = document.getElementById('model-details-title');
     const modelDetailsFeedback = document.getElementById('model-details-feedback');
@@ -2142,6 +2140,14 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     }
 
+    function shouldIgnoreModelCardOpen(target) {
+        if (!target || !target.closest) {
+            return false;
+        }
+
+        return Boolean(target.closest('.add-to-basket-form, button, input, select, textarea, a, label'));
+    }
+
     if (filterForm) {
         filterForm.addEventListener('submit', function () {
             showLoadingOverlay();
@@ -2352,10 +2358,26 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    modelDetailButtons.forEach(function (button) {
-        button.addEventListener('click', function () {
-            const modelId = parseInt(button.dataset.modelId || '0', 10);
-            const modelName = button.dataset.modelName || 'Model';
+    modelDetailCards.forEach(function (card) {
+        card.addEventListener('click', function (event) {
+            if (shouldIgnoreModelCardOpen(event.target)) {
+                return;
+            }
+            const modelId = parseInt(card.dataset.modelId || '0', 10);
+            const modelName = card.dataset.modelName || 'Model';
+            openModelDetailsModal(modelId, modelName);
+        });
+
+        card.addEventListener('keydown', function (event) {
+            if (event.key !== 'Enter' && event.key !== ' ') {
+                return;
+            }
+            if (shouldIgnoreModelCardOpen(event.target)) {
+                return;
+            }
+            event.preventDefault();
+            const modelId = parseInt(card.dataset.modelId || '0', 10);
+            const modelName = card.dataset.modelName || 'Model';
             openModelDetailsModal(modelId, modelName);
         });
     });
