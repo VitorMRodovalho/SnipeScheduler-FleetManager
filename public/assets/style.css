@@ -555,6 +555,45 @@ input[type="checkbox"] {
     color: var(--text);
 }
 
+.model-calendar-panel {
+    margin: 0;
+}
+
+.model-calendar-panel .model-calendar-toolbar {
+    margin-bottom: 0.7rem;
+}
+
+.model-calendar-panel .model-calendar-month {
+    color: #ffffff;
+    min-width: 155px;
+}
+
+.model-calendar-panel .model-calendar-weekday {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.model-calendar-panel .model-calendar-day {
+    border-color: rgba(255, 255, 255, 0.45);
+    box-shadow: 0 8px 14px rgba(0, 0, 0, 0.08);
+}
+
+.model-calendar-panel .model-calendar-day--blank {
+    background: rgba(255, 255, 255, 0.18);
+}
+
+.model-calendar-nav-btn {
+    border: 1px solid rgba(255, 255, 255, 0.78);
+    color: var(--primary-strong);
+    font-weight: 700;
+}
+
+.model-calendar-nav-btn:hover,
+.model-calendar-nav-btn:focus-visible {
+    background: #ffffff;
+    border-color: #ffffff;
+    color: var(--primary-strong);
+}
+
 .model-calendar-toolbar {
     display: flex;
     align-items: center;

@@ -1612,20 +1612,23 @@ if (!empty($allowedCategoryMap) && !empty($categories)) {
                 </div>
             </section>
 
-            <section class="model-details-section">
+            <section class="model-details-section filter-panel filter-panel--compact model-calendar-panel">
                 <div class="model-calendar-toolbar">
-                    <h3 class="model-details-section__title mb-0">Bookings calendar</h3>
-                    <div class="d-flex align-items-center gap-2">
-                        <button type="button" class="btn btn-sm btn-outline-secondary" id="model-calendar-prev">Previous</button>
+                    <div class="filter-panel__header d-flex align-items-center gap-3 mb-0">
+                        <span class="filter-panel__dot"></span>
+                        <div class="filter-panel__title">BOOKINGS CALENDAR</div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 model-calendar-controls">
+                        <button type="button" class="btn btn-sm btn-light model-calendar-nav-btn" id="model-calendar-prev">Previous</button>
                         <div id="model-calendar-month" class="model-calendar-month"></div>
-                        <button type="button" class="btn btn-sm btn-outline-secondary" id="model-calendar-next">Next</button>
+                        <button type="button" class="btn btn-sm btn-light model-calendar-nav-btn" id="model-calendar-next">Next</button>
                     </div>
                 </div>
                 <div id="model-calendar-grid" class="model-calendar-grid" aria-live="polite"></div>
             </section>
 
             <section class="model-details-section">
-                <h3 class="model-details-section__title">All bookings</h3>
+                <h3 class="model-details-section__title">Selected Month&apos;s Bookings</h3>
                 <div class="table-responsive">
                     <table class="table table-sm align-middle model-bookings-table mb-0">
                         <thead>
@@ -1642,7 +1645,7 @@ if (!empty($allowedCategoryMap) && !empty($categories)) {
                     </table>
                 </div>
                 <div id="model-bookings-empty" class="small text-muted mt-2 d-none">
-                    No bookings found for this model.
+                    No bookings found for the selected month.
                 </div>
             </section>
         </div>
@@ -1891,22 +1894,33 @@ document.addEventListener('DOMContentLoaded', function () {
     function renderModelBookingsTable() {
         if (!modelBookingsBody || !modelBookingsEmpty) return;
 
+        const cursor = new Date(modelCalendarMonthCursor.getFullYear(), modelCalendarMonthCursor.getMonth(), 1);
+        const monthLabel = cursor.toLocaleString(undefined, { month: 'long', year: 'numeric' });
+        const monthStart = new Date(cursor.getFullYear(), cursor.getMonth(), 1, 0, 0, 0, 0);
+        const monthEnd = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1, 0, 0, 0, 0);
+
         modelBookingsBody.innerHTML = '';
-        if (!modelBookings.length) {
+        const monthBookings = modelBookings
+            .filter(function (booking) {
+                return booking.start < monthEnd && booking.end > monthStart;
+            })
+            .sort(function (a, b) {
+                const timeDiff = a.start.getTime() - b.start.getTime();
+                if (timeDiff !== 0) {
+                    return timeDiff;
+                }
+                return a.id - b.id;
+            });
+
+        if (!monthBookings.length) {
+            modelBookingsEmpty.textContent = 'No bookings found for ' + monthLabel + '.';
             modelBookingsEmpty.classList.remove('d-none');
             return;
         }
+
         modelBookingsEmpty.classList.add('d-none');
 
-        const sorted = modelBookings.slice().sort(function (a, b) {
-            const timeDiff = a.start.getTime() - b.start.getTime();
-            if (timeDiff !== 0) {
-                return timeDiff;
-            }
-            return a.id - b.id;
-        });
-
-        sorted.forEach(function (booking) {
+        monthBookings.forEach(function (booking) {
             const tr = document.createElement('tr');
 
             const idCell = document.createElement('td');
@@ -2411,6 +2425,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 1
             );
             renderModelCalendar();
+            renderModelBookingsTable();
         });
     }
 
@@ -2422,6 +2437,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 1
             );
             renderModelCalendar();
+            renderModelBookingsTable();
         });
     }
 
