@@ -2027,6 +2027,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (dayBookings.length > 0) {
                 dayCell.classList.add('has-bookings');
+                dayCell.dataset.bookingCount = String(dayBookings.length);
                 dayCell.title = dayBookings.length + (dayBookings.length === 1 ? ' booking' : ' bookings');
 
                 if (compact) {
