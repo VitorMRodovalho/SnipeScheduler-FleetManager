@@ -364,7 +364,7 @@ input[type="checkbox"] {
 }
 
 .model-card--details::after {
-    content: "Open notes & bookings";
+    content: "Click for More Info";
     position: absolute;
     top: 10px;
     right: 10px;
@@ -446,6 +446,14 @@ input[type="checkbox"] {
     align-items: center;
     justify-content: center;
     padding: 1rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 200ms ease;
+}
+
+.catalogue-modal.is-open {
+    opacity: 1;
+    pointer-events: auto;
 }
 
 .catalogue-modal__backdrop {
@@ -453,6 +461,12 @@ input[type="checkbox"] {
     inset: 0;
     background: rgba(15, 23, 42, 0.58);
     backdrop-filter: blur(2px);
+    opacity: 0;
+    transition: opacity 200ms ease;
+}
+
+.catalogue-modal.is-open .catalogue-modal__backdrop {
+    opacity: 1;
 }
 
 .catalogue-modal__dialog {
@@ -466,6 +480,19 @@ input[type="checkbox"] {
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+    transform-origin: center center;
+    transition: opacity 220ms ease, transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.catalogue-modal.is-open .catalogue-modal__dialog {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.catalogue-modal__dialog.is-zooming {
+    transition: none;
 }
 
 .catalogue-modal__header {
@@ -513,6 +540,21 @@ input[type="checkbox"] {
     line-height: 1.45;
 }
 
+.model-details-info-panel {
+    margin: 0;
+}
+
+.model-details-info-panel .filter-panel__header {
+    margin-bottom: 0.55rem;
+}
+
+.model-details-info-panel .model-details-notes {
+    background: rgba(255, 255, 255, 0.96);
+    border-color: rgba(255, 255, 255, 0.7);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+    color: var(--text);
+}
+
 .model-calendar-toolbar {
     display: flex;
     align-items: center;
@@ -558,6 +600,16 @@ input[type="checkbox"] {
 
 .model-calendar-day--blank {
     background: rgba(var(--primary-rgb), 0.03);
+}
+
+.model-calendar-day--today {
+    border-color: rgba(var(--primary-rgb), 0.6);
+    box-shadow: inset 0 0 0 2px rgba(var(--primary-rgb), 0.16);
+    background: linear-gradient(145deg, rgba(var(--primary-rgb), 0.07), #ffffff);
+}
+
+.model-calendar-day--today .model-calendar-day-number {
+    color: var(--primary-strong);
 }
 
 .model-calendar-day-number {
@@ -638,6 +690,14 @@ input[type="checkbox"] {
 
 body.catalogue-modal-open {
     overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .catalogue-modal,
+    .catalogue-modal__backdrop,
+    .catalogue-modal__dialog {
+        transition: none !important;
+    }
 }
 
 /* Thumbnails for reservation checkout model selector */

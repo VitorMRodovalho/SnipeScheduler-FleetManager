@@ -1602,10 +1602,13 @@ if (!empty($allowedCategoryMap) && !empty($categories)) {
         <div class="catalogue-modal__body">
             <div id="model-details-feedback" class="d-none"></div>
 
-            <section class="model-details-section">
-                <h3 class="model-details-section__title">Full notes</h3>
+            <section class="model-details-section filter-panel filter-panel--compact model-details-info-panel">
+                <div class="filter-panel__header d-flex align-items-center gap-3">
+                    <span class="filter-panel__dot"></span>
+                    <div class="filter-panel__title">MORE INFORMATION</div>
+                </div>
                 <div id="model-details-notes" class="model-details-notes">
-                    Select a model to load notes.
+                    Select a model to load more information.
                 </div>
             </section>
 
@@ -1674,6 +1677,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const todayBtn = document.getElementById('catalogue-today-btn');
     const modelDetailCards = document.querySelectorAll('.model-card--details');
     const modelDetailsModal = document.getElementById('model-details-modal');
+    const modelDetailsDialog = modelDetailsModal ? modelDetailsModal.querySelector('.catalogue-modal__dialog') : null;
     const modelDetailsTitle = document.getElementById('model-details-title');
     const modelDetailsFeedback = document.getElementById('model-details-feedback');
     const modelDetailsNotes = document.getElementById('model-details-notes');
@@ -1690,6 +1694,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let modelBookings = [];
     let modelDetailsRequestId = 0;
     let modelModalOpen = false;
+    let modelModalOpenAnimation = null;
     let modalLastFocusedElement = null;
 
     function showLoadingOverlay() {
@@ -1950,6 +1955,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const cursor = new Date(modelCalendarMonthCursor.getFullYear(), modelCalendarMonthCursor.getMonth(), 1);
         const year = cursor.getFullYear();
         const month = cursor.getMonth();
+        const today = new Date();
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
         const leadingBlanks = firstDay.getDay();
@@ -1980,6 +1986,13 @@ document.addEventListener('DOMContentLoaded', function () {
             dayNumber.className = 'model-calendar-day-number';
             dayNumber.textContent = String(day);
             dayCell.appendChild(dayNumber);
+
+            const isToday = day === today.getDate()
+                && month === today.getMonth()
+                && year === today.getFullYear();
+            if (isToday) {
+                dayCell.classList.add('model-calendar-day--today');
+            }
 
             const dayStart = new Date(year, month, day, 0, 0, 0, 0);
             const dayEnd = new Date(year, month, day + 1, 0, 0, 0, 0);
@@ -2020,11 +2033,84 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    function cancelModelOpenAnimation() {
+        if (!modelModalOpenAnimation) {
+            return;
+        }
+        if (typeof modelModalOpenAnimation.cancel === 'function') {
+            modelModalOpenAnimation.cancel();
+        }
+        modelModalOpenAnimation = null;
+        if (modelDetailsDialog) {
+            modelDetailsDialog.classList.remove('is-zooming');
+        }
+    }
+
+    function animateModelDetailsOpenFromCard(triggerCard) {
+        if (!modelDetailsDialog) {
+            return;
+        }
+
+        cancelModelOpenAnimation();
+
+        const reduceMotion = window.matchMedia
+            && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (reduceMotion || !triggerCard || !triggerCard.getBoundingClientRect) {
+            return;
+        }
+
+        const cardRect = triggerCard.getBoundingClientRect();
+        const dialogRect = modelDetailsDialog.getBoundingClientRect();
+        if (cardRect.width <= 0 || cardRect.height <= 0 || dialogRect.width <= 0 || dialogRect.height <= 0) {
+            return;
+        }
+
+        const fromScaleX = Math.max(0.2, Math.min(1, cardRect.width / dialogRect.width));
+        const fromScaleY = Math.max(0.2, Math.min(1, cardRect.height / dialogRect.height));
+        const cardCenterX = cardRect.left + (cardRect.width / 2);
+        const cardCenterY = cardRect.top + (cardRect.height / 2);
+        const dialogCenterX = dialogRect.left + (dialogRect.width / 2);
+        const dialogCenterY = dialogRect.top + (dialogRect.height / 2);
+        const shiftX = cardCenterX - dialogCenterX;
+        const shiftY = cardCenterY - dialogCenterY;
+
+        modelDetailsDialog.classList.add('is-zooming');
+        modelModalOpenAnimation = modelDetailsDialog.animate([
+            {
+                transform: 'translate(' + shiftX + 'px, ' + shiftY + 'px) scale(' + fromScaleX + ', ' + fromScaleY + ')',
+                opacity: 0.45
+            },
+            {
+                transform: 'translate(0px, 0px) scale(1, 1)',
+                opacity: 1
+            }
+        ], {
+            duration: 300,
+            easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+            fill: 'both'
+        });
+
+        modelModalOpenAnimation.onfinish = function () {
+            if (modelDetailsDialog) {
+                modelDetailsDialog.classList.remove('is-zooming');
+            }
+            modelModalOpenAnimation = null;
+        };
+        modelModalOpenAnimation.oncancel = function () {
+            if (modelDetailsDialog) {
+                modelDetailsDialog.classList.remove('is-zooming');
+            }
+            modelModalOpenAnimation = null;
+        };
+    }
+
     function closeModelDetailsModal() {
         if (!modelDetailsModal || !modelModalOpen) return;
 
         modelModalOpen = false;
         modelDetailsRequestId += 1;
+        cancelModelOpenAnimation();
+        modelDetailsModal.classList.remove('is-open');
         modelDetailsModal.hidden = true;
         modelDetailsModal.setAttribute('aria-hidden', 'true');
         document.body.classList.remove('catalogue-modal-open');
@@ -2036,20 +2122,28 @@ document.addEventListener('DOMContentLoaded', function () {
         modalLastFocusedElement = null;
     }
 
-    function openModelDetailsModal(modelId, modelName) {
+    function openModelDetailsModal(modelId, modelName, triggerCard) {
         if (!modelDetailsModal || modelId <= 0) return;
 
         modalLastFocusedElement = document.activeElement;
         modelModalOpen = true;
+        modelDetailsModal.classList.remove('is-open');
         modelDetailsModal.hidden = false;
         modelDetailsModal.setAttribute('aria-hidden', 'false');
         document.body.classList.add('catalogue-modal-open');
+        window.requestAnimationFrame(function () {
+            if (!modelModalOpen || !modelDetailsModal) {
+                return;
+            }
+            modelDetailsModal.classList.add('is-open');
+            animateModelDetailsOpenFromCard(triggerCard);
+        });
 
         if (modelDetailsTitle) {
             modelDetailsTitle.textContent = (modelName || 'Model') + ' details';
         }
         if (modelDetailsNotes) {
-            modelDetailsNotes.textContent = 'Loading full notes...';
+            modelDetailsNotes.textContent = 'Loading more information...';
         }
 
         modelBookings = [];
@@ -2089,7 +2183,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     ? data.notes.trim()
                     : '';
                 if (modelDetailsNotes) {
-                    modelDetailsNotes.textContent = notes !== '' ? notes : 'No notes available for this model.';
+                    modelDetailsNotes.textContent = notes !== '' ? notes : 'No additional information available for this model.';
                 }
 
                 const warnings = data && Array.isArray(data.warnings)
@@ -2102,17 +2196,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 modelBookings = rawBookings
                     .map(normalizeModelBooking)
                     .filter(function (booking) { return booking !== null; });
-
-                if (modelBookings.length > 0) {
-                    const now = new Date();
-                    let anchor = modelBookings.find(function (booking) {
-                        return booking.end >= now;
-                    });
-                    if (!anchor) {
-                        anchor = modelBookings[0];
-                    }
-                    modelCalendarMonthCursor = new Date(anchor.start.getFullYear(), anchor.start.getMonth(), 1);
-                }
 
                 renderModelBookingsTable();
                 renderModelCalendar();
@@ -2131,7 +2214,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 if (modelDetailsNotes) {
-                    modelDetailsNotes.textContent = 'Unable to load notes for this model.';
+                    modelDetailsNotes.textContent = 'Unable to load more information for this model.';
                 }
                 modelBookings = [];
                 renderModelBookingsTable();
@@ -2365,7 +2448,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             const modelId = parseInt(card.dataset.modelId || '0', 10);
             const modelName = card.dataset.modelName || 'Model';
-            openModelDetailsModal(modelId, modelName);
+            openModelDetailsModal(modelId, modelName, card);
         });
 
         card.addEventListener('keydown', function (event) {
@@ -2378,7 +2461,7 @@ document.addEventListener('DOMContentLoaded', function () {
             event.preventDefault();
             const modelId = parseInt(card.dataset.modelId || '0', 10);
             const modelName = card.dataset.modelName || 'Model';
-            openModelDetailsModal(modelId, modelName);
+            openModelDetailsModal(modelId, modelName, card);
         });
     });
 });
