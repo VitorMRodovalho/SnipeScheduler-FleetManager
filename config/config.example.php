@@ -119,7 +119,7 @@ return [
     ],
 
     'app' => [
-        'timezone' => 'Europe/Jersey',
+        'timezone' => 'America/New_York',
         'debug'    => true,
         'logo_url' => '', // optional: full URL or relative path to logo image
         'primary_color' => '#660000', // main UI colour for gradients/buttons
@@ -130,6 +130,14 @@ return [
         'overdue_staff_email' => '', // overdue report recipients (comma/newline separated)
         'overdue_staff_name'  => '', // optional names for recipients (comma/newline separated)
         'block_catalogue_overdue' => true, // block catalogue for users with overdue checkouts
+    ],
+
+    // Reservation Controls
+    'reservation_controls' => [
+        'min_notice_hours' => 0,           // Minimum hours notice before reservation (0 = no minimum)
+        'max_duration_hours' => 0,         // Maximum reservation length in hours (0 = unlimited)
+        'max_concurrent_per_user' => 0,    // Max active reservations per user (0 = unlimited)
+        'staff_bypass' => true,            // Staff/Admin can bypass these rules
     ],
 
     'catalogue' => [

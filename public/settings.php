@@ -414,6 +414,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $newConfig['app']        = $app;
     $newConfig['catalogue']  = $catalogue;
     $newConfig['smtp']       = $smtp;
+    $newConfig['reservation_controls'] = $resControls;
 
     // Keep posted values in the form
     $config        = $newConfig;
@@ -1093,6 +1094,49 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
                 </div>
             </div>
 
+            <!-- Reservation Controls -->
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title mb-1">Reservation Controls</h5>
+                        <p class="text-muted small mb-3">Set rules for reservation submissions. Staff/Admin can bypass these rules if enabled.</p>
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Minimum Notice (hours)</label>
+                                <input type="number" name="res_min_notice_hours" class="form-control" min="0" 
+                                    value="<?= (int)$cfg(['reservation_controls', 'min_notice_hours'], 0) ?>">
+                                <div class="form-text">How far in advance reservations must be made. 0 = no minimum.</div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Maximum Duration (hours)</label>
+                                <input type="number" name="res_max_duration_hours" class="form-control" min="0" 
+                                    value="<?= (int)$cfg(['reservation_controls', 'max_duration_hours'], 0) ?>">
+                                <div class="form-text">Maximum length of a single reservation. 0 = unlimited.</div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Max Concurrent per User</label>
+                                <input type="number" name="res_max_concurrent" class="form-control" min="0" 
+                                    value="<?= (int)$cfg(['reservation_controls', 'max_concurrent_per_user'], 0) ?>">
+                                <div class="form-text">Max active reservations per user. 0 = unlimited.</div>
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="res_staff_bypass" id="res_staff_bypass" 
+                                        <?= $cfg(['reservation_controls', 'staff_bypass'], true) ? 'checked' : '' ?>>
+                                    <label class="form-check-label" for="res_staff_bypass">Staff can bypass rules</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <a href="blackouts.php" class="btn btn-outline-secondary btn-sm">
+                                <i class="bi bi-calendar-x me-1"></i>Manage Blackout Slots
+                            </a>
+                            <span class="text-muted small ms-2">Block specific dates/times from reservations</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <div class="col-12 d-flex justify-content-end">
                 <button type="submit" name="action" value="save" class="btn btn-primary">Save settings</button>
             </div>

@@ -63,10 +63,7 @@ input[type="checkbox"] {
     accent-color: var(--primary);
 }
 
-.form-check-input:checked {
-    background-color: var(--primary);
-    border-color: var(--primary);
-}
+
 
 .page-shell {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(244, 249, 255, 0.96));
@@ -1673,4 +1670,52 @@ form .form-select {
 .modal-backdrop {
     position: fixed !important;
     z-index: 1050 !important;
+}
+
+
+
+
+/* ====== FIX DEFINITIVO CHECKBOX E RADIO (BOOTSTRAP) ====== */
+/* 1. Reset para permitir que o Bootstrap desenhe corretamente */
+.form-check-input {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    background-color: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.3) !important;
+}
+
+/* 2. Cores gerais quando ativado */
+.form-check-input:checked {
+    background-color: var(--primary-strong) !important;
+    border-color: var(--primary-strong) !important;
+}
+
+/* 3. SVG EXCLUSIVO PARA CHECKBOX (Quadrado com "V") */
+.form-check-input[type="checkbox"]:checked {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 10 3 3 6-6'/%3e%3c/svg%3e") !important;
+    background-size: 1.1em !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+}
+
+/* 4. SVG EXCLUSIVO PARA RADIO BUTTON (Redondo com "Bolinha") */
+.form-check-input[type="radio"] {
+    border-radius: 50% !important;
+}
+.form-check-input[type="radio"]:checked {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='2' fill='%23ffffff'/%3e%3c/svg%3e") !important;
+    background-size: 1em !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+}
+
+/* 5. FEEDBACK VISUAL NO CARD DE VEÍCULO (A mágica acontece aqui) */
+.vehicle-card {
+    transition: all 0.2s ease-in-out !important;
+}
+.vehicle-card.border-primary {
+    background-color: rgba(var(--primary-rgb), 0.08) !important;
+    border-color: var(--primary-strong) !important;
+    box-shadow: 0 6px 16px rgba(var(--primary-rgb), 0.25) !important;
+    transform: translateY(-3px) !important;
 }

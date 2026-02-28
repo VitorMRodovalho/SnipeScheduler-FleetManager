@@ -9,6 +9,7 @@ require_once SRC_PATH . '/snipeit_client.php';
 require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/layout.php';
 require_once SRC_PATH . '/email_service.php';
+require_once SRC_PATH . '/reservation_validator.php';
 
 $active = basename($_SERVER['PHP_SELF']);
 $isAdmin = !empty($currentUser['is_admin']);
@@ -83,6 +84,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_reservation'])
         if (strtotime($endDatetime) <= strtotime($startDatetime)) {
             $error = 'Return time must be after pickup time.';
         } else {
+            // Validate reservation controls (min notice, max duration, max concurrent, blackouts)
+            $validation = validate_reservation(
+                $startDatetime,
+                $endDatetime,
+                $assetId,
+                $userEmail,
+                $isStaff,
+                $pdo
+            );
+            if (!$validation['valid']) {
+                $error = implode(' ', $validation['errors']);
+            }
+        }
+        
+        if (empty($error)) {
             // Check for conflicts
             $stmt = $pdo->prepare("
                 SELECT id FROM reservations 
@@ -179,7 +195,7 @@ function get_location_name($locations, $id) {
     <title>Reserve Vehicle</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/style.css?v=3">
     <link rel="stylesheet" href="/booking/css/mobile.css">
     <?= layout_theme_styles() ?>
 </head>
