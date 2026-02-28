@@ -1,6 +1,11 @@
 <?php
 require_once __DIR__ . '/../src/bootstrap.php';
 require_once SRC_PATH . '/auth.php';
+
+// CSRF Protection
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    csrf_check();
+}
 require_once SRC_PATH . '/layout.php';
 require_once SRC_PATH . '/config_writer.php';
 require_once SRC_PATH . '/snipeit_client.php';
@@ -9,8 +14,8 @@ require_once SRC_PATH . '/email.php';
 $active  = basename($_SERVER['PHP_SELF']);
 $isAdmin = !empty($currentUser['is_admin']);
 $isStaff = !empty($currentUser['is_staff']) || $isAdmin;
-
-if (!$isAdmin) {
+$isSuperAdmin = !empty($currentUser['is_super_admin']);
+if (!$isSuperAdmin) {
     http_response_code(403);
     echo 'Access denied.';
     exit;
@@ -629,6 +634,12 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
 
         <ul class="nav nav-tabs reservations-subtabs mb-3">
             <li class="nav-item">
+                <a class="nav-link" href="vehicles.php">Vehicles</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="users.php">Users</a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link" href="activity_log.php">Activity Log</a>
             </li>
             <li class="nav-item">
@@ -636,7 +647,12 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
             </li>
         </ul>
 
-        <form method="post" action="<?= h($active) ?>" class="row g-3 settings-form" id="settings-form">
+        <form method="post">
+                    <?= csrf_field() ?>
+<form method="post" action="<?= h($active) ?>" class="row g-3 settings-form" id="settings-form">
+            <?= csrf_field() ?>
+
+
             <div class="col-12">
                 <div class="card" id="admin-settings">
                     <div class="card-body">
@@ -752,7 +768,7 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
                             </div>
                             <div class="col-12">
                                 <label class="form-label">LDAP/AD Checkout Staff Group(s)</label>
-                                <textarea name="checkout_group_cn" rows="3" class="form-control" placeholder="Checkout Staff&#10;Equipment Desk"><?= layout_textarea_value($checkoutGroupText) ?></textarea>
+                                <textarea name="checkout_group_cn" rows="3" class="form-control" placeholder="Checkout Staff&#10;Vehicle Desk"><?= layout_textarea_value($checkoutGroupText) ?></textarea>
                                 <div class="form-text">Comma or newline separated group names for staff who can use all features except Admin.</div>
                             </div>
                         </div>

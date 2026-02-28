@@ -1,0 +1,280 @@
+                                   <?= htmlspecialchars($res['asset_name_cache'] ?: 'N/A') ?>
+                                           </td>
+                                            <td>
+                                                <i class="bi bi-calendar me-1"></i>
+                                                <?= date('M j, Y', strtotime($res['start_datetime'])) ?><br>
+                                                <small>
+                                                    <?= date('g:i A', strtotime($res['start_datetime'])) ?> - 
+                                                    <?= date('g:i A', strtotime($res['end_datetime'])) ?>
+                                                </small>
+                                                <?php if (date('Y-m-d', strtotime($res['start_datetime'])) !== date('Y-m-d', strtotime($res['end_datetime']))): ?>
+                                                    <br><small class="text-muted">
+                                                        to <?= date('M j, Y', strtotime($res['end_datetime'])) ?>
+                                                    </small>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <small><?= date('M j, g:i A', strtotime($res['created_at'])) ?></small>
+                                                <?php if (!empty($res['submission_notes'])): ?>
+                                                    <br><small class="text-muted" title="<?= htmlspecialchars($res['submission_notes']) ?>">
+                                                        <i class="bi bi-chat-text"></i> Has notes
+                                                    </small>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <button type="button" class="btn btn-success btn-sm" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#approveModal<?= $res['id'] ?>">
+                                                    <i class="bi bi-check-lg"></i> Approve
+                                                </button>
+                                                <button type="button" class="btn btn-danger btn-sm" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#rejectModal<?= $res['id'] ?>">
+                                                    <i class="bi bi-x-lg"></i> Reject
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        
+                                        <!-- Approve Modal -->
+                                        <div class="modal fade" id="approveModal<?= $res['id'] ?>" tabindex="-1">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <form method="post">
+                                                        <input type="hidden" name="action" value="approve">
+                                                        <input type="hidden" name="reservation_id" value="<?= $res['id'] ?>">
+                                                        <div class="modal-header bg-success text-white">
+                                                            <h5 class="modal-title">
+                                                                <i class="bi bi-check-circle me-2"></i>Approve Reservation
+                                                            </h5>
+                                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <p>Approve reservation for:</p>
+                                                            <ul>
+                                                                <li><strong>User:</strong> <?= htmlspecialchars($res['user_name']) ?></li>
+                                                                <li><strong>Vehicle:</strong> <?= htmlspecialchars($res['asset_name_cache'] ?: 'N/A') ?></li>
+                                                                <li><strong>Date:</strong> <?= date('M j, Y g:i A', strtotime($res['start_datetime'])) ?></li>
+                                                            </ul>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Notes (optional)</label>
+                                                                <textarea name="notes" class="form-control" rows="2" 
+                                                                          placeholder="Add any notes for the requestor..."></textarea>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                            <button type="submit" class="btn btn-success">
+                                                                <i class="bi bi-check-lg me-1"></i>Approve
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Reject Modal -->
+                                        <div class="modal fade" id="rejectModal<?= $res['id'] ?>" tabindex="-1">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <form method="post">
+                                                        <input type="hidden" name="action" value="reject">
+                                                        <input type="hidden" name="reservation_id" value="<?= $res['id'] ?>">
+                                                        <div class="modal-header bg-danger text-white">
+                                                            <h5 class="modal-title">
+                                                                <i class="bi bi-x-circle me-2"></i>Reject Reservation
+                                                            </h5>
+                                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <p>Reject reservation for:</p>
+                                                            <ul>
+                                                                <li><strong>User:</strong> <?= htmlspecialchars($res['user_name']) ?></li>
+                                                                <li><strong>Vehicle:</strong> <?= htmlspecialchars($res['asset_name_cache'] ?: 'N/A') ?></li>
+                                                                <li><strong>Date:</strong> <?= date('M j, Y g:i A', strtotime($res['start_datetime'])) ?></li>
+                                                            </ul>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Reason for rejection *</label>
+                                                                <textarea name="notes" class="form-control" rows="2" required
+                                                                          placeholder="Please provide a reason for rejection..."></textarea>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                            <button type="submit" class="btn btn-danger">
+                                                                <i class="bi bi-x-lg me-1"></i>Reject
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+            
+            <!-- Recently Processed -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clock-history me-2"></i>
+                        Recently Processed (Last 7 Days)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <?php if (empty($recentReservations)): ?>
+                        <p class="text-muted text-center py-3">No recently processed reservations.</p>
+                    <?php else: ?>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>User</th>
+                                        <th>Vehicle</th>
+                                        <th>Status</th>
+                                        <th>Processed By</th>
+                                        <th>Processed At</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($recentReservations as $res): ?>
+                                        <tr>
+                                            <td>#<?= $res['id'] ?></td>
+                                            <td><?= htmlspecialchars($res['user_name']) ?></td>
+                                            <td><?= htmlspecialchars($res['asset_name_cache'] ?: 'N/A') ?></td>
+                                            <td>
+                                                <?php if ($res['approval_status'] === 'approved'): ?>
+                                                    <span class="badge bg-success">Approved</span>
+                                                <?php elseif ($res['approval_status'] === 'auto_approved'): ?>
+                                                    <span class="badge bg-info">Auto-Approved (VIP)</span>
+                                                <?php elseif ($res['approval_status'] === 'rejected'): ?>
+                                                    <span class="badge bg-danger">Rejected</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <?= htmlspecialchars($res['approved_by_name'] ?: 'System') ?>
+                                            </td>
+                                            <td>
+                                                <?= $res['approved_at'] ? date('M j, g:i A', strtotime($res['approved_at'])) : '-' ?>
+          <?php
+/**
+ * FDT Fleet Manager Approval Page
+ * Allows managers to approve/reject vehicle reservations
+ */
+
+require_once __DIR__ . '/../src/bootstrap.php';
+require_once SRC_PATH . '/auth.php';
+require_once SRC_PATH . '/snipeit_client.php';
+require_once SRC_PATH . '/layout.php';
+require_once SRC_PATH . '/db.php';
+
+// $currentUser is set by auth.php
+$isAdmin = !empty($currentUser['is_admin']);
+$isStaff = !empty($currentUser['is_staff']) || $isAdmin;
+
+if (!$isStaff) {
+    header('Location: index.php');
+    exit;
+}
+
+$pdo = get_pdo();
+$error = '';
+$success = '';
+
+// Handle approval/rejection actions
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+    $reservationId = (int)($_POST['reservation_id'] ?? 0);
+    $notes = trim($_POST['notes'] ?? '');
+    
+    if ($reservationId > 0 && in_array($action, ['approve', 'reject'])) {
+        // Get reservation
+        $stmt = $pdo->prepare("SELECT * FROM reservations WHERE id = ?");
+        $stmt->execute([$reservationId]);
+        $reservation = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($reservation && $reservation['approval_status'] === 'pending_approval') {
+            $userName = trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''));
+            $userEmail = $currentUser['email'] ?? '';
+            
+            if ($action === 'approve') {
+                // Approve reservation
+                $stmt = $pdo->prepare("
+                    UPDATE reservations 
+                    SET approval_status = 'approved',
+                        status = 'confirmed',
+                        approved_by_name = ?,
+                        approved_by_email = ?,
+                        approved_at = NOW()
+                    WHERE id = ?
+                ");
+                $stmt->execute([$userName, $userEmail, $reservationId]);
+                
+                // Log approval
+                $stmt = $pdo->prepare("
+                    INSERT INTO approval_history (reservation_id, action, actor_name, actor_email, notes)
+                    VALUES (?, 'approved', ?, ?, ?)
+                ");
+                $stmt->execute([$reservationId, $userName, $userEmail, $notes ?: 'Reservation approved']);<?php
+/**
+ * FDT Fleet Manager Approval Page
+ * Allows managers to approve/reject vehicle reservations
+ */
+
+require_once __DIR__ . '/../src/bootstrap.php';
+require_once SRC_PATH . '/auth.php';
+require_once SRC_PATH . '/snipeit_client.php';
+require_once SRC_PATH . '/layout.php';
+require_once SRC_PATH . '/db.php';
+
+// $currentUser is set by auth.php
+$isAdmin = !empty($currentUser['is_admin']);
+$isStaff = !empty($currentUser['is_staff']) || $isAdmin;
+
+if (!$isStaff) {
+    header('Location: index.php');
+    exit;
+}
+
+$pdo = get_pdo();
+$error = '';
+$success = '';
+
+// Handle approval/rejection actions
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+    $reservationId = (int)($_POST['reservation_id'] ?? 0);
+    $notes = trim($_POST['notes'] ?? '');
+    
+    if ($reservationId > 0 && in_array($action, ['approve', 'reject'])) {
+        // Get reservation
+        $stmt = $pdo->prepare("SELECT * FROM reservations WHERE id = ?");
+        $stmt->execute([$reservationId]);
+        $reservation = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($reservation && $reservation['approval_status'] === 'pending_approval') {
+            $userName = trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''));
+            $userEmail = $currentUser['email'] ?? '';
+            
+            if ($action === 'approve') {
+                // Approve reservation
+                $stmt = $pdo->prepare("
+                    UPDATE reservations 
+                    SET approval_status = 'approved',
+                        status = 'confirmed',
+                        approved_by_name = ?,
+                        approved_by_email = ?,
+                        approved_at = NOW()
+                    WHERE id = ?
+                ");
+                $stmt->execute([$userName, $userEmail, $reservationId]);
+                                // Log approval
+                $stmt = $pdo->prepare("
+                    INSERT INTO approval_history (reservation_id, action, actor_name, actor_email, notes)
+                    VALUES (?, 'approved', ?, ?, ?)
+                ");
+                $stmt->execute([$reservationId, $userName, $userEmail, $notes ?: 'Reservation approved']);

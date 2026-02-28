@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && !isset($_GET['prefetch']) && !isset(
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Catalogue – Book Equipment</title>
+        <title>Catalogue – Book Vehicle</title>
         <link rel="stylesheet"
               href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
         <link rel="stylesheet" href="assets/style.css">
@@ -1062,7 +1062,7 @@ $checkedOutCounts = [];
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Catalogue – Book Equipment</title>
+    <title>Catalogue – Book Vehicle</title>
 
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
@@ -1166,9 +1166,9 @@ if (!empty($allowedCategoryMap) && !empty($categories)) {
     <div class="page-shell">
         <?= layout_logo_tag() ?>
         <div class="page-header">
-            <h1>Equipment catalogue</h1>
+            <h1>Vehicle catalogue</h1>
             <div class="page-subtitle">
-                Browse bookable equipment models and add them to your basket.
+                Browse bookable vehicle models and add them to your basket.
             </div>
         </div>
 
@@ -1232,7 +1232,7 @@ if (!empty($allowedCategoryMap) && !empty($categories)) {
             <div id="overdue-alert" class="alert alert-danger<?= $catalogueBlocked ? '' : ' d-none' ?>">
                 <div class="fw-semibold mb-2">Catalogue unavailable</div>
                 <div class="mb-2">
-                    You have overdue items. Please return them before booking more equipment.
+                    You have overdue items. Please return them before booking more vehicle.
                 </div>
                 <ul class="mb-0" id="overdue-list">
                     <?php foreach ($overdueAssets as $asset): ?>

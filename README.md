@@ -1,92 +1,148 @@
+# SnipeScheduler Fleet Manager
 
-<img width="250" height="181" alt="SnipeScheduler-Logo" src="https://github.com/user-attachments/assets/794c9bcc-2846-4c16-8071-ba072b742a02" />
+A comprehensive fleet vehicle management system that extends [Snipe-IT](https://snipeitapp.com/) asset management with vehicle reservations, checkout/checkin workflows, maintenance tracking, and compliance reporting.
 
-# SnipeScheduler - An Asset Reservation/Checkout System for Snipe-IT
+## Credits & Attribution
 
-- There is also a standalone version of this app that has its own inventory database and doesn't require Snipe-IT. It is called KitGrab, and is available [here](https://github.com/JSY-Ben/KitGrab)
+This project is a derivative work based on:
+- **Original Project**: [SnipeScheduler](https://github.com/JSY-Ben/SnipeScheduler) by [Ben Pirozzolo (JSY-Ben)](https://github.com/JSY-Ben)
+- **Asset Management**: [Snipe-IT](https://github.com/snipe/snipe-it) by [Snipe](https://snipeitapp.com/)
 
-## Donations
+## What's New in Fleet Manager Edition
 
-While i will always provide my software for free, donations are extremely helpful for allowing me to continue making these apps, so any donation would be appreciated:
+This edition significantly extends the original SnipeScheduler with:
 
-[![Donate with PayPal to help me continue developing these apps!](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/donate/?business=5TRANVZF49AN6&no_recurring=0&item_name=Thank+you+for+any+donations%21+It+will+help+me+put+money+into+the+tools+I+use+to+develop+my+apps+and+services.&currency_code=GBP)
+### Core Features
+- Vehicle reservation system with approval workflows
+- VIP auto-approval for designated users
+- Checkout/Checkin with pre/post vehicle inspection forms
+- QR code scanning for quick actions
+- Maintenance tracking integrated with Snipe-IT API
+- 5 comprehensive reports (Summary, Usage, Utilization, Maintenance, Compliance)
+- CSV export for all reports
 
+### Administration
+- Vehicle management (create vehicles, models, manufacturers via Snipe-IT API)
+- User management with Snipe-IT group-based access control
+- VIP status toggle for auto-approval
+- Activity logging and audit trail
+- Dynamic custom field mapping (portable across Snipe-IT instances)
 
+### Security
+- CSRF protection on all forms
+- XSS prevention
+- SQL injection prevention (PDO prepared statements)
+- Security headers (X-Frame-Options, CSP, etc.)
+- Directory protection (.git, config, src, vendor)
+- File permission hardening
 
-![Catalogue](https://github.com/user-attachments/assets/ead32453-1db3-4026-8a93-4f6d118ec1f1)
+### Operations
+- Automated daily backups (database + config)
+- Automated security updates
+- Comprehensive logging
 
-![Reservations](https://github.com/user-attachments/assets/8d4880c5-6203-4d5f-84e0-5c43d9672afa)
+## Requirements
 
-# Introduction
+- PHP 8.1+
+- MySQL 8.0+ or MariaDB 10.6+
+- Apache 2.4+ with mod_rewrite, mod_headers
+- Snipe-IT v6.x or v7.x
+- Composer
 
-SnipeScheduler is a PHP/MySQL web app that layers equipment booking and checkout workflows on top of Snipe-IT. It has been very deliberately designed to use the Snipe-IT API for all functions and not the Snipe-IT database directly. This allows it to sit on a separate server to your Snipe-IT Installation, and doesn't require direct access to the Snipe-IT server from the user endpoint. As long as this app can access your Snipe-IT API from the server side, this app should function. Images from Snipe-IT are delivered via an image proxy.  
+## Snipe-IT Configuration
 
-Due to the fact that the Snipe-IT API is used for all functions, there is currently a requirement for this app and Snipe-IT to be configured to use either LDAP, Google OAuth or Microsoft Entra OAuth for authentication. There is currently no local user signup or login available on this app yet. However I am open to implementing this if you feel this would help. Please do ask! 
+### 1. Create Category
+- Name: `Fleet Vehicles`
+- Type: Asset
 
-In the app, Users can request equipment, and staff can manage reservations, checkouts, and checked-out assets from a unified “Reservations” hub.
+### 2. Create Custom Fieldset: "Fleet Vehicle Fields"
 
-## Features
-- Catalogue and basket flow for users to request equipment.
-- Staff “Reservations” hub with tabs for Today’s Reservations (checkout), Checked Out Reservations, and Reservation History.
-- Quick checkout/checkin flows for ad-hoc asset handling.
-- Snipe-IT integration for model and asset data
-- LDAP/AD, Google OAuth and Microsoft Entra Integration for authentication.
+| Field Name | Type | Required |
+|------------|------|----------|
+| VIN | Text (17 chars) | No |
+| License Plate | Text | No |
+| Vehicle Year | Numeric | No |
+| Current Mileage | Numeric | No |
+| Insurance Expiry | Date | No |
+| Registration Expiry | Date | No |
+| Last Maintenance Date | Date | No |
+| Last Maintenance Mileage | Numeric | No |
+| Last Oil Change (Miles) | Numeric | No |
+| Last Tire Rotation (Miles) | Numeric | No |
+| Maintenance Interval Miles | Numeric | Default: 7500 |
+| Maintenance Interval Days | Numeric | Default: 180 |
 
-## System requirements
-- PHP 8.0+ with extensions: pdo_mysql, curl, ldap, mbstring, openssl, json.
-- MySQL/MariaDB database for the booking tables.
-- Web server: Apache or Nginx (PHP-FPM or mod_php).
-- Snipe-IT instance with API access token and either LDAP, Google OAuth or Microsoft Entra Authentication enabled.
+### 3. Create Status Labels
+
+| Name | Type | Color |
+|------|------|-------|
+| VEH-Available | Deployable | Green |
+| VEH-Reserved | Pending | Yellow |
+| VEH-In Service | Deployed | Blue |
+| VEH-Out of Service | Undeployable | Red |
+
+### 4. Create User Groups
+
+| Group | Purpose |
+|-------|---------|
+| Drivers | Basic - can make reservations |
+| Fleet Staff | Can manage maintenance, view reports |
+| Fleet Admin | Full fleet management access |
+
+### 5. Create Supplier
+- Name: Your maintenance provider (e.g., "Service Station")
 
 ## Installation
-1. Clone or copy this repository to your web root.
-2. Ensure the web server user can write to `config/` (for `config.php`) and create `config/cache/` if needed.
-3. Point your web server at the `public/` directory.
-4. Visit https://www.yourinstallation.com/install/ in your browser:
-   - Fill in database, Snipe-IT API, and at least one of the authentication (LDAP/Google/Entra) methods (tests are available inline).
-   - If you are using Entra for Authentication and User Search, you will need to create an App Registration on Entra, and assign the following API permissions:
 
-      - Login only:
-        Delegated: 'User.Read'
+See [docs/INSTALLATION.md](docs/INSTALLATION.md) for detailed instructions.
 
-      - Staff user search (directory autocomplete)
-        Delegated: 'User.Read.All'
-        ('User.ReadBasic.All' should work in most cases though however if you prefer a more secure option)
+### Quick Start
+```bash
+# Clone
+git clone https://github.com/VitorMRodovalho/SnipeScheduler-FleetManager.git
+cd SnipeScheduler-FleetManager
 
-      - You’ll need to grant admin consent for the directory search permission. After adding it, staff should sign out/in to receive the new scope.
+# Install dependencies
+composer install --no-dev
 
-   - Generate `config/config.php` and optionally create the database from `public/install/schema.sql`.
-   - Remove or restrict access to `public/install` after successful setup.
-5. If you prefer manual configuration, copy `config/config.example.php` to `config/config.php` and update values. Then import `public/install/schema.sql` into your database.
-6. Certain CRON Scripts must be run at regular intervals for this app to function correctly. Please see the CRON Scripts section below.
+# Configure
+cp config/config.example.php config/config.php
+nano config/config.php
 
-## General usage
-- Users:
-  - Browse equipment via `Catalogue`, add to basket, and submit reservations.
-  - View their reservations on `My Reservations').
-- Staff:
-  - Use `Reservations` page for:
-    - Today’s Reservations (checkout against bookings).
-    - Checked Out Reservations (view/overdue assets from Snipe-IT).
-    - Reservation History (filter/search all reservations).
-  - Quick checkout/checkin pages exist for ad-hoc asset handling.
-- Settings:
-  - Configure app, API, and LDAP options via `Settings` (staff only). Test buttons let you validate connections without saving.
+# Set permissions
+sudo chown -R www-data:www-data .
+sudo chmod 640 config/config.php
+```
 
-## Making Equipment available to be booked.
+## Security
 
-For an asset on Snipe-IT to be made available on this app for reservation, both the model and the asset itself must be set to 'Requestable' in Snipe-IT. If a model is set to 'Requestable' and the asset is not, the model will be listed on the catalogue of this app, however the specific asset will not be able to be reserved. This is useful in case you have a certain batch of assets, but you don't want all of them to necessarily be bookable.
+See [SECURITY.md](SECURITY.md) for security checklist and best practices.
 
-## Setting up Admins/Staff
+## Backup & Maintenance
 
-As mentioned, this app uses LDAP, Google OAuth or Microsoft Entra for authentication. When installing this app, please make sure to add Users/Groups on the initial config that contain your users that you wish to be admins/staff. Standard users only have access to reservations, whereas specified Groups/Users assigned to the staff section of this app can checkout/checkin equipment. 
+Automated backup script included:
+```bash
+# Manual backup
+sudo /usr/local/bin/backup-snipescheduler.sh
 
-## CRON Scripts
+# Full maintenance
+sudo /usr/local/bin/maintenance-snipescheduler.sh
+```
 
-In the scripts folder of this app, there are certain PHP scripts you must run as a cron or via PHP CLI at regular intervals for this app to function correctly. The shorter duration between each running of the scripts will dictate how up-to-date your equipment availability information is.
+## Screenshots
 
-- The 'sync_checked_out_assets.php' script is probably the most important, and i would suggest running this once a minute if you can. It queries your Snipe-IT API every time the script is run for currently checked out asset details, and caches them in the SnipeScheduler mysql database. The SnipeScheduler app then uses that information to show checked out items and update equipment availability. If you only run this script as a CRON at long intervals, equipment availability information is likely to be out of date. Using checked out assets cache avoids querying the Snipe-IT API on every catalogue and basket page load, therefore vastly improving page load times on the app, especially when you have large amounts of assets in Snipe-IT.
+*Coming soon*
 
-- The 'cron_mark_missed.php' script will automatically mark all reservations not checked out after a specified time period (set on the settings page) as missed and release them to be booked again. By default, this is set to 1 hour. While it is not worth running this Cron script every minute, it would be worth running it regularly so missed reservations are updated as soon as possible. 
+## License
 
-- The email_overdue_staff and users.php scripts will automatically email users that have overdue equipment and inform staff specified on the settings page of currently overdue reservations. I'd suggest running this once a day at the beginning of a working day, so users with overdue equipment are reminded at least once a day.
+This project maintains the same license as the original SnipeScheduler project.
+
+## Contributing
+
+Contributions are welcome! Please open an issue first to discuss proposed changes.
+
+## Acknowledgments
+
+Special thanks to:
+- [Ben Pirozzolo (JSY-Ben)](https://github.com/JSY-Ben) for the original SnipeScheduler
+- [Snipe-IT Team](https://snipeitapp.com/) for the excellent asset management platform

@@ -93,9 +93,9 @@ if (!function_exists('layout_primary_color')) {
     function layout_primary_color(?array $cfg = null): string
     {
         $config = layout_cached_config($cfg);
-        $raw    = $config['app']['primary_color'] ?? '#660000';
+        $raw    = $config['app']['primary_color'] ?? '#YOURHEX';
 
-        return layout_normalize_hex_color($raw, '#660000');
+        return layout_normalize_hex_color($raw, '#YOURHEX');
     }
 }
 
@@ -136,13 +136,25 @@ if (!function_exists('layout_render_nav')) {
     function layout_render_nav(string $active, bool $isStaff, bool $isAdmin = false): string
     {
         $links = [
-            ['href' => 'index.php',          'label' => 'Dashboard',           'staff' => false],
-            ['href' => 'catalogue.php',      'label' => 'Catalogue',           'staff' => false],
-            ['href' => 'my_bookings.php',    'label' => 'My Reservations',     'staff' => false],
-            ['href' => 'reservations.php',   'label' => 'Reservations',        'staff' => true],
-            ['href' => 'quick_checkout.php', 'label' => 'Quick Checkout',      'staff' => true],
-            ['href' => 'quick_checkin.php',  'label' => 'Quick Checkin',       'staff' => true],
-            ['href' => 'activity_log.php',   'label' => 'Admin',               'staff' => false, 'admin_only' => true],
+//            ['href' => 'index.php',             'label' => 'Dashboard',           'staff' => false],
+//            ['href' => 'catalogue.php',         'label' => 'Catalogue',           'staff' => false],
+            
+            ['href' => 'dashboard.php',         'label' => 'Dashboard',           'staff' => false],
+	    ['href' => 'vehicle_reserve.php',   'label' => 'Book Vehicle',        'staff' => false],
+
+            ['href' => 'my_bookings.php',       'label' => 'My Reservations',     'staff' => false],
+            ['href' => 'approval.php',          'label' => 'Approvals',           'staff' => true],
+	    ['href' => 'vehicle_catalogue.php', 'label' => 'List of Vehicles',            'staff' => false],
+            ['href' => 'reservations.php',      'label' => 'Reservations',        'staff' => true],
+            ['href' => 'maintenance.php',       'label' => 'Maintenance',         'staff' => true],
+            ['href' => 'reports.php',           'label' => 'Reports',             'staff' => true],
+            ['href' => 'scan.php',              'label' => 'Scan QR',             'staff' => false],
+//            ['href' => 'quick_checkout.php',    'label' => 'Quick Checkout',      'staff' => true],
+//            ['href' => 'quick_checkin.php',     'label' => 'Quick Checkin',       'staff' => true],
+            ['href' => 'activity_log.php',      'label' => 'Admin',               'staff' => false, 'admin_only' => true],
+
+
+
         ];
 
         $html = '<nav class="app-nav">';

@@ -1,0 +1,19 @@
+# Deny access to all files in root except public
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Block access to .git directory
+    RewriteRule ^\.git - [F,L]
+    
+    # Block access to sensitive directories
+    RewriteRule ^config - [F,L]
+    RewriteRule ^src - [F,L]
+    RewriteRule ^vendor - [F,L]
+    RewriteRule ^cron - [F,L]
+    RewriteRule ^scripts - [F,L]
+</IfModule>
+
+# Fallback for servers without mod_rewrite
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>

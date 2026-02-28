@@ -264,16 +264,21 @@ if ($provider === 'google') {
     $isCheckout = in_array($email, $googleCheckoutEmails, true);
     $isStaff = $isAdmin || $isCheckout;
 
-    $_SESSION['user'] = [
+   
+	$_SESSION['user'] = [
         'id'           => $userId,
         'email'        => $email,
         'username'     => $email,
         'first_name'   => $firstName ?: $email,
         'last_name'    => $lastName ?? '',
         'display_name' => $fullName,
+        'is_super_admin' => $snipePerms['is_super_admin'] ?? false,
         'is_admin'     => $isAdmin,
         'is_staff'     => $isStaff,
+        'is_vip'       => $isVip ?? false,
+        'snipeit_id'   => $snipeitId ?? null,
     ];
+
 
     activity_log_event('user_login', 'User logged in', [
         'metadata' => [
@@ -463,10 +468,36 @@ if ($provider === 'microsoft') {
         $redirectWithError($debugOn ? 'Login system is currently unavailable (database error): ' . $e->getMessage() : 'Login system is currently unavailable (database error).');
     }
 
-    $isAdmin = in_array($email, $msAdminEmails, true);
-    $isCheckout = in_array($email, $msCheckoutEmails, true);
-    $isStaff = $isAdmin || $isCheckout;
+   // Get permissions from Snipe-IT groups
+    require_once SRC_PATH . '/snipeit_client.php';
+    $snipePerms = get_user_permissions_from_snipeit($email);
+    
+    // Fallback to config-based permissions if user not in Snipe-IT
+    if (!$snipePerms['exists']) {
+        // User not registered in Snipe-IT - block login
+        $redirectWithError('Access denied. You must be registered in the Fleet Management system to use this application. Please contact the Fleet Administrator.');
+    }
+    
+    // User exists in Snipe-IT - check if activated
+    if (!$snipePerms['snipeit_id']) {
+        $redirectWithError('Access denied. Your account is not properly configured. Please contact the Fleet Administrator.');
+    }
+    
+    $isAdmin = $snipePerms['is_admin'];
+    $isStaff = $snipePerms['is_staff'];
+    $isVip = $snipePerms['is_vip'];
+    $snipeitId = $snipePerms['snipeit_id'];
+    $isSuperAdmin = $snipePerms['is_super_admin'] ?? false;
+    
+    // Sync name from OAuth to Snipe-IT
+    if ($snipeitId && ($firstName || $lastName)) {
+        sync_user_name_to_snipeit($snipeitId, $firstName, $lastName);
+    }    
 
+
+   
+    }
+    
     $_SESSION['user'] = [
         'id'           => $userId,
         'email'        => $email,
@@ -474,8 +505,11 @@ if ($provider === 'microsoft') {
         'first_name'   => $firstName ?: $email,
         'last_name'    => $lastName ?? '',
         'display_name' => $fullName,
+        'is_super_admin' => $isSuperAdmin,
         'is_admin'     => $isAdmin,
         'is_staff'     => $isStaff,
+        'is_vip'       => $isVip,
+        'snipeit_id'   => $snipeitId,
     ];
 
     activity_log_event('user_login', 'User logged in', [
@@ -486,7 +520,7 @@ if ($provider === 'microsoft') {
 
     header('Location: index.php');
     exit;
-}
+
 
 if (!$ldapEnabled) {
     $redirectWithError('LDAP sign-in is disabled.');
@@ -659,6 +693,28 @@ if ($isAdmin || $isCheckout) {
     $isStaff = false;
 }
 
+// Get permissions from Snipe-IT groups (override LDAP if user exists in Snipe-IT)
+require_once SRC_PATH . '/snipeit_client.php';
+$snipePerms = get_user_permissions_from_snipeit($mail);
+
+if (!$snipePerms['exists']) {
+    // User not registered in Snipe-IT - block login
+    ldap_unbind($ldap);
+    $redirectWithError('Access denied. You must be registered in the Fleet Management system to use this application. Please contact the Fleet Administrator.');
+}
+
+$isAdmin = $snipePerms['is_admin'];
+$isStaff = $snipePerms['is_staff'];
+$isVip = $snipePerms['is_vip'];
+$snipeitId = $snipePerms['snipeit_id'];
+$isSuperAdmin = $snipePerms['is_super_admin'] ?? false;
+
+// Sync name from LDAP to Snipe-IT
+if ($snipeitId && ($firstName || $lastName)) {
+    sync_user_name_to_snipeit($snipeitId, $firstName, $lastName);
+}
+
+
 // ------------------------------------------------------------------
 // Upsert into users table: id, user_id, name, email, created_at
 // We key users by EMAIL only, and store full name in `name`.
@@ -675,16 +731,22 @@ try {
 // ------------------------------------------------------------------
 // Successful login – store full user info in SESSION only
 // ------------------------------------------------------------------
+
+
+
 $_SESSION['user'] = [
-    'id'           => $userId,
-    'email'        => $mail,
-    'username'     => $sam,          // AD username, for display only
-    'first_name'   => $firstName,
-    'last_name'    => $lastName,
-    'display_name' => $fullName,
-    'is_admin'     => $isAdmin,
-    'is_staff'     => $isStaff,
-];
+        'id'           => $userId,
+        'email'        => $email,
+        'username'     => $email,
+        'first_name'   => $firstName ?: $email,
+        'last_name'    => $lastName ?? '',
+        'display_name' => $fullName,
+        'is_super_admin' => $isSuperAdmin,
+        'is_admin'     => $isAdmin,
+        'is_staff'     => $isStaff,
+        'is_vip'       => $isVip,
+        'snipeit_id'   => $snipeitId,
+    ];
 
 activity_log_event('user_login', 'User logged in', [
     'metadata' => [

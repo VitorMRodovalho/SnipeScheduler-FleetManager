@@ -9,12 +9,12 @@
     --border: #dbe6ff;
     --text: #0f172a;
     --muted: #5b6477;
-    --primary: #660000;
-    --primary-strong: #5a0000;
-    --primary-soft: #9a3a3a;
-    --primary-rgb: 102, 0, 0;
-    --primary-strong-rgb: 90, 0, 0;
-    --primary-soft-rgb: 154, 58, 58;
+    --primary: #YOURHEX;
+    --primary-strong: #DARKER_HEX;
+    --primary-soft: #LIGHTER_HEX;
+    --primary-rgb: R, G, B;
+    --primary-strong-rgb: R, G, B;
+    --primary-soft-rgb: R, G, B;
     --accent: var(--primary-strong);
     --accent-2: var(--primary-soft);
     --accent-warm: #f97316;
@@ -147,7 +147,7 @@ input[type="checkbox"] {
     border-radius: 999px;
     text-decoration: none;
     font-size: 0.92rem;
-    color: #0f172a;
+    color: #000000;
     background: rgba(255, 255, 255, 0.9);
     border: 1px solid transparent;
     box-shadow: 0 4px 10px rgba(15, 23, 42, 0.04);
@@ -156,7 +156,7 @@ input[type="checkbox"] {
 
 .app-nav-link:hover {
     background: rgba(var(--primary-rgb), 0.08);
-    color: var(--accent);
+    color: #000000;
     transform: translateY(-1px);
     box-shadow: 0 8px 16px rgba(var(--primary-rgb), 0.18);
 }
@@ -164,7 +164,7 @@ input[type="checkbox"] {
 .app-nav-link.active {
     background: linear-gradient(120deg, var(--accent), var(--accent-2));
     border-color: rgba(var(--primary-rgb), 0.4);
-    color: #ffffff;
+    color: #fff;
     box-shadow: 0 10px 20px rgba(var(--primary-rgb), 0.25);
 }
 
@@ -178,14 +178,14 @@ input[type="checkbox"] {
     border-radius: 0.9rem;
     background: linear-gradient(120deg, #ffffff, rgba(255, 255, 255, 0.9));
     border: 1px solid var(--border);
-    color: var(--text);
+    color: #000000;
     font-weight: 700;
     box-shadow: 0 10px 25px rgba(var(--primary-rgb), 0.12);
 }
 
 .app-nav-toggle:hover {
     background: rgba(var(--primary-rgb), 0.08);
-    color: var(--accent);
+    color: #000000;
 }
 
 .app-nav-toggle-icon {
@@ -1224,7 +1224,7 @@ form .form-select {
 .btn-success {
     border-radius: 0.6rem;
     box-shadow: 0 10px 20px rgba(var(--primary-rgb), 0.18);
-    color: #ffffff;
+    color: #0f172a;
 }
 
 /* Optional: subtle hover effect */
@@ -1254,7 +1254,7 @@ form .form-select {
 }
 
 .pagination .page-item.active .page-link {
-    color: #ffffff;
+    color: #000000; /* Changed from white to dark navy/black */
     background: linear-gradient(120deg, var(--primary-strong), var(--primary-soft));
     border-color: rgba(var(--primary-rgb), 0.55);
 }
@@ -1275,7 +1275,7 @@ form .form-select {
 
 .reservations-subtabs .nav-link {
     border: 1px solid transparent;
-    color: var(--primary-strong);
+    color: #000000;
     font-weight: 600;
     padding: 0.8rem 1.1rem;
     border-radius: 0.5rem 0.5rem 0 0;
@@ -1284,13 +1284,13 @@ form .form-select {
 }
 
 .reservations-subtabs .nav-link:hover {
-    color: var(--primary);
+    color: #000000;
     background: linear-gradient(180deg, rgba(var(--primary-soft-rgb),0.36), rgba(255,255,255,0.08));
     border-color: rgba(var(--primary-rgb),0.25);
 }
 
 .reservations-subtabs .nav-link.active {
-    color: #fff;
+    color: #000000;
     background: linear-gradient(135deg, var(--primary), var(--primary-strong));
     border-color: var(--primary-strong) var(--primary-strong) #fff;
     box-shadow: 0 8px 18px rgba(var(--primary-rgb), 0.2);
@@ -1370,7 +1370,7 @@ form .form-select {
     border-radius: 1rem;
     border: 1px solid var(--border);
     box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
-    background: linear-gradient(160deg, #ffffff 0%, #f5faff 100%);
+    background: #ffffff;
 }
 
 .card .card-title {
@@ -1404,7 +1404,7 @@ form .form-select {
 .btn-primary:focus-visible {
     background: linear-gradient(120deg, var(--primary-strong), var(--primary-soft));
     border-color: rgba(var(--primary-rgb), 0.55);
-    color: #ffffff;
+    color: #000000;
 }
 
 .btn-primary:focus {
@@ -1443,7 +1443,7 @@ form .form-select {
 .btn-success:focus-visible {
     background: linear-gradient(120deg, var(--primary-strong), var(--primary-soft));
     border-color: rgba(var(--primary-rgb), 0.55);
-    color: #ffffff;
+    color: #000000;
 }
 
 .filter-panel .btn-primary {
@@ -1457,7 +1457,7 @@ form .form-select {
 .filter-panel .btn-primary:focus-visible {
     background: #111111;
     border-color: #111111;
-    color: #ffffff;
+    color: #000000;
 }
 
 /* --------------------------------------------------
@@ -1664,3 +1664,14 @@ form .form-select {
     opacity: 1;
     transform: translate(-50%, 0) scale(1);
 }
+
+/* Fix checkbox visibility */
+.form-check-input:checked {
+    background-color: #0d6efd !important;
+    border-color: #0d6efd !important;
+}
+.form-check-input {
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+}
+

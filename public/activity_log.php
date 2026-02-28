@@ -238,14 +238,23 @@ try {
             </div>
         </div>
 
-        <ul class="nav nav-tabs reservations-subtabs mb-3">
+	<ul class="nav nav-tabs reservations-subtabs mb-3">
+            <li class="nav-item">
+                <a class="nav-link" href="vehicles.php">Vehicles</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="users.php">Users</a>
+            </li>
             <li class="nav-item">
                 <a class="nav-link active" href="activity_log.php">Activity Log</a>
             </li>
+            <?php if (!empty($currentUser['is_super_admin'])): ?>
             <li class="nav-item">
                 <a class="nav-link" href="settings.php">Settings</a>
             </li>
-        </ul>
+            <?php endif; ?>
+        </ul>        
+
 
         <div class="card">
             <div class="card-body">

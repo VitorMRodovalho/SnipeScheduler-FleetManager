@@ -240,13 +240,40 @@ if (!empty($_GET['deleted'])) {
                                 </div>
                             <?php endif; ?>
 
-                            <div class="d-flex justify-content-end gap-2 mt-3">
+
+                             <div class="d-flex justify-content-end gap-2 mt-3">
+                                <?php 
+                                $approvalStatus = $res['approval_status'] ?? '';
+                                $assetId = $res['asset_id'] ?? 0;
+                                $isApproved = in_array($approvalStatus, ['approved', 'auto_approved']);
+                                ?>
+
+
+
+
+                                <?php if ($isApproved && $assetId && $status === 'confirmed'): ?>
+    <a href="vehicle_checkin.php?reservation_id=<?= $resId ?>"
+       class="btn btn-primary btn-sm">
+        <i class="bi bi-box-arrow-in-left"></i> Return Vehicle
+    </a>
+<?php elseif ($isApproved && $assetId && $status !== 'completed' && $status !== 'confirmed'): ?>
+    <a href="vehicle_checkout.php?reservation_id=<?= $resId ?>"
+       class="btn btn-success btn-sm">
+        <i class="bi bi-box-arrow-right"></i> Checkout Vehicle
+    </a>
+<?php endif; ?>
+
+
+
                                 <?php if ($status === 'pending'): ?>
                                     <a href="reservation_edit.php?id=<?= $resId ?>&from=my_bookings"
                                        class="btn btn-outline-primary btn-sm btn-action">
                                         Edit
                                     </a>
                                 <?php endif; ?>
+
+
+
                                 <form method="post"
                                       action="delete_reservation.php"
                                       onsubmit="return confirm('Delete this reservation and all its items? This cannot be undone.');">

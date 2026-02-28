@@ -1,0 +1,2 @@
+# Deny all access to src directory
+Require all denied

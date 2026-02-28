@@ -69,7 +69,7 @@ if (!$tabFile || !is_file($tabFile)) {
             border-color: rgba(var(--primary-rgb),0.25);
         }
         .reservations-tabs .nav-link.active {
-            color: #fff;
+            color: #000000;
             background: linear-gradient(135deg, var(--primary), var(--primary-strong));
             border-color: var(--primary-strong) var(--primary-strong) #fff;
             box-shadow: 0 8px 18px rgba(var(--primary-rgb), 0.22);

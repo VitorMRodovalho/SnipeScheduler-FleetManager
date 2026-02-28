@@ -35,7 +35,7 @@ if (!function_exists('app_get_timezone')) {
     function app_get_timezone(?array $cfg = null): ?DateTimeZone
     {
         $cfg = $cfg ?? load_config();
-        $timezone = $cfg['app']['timezone'] ?? 'Europe/Jersey';
+        $timezone = $cfg['app']['timezone'] ?? 'America/New_York';
         try {
             return new DateTimeZone($timezone);
         } catch (Throwable $e) {

@@ -23,9 +23,20 @@ if (empty($_SESSION['user'])) {
 // User is logged in – expose as $currentUser for the including script
 $currentUser = $_SESSION['user'];
 
+// ==========================================
+// ADDED: Sync Logic (Runs ONLY once per session)
+// ==========================================
+if (empty($_SESSION['user_synced_to_snipeit'])) {
+    
+    // TODO: Insert your Snipe-IT sync logic here.
+    // Example: SnipeITService::syncUser($currentUser);
+    
+    // Mark as synced so this block never runs again for this session
+    $_SESSION['user_synced_to_snipeit'] = true;
+}
+// ==========================================
+
 // Global HTML output helper:
-//  - Decodes any existing entities (e.g. &quot;) so they show as "
-//  - Then safely escapes once for HTML output.
 if (!function_exists('h')) {
     function h(?string $value): string
     {

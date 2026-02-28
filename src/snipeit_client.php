@@ -999,3 +999,1295 @@ function list_checked_out_assets(bool $overdueOnly = false): array
 
     return $results;
 }
+// ============================================================
+// FLEET CUSTOMIZATIONS - Added for Vehicle Management
+// ============================================================
+
+/**
+ * Get user by email from Snipe-IT
+ */
+function get_snipeit_user_by_email(string $email): ?array
+{
+    if (empty($email)) {
+        return null;
+    }
+    
+    $result = snipeit_request('GET', '/users', [
+        'search' => $email,
+        'limit' => 10
+    ]);
+    
+    if (!isset($result['rows']) || empty($result['rows'])) {
+        return null;
+    }
+    
+    // Find exact email match
+    foreach ($result['rows'] as $user) {
+        if (isset($user['email']) && strtolower($user['email']) === strtolower($email)) {
+            return $user;
+        }
+    }
+    
+    return null;
+}
+
+/**
+ * Check if user is VIP in Snipe-IT
+ */
+function is_user_vip_in_snipeit(string $email): bool
+{
+    $user = get_snipeit_user_by_email($email);
+    
+    if (!$user) {
+        return false;
+    }
+    
+    // Check if user has VIP flag set in Snipe-IT
+    return isset($user['vip']) && $user['vip'] === true;
+}
+
+/**
+ * Get custom fieldset for a model
+ */
+function get_model_fieldset(int $modelId): ?array
+{
+    $model = get_model($modelId);
+    
+    if (!$model || !isset($model['fieldset']) || !$model['fieldset']) {
+        return null;
+    }
+    
+    $fieldsetId = $model['fieldset']['id'] ?? null;
+    
+    if (!$fieldsetId) {
+        return null;
+    }
+    
+    // Get fieldset details
+    $result = snipeit_request('GET', "/fieldsets/{$fieldsetId}");
+    
+    if (!isset($result['id'])) {
+        return null;
+    }
+    
+    return $result;
+}
+
+/**
+ * Get custom fields for a model with display settings
+ * Returns array with 'checkout_fields', 'checkin_fields', 'all_fields'
+ */
+function get_model_custom_fields_with_settings(int $modelId): array
+{
+    $result = [
+        'checkout_fields' => [],
+        'checkin_fields' => [],
+        'audit_fields' => [],
+        'all_fields' => []
+    ];
+    
+    $fieldset = get_model_fieldset($modelId);
+    
+    if (!$fieldset || !isset($fieldset['fields']) || !isset($fieldset['fields']['rows'])) {
+        return $result;
+    }
+    
+    foreach ($fieldset['fields']['rows'] as $field) {
+        $fieldInfo = [
+            'id' => $field['id'] ?? 0,
+            'name' => $field['name'] ?? '',
+            'db_column' => $field['db_column_name'] ?? $field['db_column'] ?? '',
+            'element' => $field['element'] ?? 'text',
+            'field_format' => $field['format'] ?? 'ANY',
+            'field_values' => $field['field_values'] ?? '',
+            'required' => $field['required'] ?? false,
+            'show_in_checkout' => !empty($field['show_in_checkoutform']),
+            'show_in_checkin' => !empty($field['show_in_requestableform']), // Note: checkin might use different property
+            'show_in_audit' => !empty($field['show_in_audit']),
+        ];
+        
+        $result['all_fields'][] = $fieldInfo;
+        
+        if ($fieldInfo['show_in_checkout']) {
+            $result['checkout_fields'][] = $fieldInfo;
+        }
+        if ($fieldInfo['show_in_checkin']) {
+            $result['checkin_fields'][] = $fieldInfo;
+        }
+        if ($fieldInfo['show_in_audit']) {
+            $result['audit_fields'][] = $fieldInfo;
+        }
+    }
+    
+    return $result;
+}
+
+/**
+ * Get asset with custom fields merged with field definitions
+ */
+function get_asset_with_field_definitions(int $assetId): ?array
+{
+    $asset = get_asset($assetId);
+    
+    if (!$asset || !isset($asset['model']['id'])) {
+        return $asset;
+    }
+    
+    $modelId = $asset['model']['id'];
+    $fieldSettings = get_model_custom_fields_with_settings($modelId);
+    
+    // Merge current values with field definitions
+    $asset['field_definitions'] = $fieldSettings;
+    
+    // Map current values to field definitions
+    if (!empty($asset['custom_fields']) && !empty($fieldSettings['all_fields'])) {
+        foreach ($fieldSettings['all_fields'] as &$fieldDef) {
+            foreach ($asset['custom_fields'] as $fieldName => $fieldData) {
+                $dbCol = $fieldData['field'] ?? '';
+                if ($dbCol === $fieldDef['db_column'] || $fieldName === $fieldDef['name']) {
+                    $fieldDef['current_value'] = $fieldData['value'] ?? '';
+                    break;
+                }
+            }
+        }
+        $asset['field_definitions'] = $fieldSettings;
+    }
+    
+    return $asset;
+}
+
+/**
+ * Get all requestable assets (not just models)
+ */
+function get_requestable_assets(int $limit = 500, ?int $categoryId = null): array
+{
+    $params = [
+        'limit' => $limit,
+        'requestable' => 'true',
+        'status' => 'Ready to Deploy',
+        'sort' => 'name',
+        'order' => 'asc'
+    ];
+    
+    if ($categoryId) {
+        $params['category_id'] = $categoryId;
+    }
+    
+    $result = snipeit_request('GET', '/hardware', $params);
+    
+    if (!isset($result['rows'])) {
+        return [];
+    }
+    
+    return $result['rows'];
+}
+
+/**
+ * Get single asset details
+ */
+function get_asset(int $assetId): ?array
+{
+    $result = snipeit_request('GET', "/hardware/{$assetId}");
+    
+    if (!isset($result['id'])) {
+        return null;
+    }
+    
+    return $result;
+}
+
+/**
+ * Get asset with custom fields
+ */
+function get_asset_with_custom_fields(int $assetId): ?array
+{
+    $asset = get_asset($assetId);
+    
+    if (!$asset) {
+        return null;
+    }
+    
+    // Custom fields are included in the asset response under 'custom_fields'
+    return $asset;
+}
+
+/**
+ * Update asset with custom field values (for checkout/checkin form data)
+ */
+function update_asset_custom_fields(int $assetId, array $customFields): bool
+{
+    if (empty($customFields)) {
+        return true;
+    }
+    
+    $result = snipeit_request('PATCH', "/hardware/{$assetId}", $customFields);
+    
+    return isset($result['status']) && $result['status'] === 'success';
+}
+
+/**
+ * Get categories that have requestable assets
+ */
+function get_categories_with_requestable_assets(): array
+{
+    $allCategories = get_model_categories();
+    $categoriesWithAssets = [];
+    
+    foreach ($allCategories as $category) {
+        $categoryId = $category['id'];
+        
+        // Check if category has any requestable assets
+        $assets = snipeit_request('GET', '/hardware', [
+            'category_id' => $categoryId,
+            'requestable' => 'true',
+            'limit' => 1
+        ]);
+        
+        if (isset($assets['total']) && $assets['total'] > 0) {
+            $category['requestable_count'] = $assets['total'];
+            $categoriesWithAssets[] = $category;
+        }
+    }
+    
+    return $categoriesWithAssets;
+}
+
+/**
+ * Search assets by name, tag, or serial
+ */
+function search_requestable_assets(string $query, int $limit = 50): array
+{
+    $result = snipeit_request('GET', '/hardware', [
+        'search' => $query,
+        'requestable' => 'true',
+        'limit' => $limit,
+        'sort' => 'name',
+        'order' => 'asc'
+    ]);
+    
+    if (!isset($result['rows'])) {
+        return [];
+    }
+    
+    return $result['rows'];
+}
+
+/**
+ * Checkout asset with custom field data
+ */
+function checkout_asset_with_form_data(
+    int $assetId, 
+    int $userId, 
+    array $formData = [], 
+    string $note = '', 
+    ?string $expectedCheckin = null
+): array
+{
+    // First update custom fields if provided
+    if (!empty($formData)) {
+        $customFieldsUpdate = [];
+        foreach ($formData as $key => $value) {
+            // Custom fields in Snipe-IT API use the db column name
+            if (strpos($key, '_') === 0) {
+                $customFieldsUpdate[$key] = $value;
+            }
+        }
+        
+        if (!empty($customFieldsUpdate)) {
+            update_asset_custom_fields($assetId, $customFieldsUpdate);
+        }
+    }
+    
+    // Then checkout the asset
+    try {
+        checkout_asset_to_user($assetId, $userId, $note, $expectedCheckin);
+        return ['success' => true];
+    } catch (Exception $e) {
+        return ['success' => false, 'error' => $e->getMessage()];
+    }
+}
+
+/**
+ * Checkin asset with custom field data and maintenance flag
+ */
+function checkin_asset_with_form_data(
+    int $assetId, 
+    array $formData = [], 
+    bool $maintenanceFlag = false,
+    string $maintenanceNotes = '',
+    string $note = ''
+): array
+{
+    // First update custom fields if provided
+    if (!empty($formData)) {
+        $customFieldsUpdate = [];
+        foreach ($formData as $key => $value) {
+            if (strpos($key, '_') === 0) {
+                $customFieldsUpdate[$key] = $value;
+            }
+        }
+        
+        if (!empty($customFieldsUpdate)) {
+            update_asset_custom_fields($assetId, $customFieldsUpdate);
+        }
+    }
+    
+    // Add maintenance note if flagged
+    if ($maintenanceFlag && !empty($maintenanceNotes)) {
+        $note .= "\n[MAINTENANCE REQUIRED] " . $maintenanceNotes;
+    }
+    
+    // Checkin the asset
+    try {
+        checkin_asset($assetId, $note);
+        
+        // If maintenance flagged, update status (you may need to adjust status ID)
+        if ($maintenanceFlag) {
+            // Get the "Needs Maintenance" status ID from your Snipe-IT
+            // This would need to be configured in settings
+            // For now, we'll just add a note
+        }
+        
+        return ['success' => true, 'maintenance_flag' => $maintenanceFlag];
+    } catch (Exception $e) {
+        return ['success' => false, 'error' => $e->getMessage()];
+    }
+}
+/**
+ * Snipe-IT Status IDs for Fleet Vehicles
+ */
+define('STATUS_VEH_AVAILABLE', 5);
+define('STATUS_VEH_IN_SERVICE', 6);
+define('STATUS_VEH_OUT_OF_SERVICE', 7);
+define('STATUS_VEH_RESERVED', 8);
+
+/**
+ * Get pickup locations (parent_id = 9)
+ */
+function get_pickup_locations(): array
+{
+    $locations = get_locations();
+    $pickups = [];
+    foreach ($locations as $loc) {
+        if (isset($loc['parent']['id']) && $loc['parent']['id'] == 9) {
+            $pickups[] = $loc;
+        }
+    }
+    return $pickups;
+}
+
+/**
+ * Get field destinations (parent_id = 10)
+ */
+function get_field_destinations(): array
+{
+    $locations = get_locations();
+    $destinations = [];
+    foreach ($locations as $loc) {
+        if (isset($loc['parent']['id']) && $loc['parent']['id'] == 10) {
+            $destinations[] = $loc;
+        }
+    }
+    return $destinations;
+}
+
+/**
+ * Update asset status in Snipe-IT
+ */
+function update_asset_status(int $assetId, int $statusId): bool
+{
+    $config = require CONFIG_PATH . '/config.php';
+    $baseUrl = rtrim($config['snipeit']['base_url'], '/');
+    $token = $config['snipeit']['api_token'];
+
+    $ch = curl_init($baseUrl . '/api/v1/hardware/' . $assetId);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['status_id' => $statusId]));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Authorization: Bearer ' . $token,
+        'Accept: application/json',
+        'Content-Type: application/json'
+    ]);
+    $result = curl_exec($ch);
+    curl_close($ch);
+
+    $data = json_decode($result, true);
+    return isset($data['status']) && $data['status'] === 'success';
+}
+
+/**
+ * Update asset location in Snipe-IT
+ */
+function update_asset_location(int $assetId, int $locationId): bool
+{
+    $config = require CONFIG_PATH . '/config.php';
+    $baseUrl = rtrim($config['snipeit']['base_url'], '/');
+    $token = $config['snipeit']['api_token'];
+
+    $ch = curl_init($baseUrl . '/api/v1/hardware/' . $assetId);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['rtd_location_id' => $locationId]));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Authorization: Bearer ' . $token,
+        'Accept: application/json',
+        'Content-Type: application/json'
+    ]);
+    $result = curl_exec($ch);
+    curl_close($ch);
+
+    $data = json_decode($result, true);
+    return isset($data['status']) && $data['status'] === 'success';
+}
+
+
+/**
+ * Get all maintenance records from Snipe-IT
+ */
+function get_maintenances(int $limit = 100, int $assetId = null): array
+{
+    $url = '/maintenances?limit=' . $limit;
+    if ($assetId) {
+        $url = '/hardware/' . $assetId . '/maintenances?limit=' . $limit;
+    }
+    $response = snipeit_request('GET', $url);
+    return $response['rows'] ?? [];
+}
+
+/**
+ * Get maintenance records for a specific asset
+ */
+function get_asset_maintenances(int $assetId, int $limit = 50): array
+{
+    $response = snipeit_request('GET', '/hardware/' . $assetId . '/maintenances?limit=' . $limit);
+    return $response['rows'] ?? [];
+}
+
+/**
+ * Create a maintenance record in Snipe-IT
+ */
+function create_maintenance(array $data): ?array
+{
+    $payload = [
+        'asset_id' => $data['asset_id'],
+        'supplier_id' => $data['supplier_id'] ?? null,
+        'asset_maintenance_type' => $data['asset_maintenance_type'] ?? 'Maintenance',
+        'title' => $data['title'] ?? 'Scheduled Maintenance',
+        'start_date' => $data['start_date'] ?? date('Y-m-d'),
+        'completion_date' => $data['completion_date'] ?? $data['start_date'] ?? date('Y-m-d'),
+        'cost' => $data['cost'] ?? 0,
+        'is_warranty' => $data['is_warranty'] ?? 0,
+        'notes' => $data['notes'] ?? '',
+    ];
+    
+    $response = snipeit_request('POST', '/maintenances', $payload);
+    
+    if (isset($response['status']) && $response['status'] === 'error') {
+        error_log('Snipe-IT create maintenance error: ' . json_encode($response));
+        return null;
+    }
+    
+    return $response['payload'] ?? $response;
+}
+
+/**
+ * Get maintenance types available in Snipe-IT
+ */
+function get_maintenance_types(): array
+{
+    // Snipe-IT default maintenance types
+    return [
+        'Maintenance' => 'Preventive Maintenance',
+        'Repair' => 'Repair',
+        'Upgrade' => 'Upgrade',
+        'PAT Test' => 'PAT Test',
+        'Calibration' => 'Calibration',
+        'Software Support' => 'Software Support',
+        'Hardware Support' => 'Hardware Support',
+    ];
+}
+
+/**
+ * Get suppliers from Snipe-IT (for service providers)
+ */
+function get_suppliers(): array
+{
+    $response = snipeit_request('GET', '/suppliers?limit=100');
+    return $response['rows'] ?? [];
+}
+/**
+ * Get all users from Snipe-IT
+ */
+function get_snipeit_users(int $limit = 100, string $search = ''): array
+{
+    $url = '/users?limit=' . $limit;
+    if ($search) {
+        $url .= '&search=' . urlencode($search);
+    }
+    $response = snipeit_request('GET', $url);
+    return $response['rows'] ?? [];
+}
+
+/**
+ * Get a single user from Snipe-IT
+ */
+function get_snipeit_user(int $userId): ?array
+{
+    $response = snipeit_request('GET', '/users/' . $userId);
+    return $response['id'] ? $response : null;
+}
+/**
+ * Create a new user in Snipe-IT
+ */
+function create_snipeit_user(array $data): ?array
+{
+    $password = $data['password'] ?? 'TempPass' . rand(1000, 9999) . '!';
+    
+    $payload = [
+        'first_name' => $data['first_name'],
+        'last_name' => $data['last_name'] ?? '',
+        'username' => $data['username'] ?? $data['email'],
+        'email' => $data['email'],
+        'password' => $password,
+        'password_confirmation' => $password,
+        'activated' => isset($data['activated']) ? (bool)$data['activated'] : true,
+        'groups' => $data['groups'] ?? SNIPEIT_GROUP_DRIVERS,
+        'vip' => isset($data['vip']) ? (bool)$data['vip'] : false,
+        'notes' => $data['notes'] ?? 'Created via SnipeScheduler',
+    ];
+    
+    $response = snipeit_request('POST', '/users', $payload);
+    
+    if (isset($response['status']) && $response['status'] === 'error') {
+        error_log('Snipe-IT create user error: ' . json_encode($response));
+        return null;
+    }
+    
+    if (isset($response['status']) && $response['status'] === 'success') {
+        return $response['payload'] ?? $response;
+    }
+    
+    return $response;
+}
+
+/**
+ * Update a user in Snipe-IT
+ */
+function update_snipeit_user(int $userId, array $data): ?array
+{
+    $payload = [];
+    
+    if (isset($data['first_name'])) $payload['first_name'] = $data['first_name'];
+    if (isset($data['last_name'])) $payload['last_name'] = $data['last_name'];
+    if (isset($data['email'])) $payload['email'] = $data['email'];
+    if (isset($data['activated'])) $payload['activated'] = $data['activated'];
+    if (isset($data['groups'])) $payload['groups'] = $data['groups'];
+    if (isset($data['notes'])) $payload['notes'] = $data['notes'];
+    
+    $response = snipeit_request('PATCH', '/users/' . $userId, $payload);
+    
+    if (isset($response['status']) && $response['status'] === 'error') {
+        error_log('Snipe-IT update user error: ' . json_encode($response));
+        return null;
+    }
+    
+    return $response['payload'] ?? $response;
+}
+
+/**
+ * Deactivate a user in Snipe-IT
+ */
+function deactivate_snipeit_user(int $userId): bool
+{
+    $response = update_snipeit_user($userId, ['activated' => false]);
+    return $response !== null;
+}
+
+/**
+ * Activate a user in Snipe-IT
+ */
+function activate_snipeit_user(int $userId): bool
+{
+    $response = update_snipeit_user($userId, ['activated' => true]);
+    return $response !== null;
+}
+
+/**
+ * Get Snipe-IT groups
+ */
+function get_snipeit_groups(): array
+{
+    $response = snipeit_request('GET', '/groups');
+    return $response['rows'] ?? [];
+}
+
+// Group ID constants for fleet management
+define('SNIPEIT_GROUP_DRIVERS', 2);
+define('SNIPEIT_GROUP_FLEET_STAFF', 3);
+define('SNIPEIT_GROUP_FLEET_ADMIN', 4);
+
+
+/**
+ * Get user permissions from Snipe-IT groups
+ * Returns array with is_admin, is_staff, is_vip, snipeit_id
+ */
+function get_user_permissions_from_snipeit(string $email): array
+{
+    $result = [
+        'snipeit_id' => null,
+        'is_super_admin' => false,  // Group 1 - Admins (full system access)
+        'is_admin' => false,         // Group 4 - Fleet Admin
+        'is_staff' => false,         // Group 3 - Fleet Staff
+        'is_vip' => false,
+        'groups' => [],
+        'exists' => false,
+    ];
+    
+    $user = get_snipeit_user_by_email($email);
+    
+    if (!$user) {
+        return $result;
+    }
+    
+    $result['exists'] = true;
+    $result['snipeit_id'] = $user['id'] ?? null;
+    $result['is_vip'] = !empty($user['vip']);
+    
+    // Get user groups
+    $userGroups = [];
+    if (isset($user['groups']['rows'])) {
+        foreach ($user['groups']['rows'] as $group) {
+            $userGroups[] = (int)$group['id'];
+            $result['groups'][] = $group['name'];
+        }
+    }
+    
+    // Check group permissions
+    // Admins (group 1) = Super Admin (full system access including Settings)
+    if (in_array(1, $userGroups)) {
+        $result['is_super_admin'] = true;
+        $result['is_admin'] = true;
+        $result['is_staff'] = true;
+    }
+    
+    // Fleet Admin (group 4) = is_admin + is_staff
+    if (in_array(SNIPEIT_GROUP_FLEET_ADMIN, $userGroups)) {
+        $result['is_admin'] = true;
+        $result['is_staff'] = true;
+    }
+    
+    // Fleet Staff (group 3) = is_staff
+    if (in_array(SNIPEIT_GROUP_FLEET_STAFF, $userGroups)) {
+        $result['is_staff'] = true;
+    }
+    
+    // Drivers (group 2) = basic user (can book vehicles)
+    // No special permissions needed, just needs to exist
+    
+    return $result;
+}
+
+
+/**
+ * Sync user name from OAuth to Snipe-IT
+ */
+function sync_user_name_to_snipeit(int $snipeitId, string $firstName, string $lastName): bool
+{
+    if ($snipeitId <= 0) {
+        return false;
+    }
+    
+    $result = update_snipeit_user($snipeitId, [
+        'first_name' => $firstName,
+        'last_name' => $lastName,
+    ]);
+    
+    return $result !== null;
+}
+/**
+ * Set VI"smart API" in a few critical areas—specifically through the use of hardcoded custom database columns (e.g., _snipeit_vin_5) and hardcoded environment-specific strings (e.g., "Amtrak", "B&P").
+
+If you deploy this code to a different Snipe-IT instance, the custom field IDs will change (e.g., _snipeit_vin_5 might become _snipeit_vin_12), and the API calls will fail. Additionally, fetching all records (like limit=100) and filtering them in PHP is inefficient; it is much better to let Snipe-IT's API do the filtering.P status for a user in Snipe-IT
+ */
+function set_user_vip_status(int $userId, bool $isVip): bool
+{
+    $response = snipeit_request('PATCH', '/users/' . $userId, [
+        'vip' => $isVip ? '1' : '0',
+    ]);
+    
+    if (isset($response['status']) && $response['status'] === 'error') {
+        error_log('Snipe-IT set VIP error: ' . json_encode($response));
+        return false;
+    }
+    
+    return true;
+}
+
+// ============================================================
+// VEHICLE MANAGEMENT - Smart API with Dynamic Field Mapping
+// ============================================================
+
+/**
+ * Get custom fields mapping for a category/fieldset
+ * Returns array like: ['vin' => '_snipeit_vin_5', 'license_plate' => '_snipeit_license_plate_9']
+ * This dynamically discovers field mappings from Snipe-IT
+ */
+function get_custom_fields_mapping(?int $fieldsetId = null): array
+{
+    static $cache = [];
+    
+    $cacheKey = $fieldsetId ?? 'default';
+    if (isset($cache[$cacheKey])) {
+        return $cache[$cacheKey];
+    }
+    
+    $mapping = [];
+    
+    // If no fieldset specified, try to get from fleet models
+    if (!$fieldsetId) {
+        $fieldsetId = get_fleet_fieldset_id();
+    }
+    
+    if (!$fieldsetId) {
+        return $mapping;
+    }
+    
+    // Get fieldset with fields
+    $response = snipeit_request('GET', '/fieldsets/' . $fieldsetId);
+    
+    if (!isset($response['fields']['rows'])) {
+        return $mapping;
+    }
+    
+    foreach ($response['fields']['rows'] as $field) {
+        $name = $field['name'] ?? '';
+        $dbColumn = $field['db_column_name'] ?? $field['db_column'] ?? '';
+        
+        if ($name && $dbColumn) {
+            // Create a normalized key from field name
+            $key = strtolower(preg_replace('/[^a-zA-Z0-9]/', '_', $name));
+            $key = preg_replace('/_+/', '_', $key); // Remove multiple underscores
+            $key = trim($key, '_');
+            
+            $mapping[$key] = $dbColumn;
+            
+            // Map specific field names to canonical keys
+            // Order matters - more specific matches first
+            $fieldNameLower = strtolower($name);
+            
+            if (strpos($fieldNameLower, 'current mileage') !== false || $fieldNameLower === 'current_mileage') {
+                $mapping['current_mileage'] = $dbColumn;
+            } elseif (strpos($fieldNameLower, 'last maintenance mileage') !== false) {
+                $mapping['last_maintenance_mileage'] = $dbColumn;
+            } elseif (strpos($fieldNameLower, 'last maintenance date') !== false) {
+                $mapping['last_maintenance_date'] = $dbColumn;
+            } elseif (strpos($fieldNameLower, 'maintenance interval miles') !== false) {
+                $mapping['maintenance_interval_miles'] = $dbColumn;
+            } elseif (strpos($fieldNameLower, 'maintenance interval days') !== false) {
+                $mapping['maintenance_interval_days'] = $dbColumn;
+            } elseif (strpos($fieldNameLower, 'oil change') !== false) {
+                $mapping['last_oil_change_miles'] = $dbColumn;
+            } elseif (strpos($fieldNameLower, 'tire rotation') !== false) {
+                $mapping['last_tire_rotation_miles'] = $dbColumn;
+            } elseif (strpos($fieldNameLower, 'insurance') !== false) {
+                $mapping['insurance_expiry'] = $dbColumn;
+            } elseif (strpos($fieldNameLower, 'registration') !== false) {
+                $mapping['registration_expiry'] = $dbColumn;
+            } elseif (strpos($fieldNameLower, 'vin') !== false && strlen($fieldNameLower) < 10) {
+                $mapping['vin'] = $dbColumn;
+            } elseif (strpos($fieldNameLower, 'license plate') !== false || strpos($fieldNameLower, 'plate') !== false) {
+                $mapping['license_plate'] = $dbColumn;
+            } elseif (strpos($fieldNameLower, 'vehicle year') !== false || $fieldNameLower === 'year') {
+                $mapping['vehicle_year'] = $dbColumn;
+            } elseif (strpos($fieldNameLower, 'visual inspection') !== false) {
+                $mapping['visual_inspection'] = $dbColumn;
+            } elseif (strpos($fieldNameLower, 'checkout time') !== false) {
+                $mapping['checkout_time'] = $dbColumn;
+            } elseif (strpos($fieldNameLower, 'return time') !== false && strpos($fieldNameLower, 'expected') === false) {
+                $mapping['return_time'] = $dbColumn;
+            } elseif (strpos($fieldNameLower, 'expected return') !== false) {
+                $mapping['expected_return_time'] = $dbColumn;
+            }
+        }
+    }
+    
+    $cache[$cacheKey] = $mapping;
+    return $mapping;
+}
+
+/**
+ * Map user-friendly field names to Snipe-IT db_column names
+ */
+function map_custom_fields(array $data, ?int $fieldsetId = null): array
+{
+    $mapping = get_custom_fields_mapping($fieldsetId);
+    $result = [];
+    
+    foreach ($data as $key => $value) {
+        if ($value === '' || $value === null) {
+            continue;
+        }
+        
+        $normalizedKey = strtolower(preg_replace('/[^a-zA-Z0-9]/', '_', $key));
+        
+        if (isset($mapping[$normalizedKey])) {
+            $result[$mapping[$normalizedKey]] = $value;
+        } elseif (isset($mapping[$key])) {
+            $result[$mapping[$key]] = $value;
+        } elseif (strpos($key, '_snipeit_') === 0) {
+            // Already a db_column format
+            $result[$key] = $value;
+        }
+    }
+    
+    return $result;
+}
+
+/**
+ * Get all manufacturers from Snipe-IT
+ */
+function get_manufacturers(int $limit = 100, string $search = ''): array
+{
+    $url = '/manufacturers?limit=' . $limit;
+    if ($search) {
+        $url .= '&search=' . urlencode($search);
+    }
+    $response = snipeit_request('GET', $url);
+    return $response['rows'] ?? [];
+}
+
+/**
+ * Find manufacturer by exact name (API-level search)
+ */
+function find_manufacturer_by_name(string $name): ?array
+{
+    if (empty(trim($name))) {
+        return null;
+    }
+    
+    $response = snipeit_request('GET', '/manufacturers?search=' . urlencode($name) . '&limit=5');
+    $rows = $response['rows'] ?? [];
+    
+    foreach ($rows as $m) {
+        if (strcasecmp(trim($m['name']), trim($name)) === 0) {
+            return $m;
+        }
+    }
+    
+    return null;
+}
+
+/**
+ * Create a new manufacturer in Snipe-IT
+ */
+function create_manufacturer(string $name): ?array
+{
+    if (empty(trim($name))) {
+        return null;
+    }
+    
+    $response = snipeit_request('POST', '/manufacturers', [
+        'name' => trim($name),
+    ]);
+    
+    if (isset($response['status']) && $response['status'] === 'error') {
+        error_log('Snipe-IT create manufacturer error: ' . json_encode($response));
+        return null;
+    }
+    
+    return $response['payload'] ?? $response;
+}
+
+/**
+ * Get or create manufacturer (prevents duplicates using API search)
+ */
+function get_or_create_manufacturer(string $name): ?array
+{
+    $existing = find_manufacturer_by_name($name);
+    if ($existing) {
+        return $existing;
+    }
+    return create_manufacturer($name);
+}
+
+/**
+ * Get all asset models from Snipe-IT
+ */
+function get_models(int $limit = 100, string $search = '', ?int $categoryId = null): array
+{
+    $url = '/models?limit=' . $limit;
+    if ($search) {
+        $url .= '&search=' . urlencode($search);
+    }
+    if ($categoryId) {
+        $url .= '&category_id=' . $categoryId;
+    }
+    $response = snipeit_request('GET', $url);
+    return $response['rows'] ?? [];
+}
+
+/**
+ * Find model by exact name (API-level search)
+ */
+function find_model_by_name(string $name, ?int $categoryId = null): ?array
+{
+    if (empty(trim($name))) {
+        return null;
+    }
+    
+    $url = '/models?search=' . urlencode($name) . '&limit=5';
+    if ($categoryId) {
+        $url .= '&category_id=' . $categoryId;
+    }
+    
+    $response = snipeit_request('GET', $url);
+    $rows = $response['rows'] ?? [];
+    
+    foreach ($rows as $m) {
+        if (strcasecmp(trim($m['name']), trim($name)) === 0) {
+            return $m;
+        }
+    }
+    
+    return null;
+}
+
+/**
+ * Get fleet vehicle models only (filtered by Fleet Vehicles category)
+ */
+function get_fleet_models(int $limit = 100): array
+{
+    $categoryId = get_fleet_category_id();
+    if (!$categoryId) {
+        return [];
+    }
+    return get_models($limit, '', $categoryId);
+}
+
+/**
+ * Create a new asset model in Snipe-IT
+ */
+function create_model(array $data): ?array
+{
+    if (empty($data['name']) || empty($data['manufacturer_id'])) {
+        error_log('Snipe-IT create model error: name and manufacturer_id are required');
+        return null;
+    }
+    
+    $categoryId = $data['category_id'] ?? get_fleet_category_id();
+    $fieldsetId = $data['fieldset_id'] ?? get_fleet_fieldset_id();
+    
+    if (!$categoryId) {
+        error_log('Snipe-IT create model error: No category ID found');
+        return null;
+    }
+    
+    $payload = [
+        'name' => $data['name'],
+        'manufacturer_id' => (int)$data['manufacturer_id'],
+        'category_id' => (int)$categoryId,
+    ];
+    
+    if (!empty($data['model_number'])) {
+        $payload['model_number'] = $data['model_number'];
+    }
+    
+    if ($fieldsetId) {
+        $payload['fieldset_id'] = (int)$fieldsetId;
+    }
+    
+    $response = snipeit_request('POST', '/models', $payload);
+    
+    if (isset($response['status']) && $response['status'] === 'error') {
+        error_log('Snipe-IT create model error: ' . json_encode($response));
+        return null;
+    }
+    
+    return $response['payload'] ?? $response;
+}
+
+/**
+ * Get or create model (prevents duplicates using API search)
+ */
+function get_or_create_model(string $name, int $manufacturerId, string $modelNumber = ''): ?array
+{
+    $categoryId = get_fleet_category_id();
+    $existing = find_model_by_name($name, $categoryId);
+    
+    if ($existing) {
+        return $existing;
+    }
+    
+    return create_model([
+        'name' => $name,
+        'manufacturer_id' => $manufacturerId,
+        'model_number' => $modelNumber,
+    ]);
+}
+
+/**
+ * Get all categories from Snipe-IT
+ */
+function get_categories(int $limit = 100, string $search = ''): array
+{
+    $url = '/categories?limit=' . $limit;
+    if ($search) {
+        $url .= '&search=' . urlencode($search);
+    }
+    $response = snipeit_request('GET', $url);
+    return $response['rows'] ?? [];
+}
+
+/**
+ * Get the Fleet Vehicles category ID (cached, configurable)
+ */
+function get_fleet_category_id(): ?int
+{
+    static $categoryId = null;
+    
+    if ($categoryId !== null) {
+        return $categoryId;
+    }
+    
+    // Check config first
+    if (defined('SNIPEIT_FLEET_CATEGORY_ID')) {
+        $categoryId = SNIPEIT_FLEET_CATEGORY_ID;
+        return $categoryId;
+    }
+    
+    // Search via API
+    $response = snipeit_request('GET', '/categories?search=Fleet&limit=10');
+    $categories = $response['rows'] ?? [];
+    
+    foreach ($categories as $cat) {
+        if (stripos($cat['name'], 'Fleet') !== false) {
+            $categoryId = (int)$cat['id'];
+            return $categoryId;
+        }
+    }
+    
+    return null;
+}
+
+/**
+ * Get the Fleet Vehicle fieldset ID (cached, configurable)
+ */
+function get_fleet_fieldset_id(): ?int
+{
+    static $fieldsetId = null;
+    
+    if ($fieldsetId !== null) {
+        return $fieldsetId;
+    }
+    
+    // Check config first
+    if (defined('SNIPEIT_FLEET_FIELDSET_ID')) {
+        $fieldsetId = SNIPEIT_FLEET_FIELDSET_ID;
+        return $fieldsetId;
+    }
+    
+    // Search via API
+    $response = snipeit_request('GET', '/fieldsets?limit=50');
+    $fieldsets = $response['rows'] ?? [];
+    
+    foreach ($fieldsets as $fs) {
+        if (stripos($fs['name'], 'Fleet') !== false || stripos($fs['name'], 'Vehicle') !== false) {
+            $fieldsetId = (int)$fs['id'];
+            return $fieldsetId;
+        }
+    }
+    
+    return null;
+}
+
+/**
+ * Get all status labels from Snipe-IT
+ */
+function get_status_labels(string $search = ''): array
+{
+    $url = '/statuslabels?limit=100';
+    if ($search) {
+        $url .= '&search=' . urlencode($search);
+    }
+    $response = snipeit_request('GET', $url);
+    return $response['rows'] ?? [];
+}
+
+/**
+ * Get deployable status labels (for available vehicles)
+ */
+function get_deployable_status_labels(): array
+{
+    $labels = get_status_labels();
+    return array_filter($labels, fn($l) => !empty($l['type']) && $l['type'] === 'deployable');
+}
+
+/**
+ * Get the VEH-Available status ID (cached, configurable)
+ */
+function get_veh_available_status_id(): ?int
+{
+    static $statusId = null;
+    
+    if ($statusId !== null) {
+        return $statusId;
+    }
+    
+    // Check config first
+    if (defined('SNIPEIT_VEH_AVAILABLE_STATUS_ID')) {
+        $statusId = SNIPEIT_VEH_AVAILABLE_STATUS_ID;
+        return $statusId;
+    }
+    
+    // Search via API
+    $labels = get_status_labels('VEH-Available');
+    foreach ($labels as $label) {
+        if (stripos($label['name'], 'VEH-Available') !== false) {
+            $statusId = (int)$label['id'];
+            return $statusId;
+        }
+    }
+    
+    // Fallback: first deployable status
+    $deployable = get_deployable_status_labels();
+    if (!empty($deployable)) {
+        $first = reset($deployable);
+        $statusId = (int)$first['id'];
+        return $statusId;
+    }
+    
+    return null;
+}
+
+/**
+ * Get all locations from Snipe-IT
+ */
+function get_locations(int $limit = 100, string $search = ''): array
+{
+    $url = '/locations?limit=' . $limit;
+    if ($search) {
+        $url .= '&search=' . urlencode($search);
+    }
+    $response = snipeit_request('GET', $url);
+    return $response['rows'] ?? [];
+}
+
+/**
+ * Get all companies from Snipe-IT
+ */
+function get_companies(string $search = ''): array
+{
+    $url = '/companies?limit=100';
+    if ($search) {
+        $url .= '&search=' . urlencode($search);
+    }
+    $response = snipeit_request('GET', $url);
+    return $response['rows'] ?? [];
+}
+
+/**
+ * Create a new vehicle (hardware asset) in Snipe-IT
+ * Uses dynamic field mapping - pass user-friendly field names
+ * 
+ * @param array $data [
+ *   'model_id' => (required),
+ *   'asset_tag' => (optional, auto-generated if empty),
+ *   'name' => (optional),
+ *   'status_id' => (optional, defaults to VEH-Available),
+ *   'location_id' => (optional),
+ *   'company_id' => (optional),
+ *   'serial' => (optional),
+ *   'notes' => (optional),
+ *   // Custom fields with user-friendly names:
+ *   'vin' => '...',
+ *   'license_plate' => '...',
+ *   'vehicle_year' => '...',
+ *   'current_mileage' => '...',
+ *   etc.
+ * ]
+ */
+function create_vehicle(array $data): ?array
+{
+    // Required fields
+    if (empty($data['model_id'])) {
+        error_log('Snipe-IT create vehicle error: model_id is required');
+        return null;
+    }
+    
+    // Build base payload
+    $payload = [
+        'model_id' => (int)$data['model_id'],
+        'status_id' => (int)($data['status_id'] ?? get_veh_available_status_id()),
+        'requestable' => true,
+    ];
+    
+    // Optional standard fields
+    if (!empty($data['asset_tag'])) {
+        $payload['asset_tag'] = $data['asset_tag'];
+    }
+    if (!empty($data['name'])) {
+        $payload['name'] = $data['name'];
+    }
+    if (!empty($data['serial'])) {
+        $payload['serial'] = $data['serial'];
+    }
+    if (!empty($data['location_id'])) {
+        $payload['rtd_location_id'] = (int)$data['location_id'];
+    }
+    if (!empty($data['company_id'])) {
+        $payload['company_id'] = (int)$data['company_id'];
+    }
+    if (!empty($data['notes'])) {
+        $payload['notes'] = $data['notes'];
+    }
+    
+    // Map custom fields dynamically
+    $customFieldKeys = [
+        'vin', 'license_plate', 'vehicle_year', 'current_mileage',
+        'last_oil_change_miles', 'last_tire_rotation_miles',
+        'insurance_expiry', 'registration_expiry',
+        'maintenance_interval_miles', 'maintenance_interval_days',
+        'last_maintenance_date', 'last_maintenance_mileage',
+    ];
+    
+    $customData = [];
+    foreach ($customFieldKeys as $key) {
+        if (isset($data[$key]) && $data[$key] !== '') {
+            $customData[$key] = $data[$key];
+        }
+    }
+    
+    if (!empty($customData)) {
+        $mappedFields = map_custom_fields($customData);
+        $payload = array_merge($payload, $mappedFields);
+    }
+    
+    $response = snipeit_request('POST', '/hardware', $payload);
+    
+    if (isset($response['status']) && $response['status'] === 'error') {
+        error_log('Snipe-IT create vehicle error: ' . json_encode($response));
+        return null;
+    }
+    
+    return $response['payload'] ?? $response;
+}
+
+/**
+ * Get fleet vehicles (hardware assets in Fleet Vehicles category)
+ */
+function get_fleet_vehicles(int $limit = 100, ?int $statusId = null): array
+{
+    $categoryId = get_fleet_category_id();
+    
+    $url = '/hardware?limit=' . $limit;
+    if ($categoryId) {
+        $url .= '&category_id=' . $categoryId;
+    }
+    if ($statusId) {
+        $url .= '&status_id=' . $statusId;
+    }
+    
+    $response = snipeit_request('GET', $url);
+    return $response['rows'] ?? [];
+}

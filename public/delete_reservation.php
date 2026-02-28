@@ -4,6 +4,11 @@
 
 require_once __DIR__ . '/../src/bootstrap.php';
 require_once SRC_PATH . '/auth.php';
+
+// CSRF Protection
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    csrf_check();
+}
 require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/activity_log.php';
 
