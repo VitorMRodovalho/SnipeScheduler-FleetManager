@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 if ($action === 'approve') {
                 $stmt = $pdo->prepare("UPDATE reservations SET approval_status = 'approved', status = 'pending',
-                    approved_by_name = ?, approved_by_email = ?, approved_at = NOW() WHERE id = ?");
+                    approved_by_name = ?, approved_by_email = ?, approved_at = '" . date('Y-m-d H:i:s') . "' WHERE id = ?");
                 $stmt->execute([$userName, $userEmail, $reservationId]);
 
 		$stmt = $pdo->prepare("INSERT INTO approval_history (reservation_id, action, actor_name, actor_email, notes)
@@ -60,9 +60,9 @@ if ($action === 'approve') {
                 // The reservation system tracks reserved state
                 // Status will change to VEH-In Service on actual checkout
                 
-// Send rejection email
+// Send approval email
                 $emailService = get_email_service($pdo);
-                $emailService->notifyRejected($reservation, $userName, $notes);               
+                $emailService->notifyApproved($reservation, $userName);               
 
  $success = "Reservation #{$reservationId} has been approved.";
 
@@ -73,7 +73,7 @@ if ($action === 'approve') {
 
             } else {
                 $stmt = $pdo->prepare("UPDATE reservations SET approval_status = 'rejected', status = 'cancelled',
-                    approved_by_name = ?, approved_by_email = ?, approved_at = NOW() WHERE id = ?");
+                    approved_by_name = ?, approved_by_email = ?, approved_at = '" . date('Y-m-d H:i:s') . "' WHERE id = ?");
                 $stmt->execute([$userName, $userEmail, $reservationId]);
 
                 

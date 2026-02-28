@@ -42,6 +42,8 @@ class FleetEmailService
         $fromName = $smtp['from_name'] ?: 'FDT Fleet Management';
         $mail->setFrom($fromEmail, $fromName);
         $mail->isHTML(true);
+        $mail->Timeout = 10; // 10 second timeout
+        $mail->SMTPDebug = 0;
         
         return $mail;
     }
