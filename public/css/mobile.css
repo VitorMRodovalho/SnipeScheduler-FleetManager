@@ -1,0 +1,419 @@
+/**
+ * SnipeScheduler Fleet Manager - Mobile Optimizations
+ * Add this to layout.php header or as a separate CSS file
+ * Ensures touch-friendly interactions on Android/iOS
+ */
+
+/* =====================================================
+   MOBILE BREAKPOINT (max-width: 768px)
+   ===================================================== */
+@media (max-width: 768px) {
+    
+    /* -------------------------------------------------
+       TOUCH TARGETS: Minimum 44x44px (Apple HIG / Google MD)
+       ------------------------------------------------- */
+    
+    /* Override small buttons to be touch-friendly */
+    .btn-sm {
+        min-height: 44px !important;
+        min-width: 44px !important;
+        padding: 0.5rem 1rem !important;
+        font-size: 1rem !important;
+        line-height: 1.5 !important;
+    }
+    
+    /* Regular buttons - ensure minimum size */
+    .btn {
+        min-height: 44px;
+        padding: 0.625rem 1rem;
+    }
+    
+    /* Form controls - larger touch targets */
+    .form-control,
+    .form-select {
+        min-height: 44px !important;
+        font-size: 16px !important; /* Prevents iOS zoom on focus */
+        padding: 0.625rem 0.75rem !important;
+    }
+    
+    /* Checkboxes and radio buttons */
+    .form-check-input {
+        width: 1.5rem !important;
+        height: 1.5rem !important;
+        margin-top: 0.1rem !important;
+    }
+    
+    .form-check-label {
+        padding-left: 0.5rem;
+        line-height: 1.5rem;
+    }
+    
+    /* -------------------------------------------------
+       TABLE RESPONSIVENESS
+       ------------------------------------------------- */
+    
+    /* Make tables scrollable horizontally */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Wrap tables in responsive container if not already */
+    table.table {
+        min-width: 600px;
+    }
+    
+    /* Larger table cells for touch */
+    .table td,
+    .table th {
+        padding: 0.75rem 0.5rem !important;
+        vertical-align: middle !important;
+    }
+    
+    /* Table action buttons - larger touch area */
+    .table .btn-sm {
+        min-height: 38px !important;
+        min-width: 38px !important;
+        margin: 2px !important;
+    }
+    
+    /* -------------------------------------------------
+       NAVIGATION & HEADER
+       ------------------------------------------------- */
+    
+    /* Navbar toggle button */
+    .navbar-toggler {
+        min-height: 44px;
+        min-width: 44px;
+        padding: 0.5rem;
+    }
+    
+    /* Nav links */
+    .nav-link {
+        padding: 0.75rem 1rem !important;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+    
+    /* Dropdown items */
+    .dropdown-item {
+        padding: 0.75rem 1rem !important;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+    
+    /* -------------------------------------------------
+       MODALS - Full screen on mobile
+       ------------------------------------------------- */
+    
+    .modal-dialog {
+        margin: 0 !important;
+        max-width: 100% !important;
+        min-height: 100vh;
+    }
+    
+    .modal-content {
+        border-radius: 0 !important;
+        min-height: 100vh;
+    }
+    
+    .modal-body {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        max-height: calc(100vh - 120px);
+    }
+    
+    /* Modal close button - larger */
+    .btn-close {
+        width: 44px !important;
+        height: 44px !important;
+        padding: 1rem !important;
+    }
+    
+    /* -------------------------------------------------
+       CARDS & CONTAINERS
+       ------------------------------------------------- */
+    
+    .card {
+        margin-bottom: 1rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    /* Feature cards - stack vertically */
+    .row .col-md-4,
+    .row .col-md-3,
+    .row .col-lg-3,
+    .row .col-lg-4 {
+        margin-bottom: 1rem;
+    }
+    
+    /* -------------------------------------------------
+       DATE/TIME INPUTS - Native mobile pickers
+       ------------------------------------------------- */
+    
+    input[type="date"],
+    input[type="datetime-local"],
+    input[type="time"] {
+        min-height: 44px !important;
+        font-size: 16px !important;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+    
+    /* -------------------------------------------------
+       ALERTS & BADGES
+       ------------------------------------------------- */
+    
+    .alert {
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .badge {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+    }
+    
+    /* -------------------------------------------------
+       SPACING ADJUSTMENTS
+       ------------------------------------------------- */
+    
+    .container,
+    .container-fluid {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    /* Stack horizontal button groups */
+    .btn-group {
+        flex-wrap: wrap;
+    }
+    
+    .btn-group .btn {
+        margin-bottom: 0.25rem;
+    }
+    
+    /* -------------------------------------------------
+       QUICK ACTIONS (scan.php, quick.php)
+       ------------------------------------------------- */
+    
+    /* Large action buttons for quick access */
+    .quick-action-btn,
+    .action-card .btn {
+        min-height: 60px !important;
+        font-size: 1.125rem !important;
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* -------------------------------------------------
+       DASHBOARD STAT CARDS
+       ------------------------------------------------- */
+    
+    .stat-card,
+    .dashboard-card {
+        margin-bottom: 1rem;
+    }
+    
+    .stat-card h2,
+    .stat-card .display-4 {
+        font-size: 2rem;
+    }
+    
+    /* -------------------------------------------------
+       FORMS - Full width on mobile
+       ------------------------------------------------- */
+    
+    .row > .col-md-6,
+    .row > .col-lg-6 {
+        width: 100%;
+    }
+    
+    /* Form labels - more spacing */
+    .form-label {
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+    
+    /* Submit buttons - full width */
+    form .btn[type="submit"],
+    form button[type="submit"] {
+        width: 100%;
+        margin-top: 1rem;
+    }
+    
+    /* -------------------------------------------------
+       PAGINATION
+       ------------------------------------------------- */
+    
+    .pagination .page-link {
+        min-width: 44px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.5rem;
+    }
+    
+    /* -------------------------------------------------
+       SCROLLING & TOUCH
+       ------------------------------------------------- */
+    
+    /* Smooth scrolling */
+    html {
+        scroll-behavior: smooth;
+    }
+    
+    /* Prevent horizontal overflow */
+    body {
+        overflow-x: hidden;
+    }
+    
+    /* Touch-action for better responsiveness */
+    button, 
+    a, 
+    .btn,
+    input,
+    select,
+    textarea {
+        touch-action: manipulation;
+    }
+    
+    /* Remove tap highlight on iOS */
+    * {
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    /* -------------------------------------------------
+       QR SCANNER SPECIFIC
+       ------------------------------------------------- */
+    
+    #reader {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    
+    #reader video {
+        width: 100% !important;
+        height: auto !important;
+    }
+    
+    /* -------------------------------------------------
+       ACCESSIBILITY FOCUS STATES
+       ------------------------------------------------- */
+    
+    .btn:focus,
+    .form-control:focus,
+    .form-select:focus,
+    a:focus {
+        outline: 3px solid rgba(13, 110, 253, 0.5);
+        outline-offset: 2px;
+    }
+}
+
+/* =====================================================
+   SMALL MOBILE (max-width: 480px)
+   ===================================================== */
+@media (max-width: 480px) {
+    
+    /* Even larger touch targets */
+    .btn {
+        min-height: 48px;
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Hide non-essential columns in tables */
+    .table .d-none-mobile,
+    .table .hide-mobile {
+        display: none !important;
+    }
+    
+    /* Smaller headings */
+    h1 { font-size: 1.75rem; }
+    h2 { font-size: 1.5rem; }
+    h3 { font-size: 1.25rem; }
+    
+    /* Card padding */
+    .card-body {
+        padding: 0.75rem;
+    }
+    
+    /* Footer - stack elements */
+    footer .text-center {
+        font-size: 0.75rem;
+    }
+}
+
+/* =====================================================
+   LANDSCAPE ORIENTATION
+   ===================================================== */
+@media (max-width: 768px) and (orientation: landscape) {
+    
+    /* Reduce modal height in landscape */
+    .modal-content {
+        min-height: auto;
+        max-height: 100vh;
+    }
+    
+    .modal-body {
+        max-height: calc(100vh - 100px);
+    }
+    
+    /* QR scanner adjustments */
+    #reader {
+        max-height: 60vh;
+    }
+}
+
+/* =====================================================
+   iOS SPECIFIC FIXES
+   ===================================================== */
+@supports (-webkit-touch-callout: none) {
+    
+    /* Prevent iOS zoom on input focus */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="date"],
+    input[type="datetime-local"],
+    select,
+    textarea {
+        font-size: 16px !important;
+    }
+    
+    /* Fix iOS button styling */
+    input[type="submit"],
+    input[type="button"],
+    button {
+        -webkit-appearance: none;
+        border-radius: 0.375rem;
+    }
+    
+    /* Momentum scrolling */
+    .modal-body,
+    .table-responsive {
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* =====================================================
+   PRINT STYLES (bonus)
+   ===================================================== */
+@media print {
+    .btn,
+    .navbar,
+    .no-print {
+        display: none !important;
+    }
+    
+    .table {
+        min-width: auto !important;
+    }
+}

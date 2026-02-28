@@ -182,15 +182,16 @@ if (!function_exists('layout_render_nav')) {
 if (!function_exists('layout_footer')) {
     function layout_footer(): void
     {
-        $versionFile = APP_ROOT . '/version.txt';
-        $versionRaw  = is_file($versionFile) ? trim((string)@file_get_contents($versionFile)) : '';
-        $version     = $versionRaw !== '' ? $versionRaw : 'dev';
-        $versionEsc  = htmlspecialchars($version, ENT_QUOTES, 'UTF-8');
+        $version = defined('SNIPESCHEDULER_VERSION') ? SNIPESCHEDULER_VERSION : '2.0.0';
+        $versionEsc = htmlspecialchars($version, ENT_QUOTES, 'UTF-8');
 
-        echo '<script src="assets/nav.js"></script>';
-        echo '<footer class="text-center text-muted mt-4 small">'
-            . 'SnipeScheduler Version ' . $versionEsc . ' - Created by '
-            . '<a href="https://www.linkedin.com/in/ben-pirozzolo-76212a88" target="_blank" rel="noopener noreferrer">Ben Pirozzolo</a>'
+        echo '<footer class="text-center text-muted mt-4 py-3 small">'
+            . '<div>SnipeScheduler Fleet Manager v' . $versionEsc . '</div>'
+            . '<div class="mt-1">'
+            . 'Based on <a href="https://github.com/JSY-Ben/SnipeScheduler" target="_blank" rel="noopener noreferrer">SnipeScheduler</a> by Ben Pirozzolo | '
+            . 'Fleet Manager by <a href="https://github.com/VitorMRodovalho" target="_blank" rel="noopener noreferrer">Vitor Rodovalho</a> | '
+            . 'Powered by <a href="https://snipeitapp.com" target="_blank" rel="noopener noreferrer">Snipe-IT</a>'
+            . '</div>'
             . '</footer>';
     }
 }

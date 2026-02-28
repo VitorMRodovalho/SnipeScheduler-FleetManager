@@ -114,6 +114,7 @@ activity_log_event('reservation_submitted', 'Reservation submitted', [
     <title>Booking submitted</title>
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/booking/css/mobile.css">
 </head>
 <body class="p-4">
 <div class="container">

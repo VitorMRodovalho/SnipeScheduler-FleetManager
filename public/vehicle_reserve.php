@@ -180,6 +180,7 @@ function get_location_name($locations, $id) {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="/booking/css/mobile.css">
     <?= layout_theme_styles() ?>
 </head>
 <body class="p-4">
