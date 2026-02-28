@@ -42,7 +42,9 @@ class FleetEmailService
         $fromName = $smtp['from_name'] ?: 'FDT Fleet Management';
         $mail->setFrom($fromEmail, $fromName);
         $mail->isHTML(true);
-        $mail->Timeout = 10; // 10 second timeout
+        $mail->Timeout = 3;
+        $mail->SMTPOptions = ["socket" => ["bindto" => "0:0"], "ssl" => ["verify_peer" => false, "verify_peer_name" => false, "allow_self_signed" => true]];
+        $mail->SMTPKeepAlive = false; // 10 second timeout
         $mail->SMTPDebug = 0;
         
         return $mail;
@@ -98,10 +100,13 @@ class FleetEmailService
      */
     private function send(PHPMailer $mail): bool
     {
-        if (!$this->enabled) {
-            error_log("Email disabled: " . $mail->Subject);
-            return true;
-        }
+        // TEMPORARY: Queue directly until AWS SES configured
+        $recipients = $mail->getAllRecipientAddresses();
+        $toEmail = array_key_first($recipients);
+        $toName = $recipients[$toEmail] ?? '';
+        error_log("Email queued (SMTP disabled): " . $mail->Subject);
+        $this->queueEmail($toEmail, $toName, $mail->Subject, $mail->Body);
+        return true;
         
         // Get recipients before attempting send
         $recipients = $mail->getAllRecipientAddresses();
