@@ -182,7 +182,14 @@ if (!function_exists('layout_render_nav')) {
 if (!function_exists('layout_footer')) {
     function layout_footer(): void
     {
-        $version = defined('SNIPESCHEDULER_VERSION') ? SNIPESCHEDULER_VERSION : '2.0.0';
+        
+        $versionFile = __DIR__ . '/../version.txt';
+        if (file_exists($versionFile)) {
+            $version = trim(file_get_contents($versionFile));
+        } else {
+            $version = defined('SNIPESCHEDULER_VERSION') ? SNIPESCHEDULER_VERSION : '2.0.0';
+        }
+
         $versionEsc = htmlspecialchars($version, ENT_QUOTES, 'UTF-8');
 
         echo '<footer class="text-center text-muted mt-4 py-3 small">'
