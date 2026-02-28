@@ -1,10 +1,8 @@
 <?php
 // delete_reservation.php
 // Deletes a reservation and its items (admins or the owning user).
-
 require_once __DIR__ . '/../src/bootstrap.php';
 require_once SRC_PATH . '/auth.php';
-
 // CSRF Protection
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     csrf_check();
@@ -29,9 +27,9 @@ if ($resId <= 0) {
     exit;
 }
 
-// Load reservation to check ownership
+// Load reservation to check ownership and status
 $stmt = $pdo->prepare("
-    SELECT id, user_id
+    SELECT id, user_id, status, approval_status
     FROM reservations
     WHERE id = :id
     LIMIT 1
@@ -55,10 +53,20 @@ if (!$isStaff && !$ownsReservation) {
     exit;
 }
 
+// Business rule: Drivers cannot delete reservations that are already checked out or completed
+// Only staff/admin can delete completed/confirmed reservations
+$status = $reservation['status'] ?? '';
+$protectedStatuses = ['confirmed', 'completed'];
+
+if (!$isStaff && in_array($status, $protectedStatuses)) {
+    http_response_code(403);
+    echo 'Cannot delete a reservation that has been checked out or completed. Please contact Fleet Staff for assistance.';
+    exit;
+}
+
 try {
     $pdo->beginTransaction();
 
-    // 🔴 ADJUST TABLE NAMES HERE IF NEEDED
     // First delete child items
     $stmt = $pdo->prepare("DELETE FROM reservation_items WHERE reservation_id = :id");
     $stmt->execute([':id' => $resId]);
@@ -72,7 +80,10 @@ try {
     activity_log_event('reservation_deleted', 'Reservation deleted', [
         'subject_type' => 'reservation',
         'subject_id'   => $resId,
+        'status'       => $status,
+        'deleted_by'   => $isStaff ? 'staff' : 'user',
     ]);
+
 } catch (Exception $e) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
@@ -82,7 +93,7 @@ try {
     exit;
 }
 
-// Redirect back with a “deleted” flag
+// Redirect back with a "deleted" flag
 $redirect = $isStaff
     ? 'staff_reservations.php?deleted=' . $resId
     : 'my_bookings.php?deleted=' . $resId;

@@ -1163,6 +1163,12 @@ function get_asset_with_field_definitions(int $assetId): ?array
  */
 function get_requestable_assets(int $limit = 500, ?int $categoryId = null): array
 {
+    $cacheKey = 'requestable_assets_' . $limit . '_' . ($categoryId ?? 'all');
+    $cached = snipeit_cache_get($cacheKey, 120); // 2 minute cache
+    if ($cached !== null) {
+        return $cached;
+    }
+    
     $params = [
         'limit' => $limit,
         'requestable' => 'true',
@@ -1170,18 +1176,16 @@ function get_requestable_assets(int $limit = 500, ?int $categoryId = null): arra
         'sort' => 'name',
         'order' => 'asc'
     ];
-    
     if ($categoryId) {
         $params['category_id'] = $categoryId;
     }
-    
     $result = snipeit_request('GET', '/hardware', $params);
-    
     if (!isset($result['rows'])) {
         return [];
     }
-    
-    return $result['rows'];
+    $assets = $result['rows'];
+    snipeit_cache_set($cacheKey, $assets);
+    return $assets;
 }
 
 /**
@@ -2037,12 +2041,20 @@ function get_or_create_model(string $name, int $manufacturerId, string $modelNum
  */
 function get_categories(int $limit = 100, string $search = ''): array
 {
+    $cacheKey = 'categories_' . $limit . '_' . md5($search);
+    $cached = snipeit_cache_get($cacheKey, 600); // 10 minute cache
+    if ($cached !== null) {
+        return $cached;
+    }
+    
     $url = '/categories?limit=' . $limit;
     if ($search) {
         $url .= '&search=' . urlencode($search);
     }
     $response = snipeit_request('GET', $url);
-    return $response['rows'] ?? [];
+    $result = $response['rows'] ?? [];
+    snipeit_cache_set($cacheKey, $result);
+    return $result;
 }
 
 /**
@@ -2112,12 +2124,20 @@ function get_fleet_fieldset_id(): ?int
  */
 function get_status_labels(string $search = ''): array
 {
+    $cacheKey = 'status_labels_' . md5($search);
+    $cached = snipeit_cache_get($cacheKey, 600); // 10 minute cache
+    if ($cached !== null) {
+        return $cached;
+    }
+    
     $url = '/statuslabels?limit=100';
     if ($search) {
         $url .= '&search=' . urlencode($search);
     }
     $response = snipeit_request('GET', $url);
-    return $response['rows'] ?? [];
+    $result = $response['rows'] ?? [];
+    snipeit_cache_set($cacheKey, $result);
+    return $result;
 }
 
 /**
@@ -2171,12 +2191,21 @@ function get_veh_available_status_id(): ?int
  */
 function get_locations(int $limit = 100, string $search = ''): array
 {
+    $cacheKey = 'locations_' . $limit . '_' . md5($search);
+    $cached = snipeit_cache_get($cacheKey, 300); // 5 minute cache
+    if ($cached !== null) {
+        return $cached;
+    }
+    
     $url = '/locations?limit=' . $limit;
     if ($search) {
         $url .= '&search=' . urlencode($search);
     }
     $response = snipeit_request('GET', $url);
-    return $response['rows'] ?? [];
+    $result = $response['rows'] ?? [];
+    
+    snipeit_cache_set($cacheKey, $result);
+    return $result;
 }
 
 /**
