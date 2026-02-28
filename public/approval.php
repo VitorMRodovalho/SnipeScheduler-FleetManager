@@ -294,4 +294,10 @@ $recentReservations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 </div><!-- page-shell -->
     </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Move modals to body to fix stacking context issues
+document.querySelectorAll(".modal").forEach(function(modal) {
+    document.body.appendChild(modal);
+});
+</script>
 <?php layout_footer(); ?>

@@ -1665,13 +1665,12 @@ form .form-select {
     transform: translate(-50%, 0) scale(1);
 }
 
-/* Fix checkbox visibility */
-.form-check-input:checked {
-    background-color: #0d6efd !important;
-    border-color: #0d6efd !important;
+/* Fix modal z-index stacking context */
+.modal {
+    position: fixed !important;
+    z-index: 1055 !important;
 }
-.form-check-input {
-    background-color: #fff;
-    border: 1px solid #dee2e6;
+.modal-backdrop {
+    position: fixed !important;
+    z-index: 1050 !important;
 }
-
