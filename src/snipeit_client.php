@@ -112,6 +112,8 @@ function snipeit_request(string $method, string $endpoint, array $params = []): 
         CURLOPT_HTTPHEADER     => $headers,
         CURLOPT_SSL_VERIFYPEER => $snipeVerifySsl,
         CURLOPT_SSL_VERIFYHOST => $snipeVerifySsl ? 2 : 0,
+        CURLOPT_TIMEOUT        => 30,
+        CURLOPT_CONNECTTIMEOUT => 10,
     ]);
 
     $raw = curl_exec($ch);
@@ -1403,6 +1405,8 @@ function update_asset_status(int $assetId, int $statusId): bool
     $ch = curl_init($baseUrl . '/api/v1/hardware/' . $assetId);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['status_id' => $statusId]));
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
         'Authorization: Bearer ' . $token,
@@ -1428,6 +1432,8 @@ function update_asset_location(int $assetId, int $locationId): bool
     $ch = curl_init($baseUrl . '/api/v1/hardware/' . $assetId);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['rtd_location_id' => $locationId]));
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
         'Authorization: Bearer ' . $token,

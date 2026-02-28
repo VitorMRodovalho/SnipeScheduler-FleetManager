@@ -179,15 +179,23 @@ if (!function_exists('layout_render_nav')) {
     }
 }
 
+
+
+
 if (!function_exists('layout_footer')) {
     function layout_footer(): void
     {
-        
+        // Dynamically read the version from version.txt
         $versionFile = __DIR__ . '/../version.txt';
+        $version = '2.0.0'; // Default fallback
+
         if (file_exists($versionFile)) {
-            $version = trim(file_get_contents($versionFile));
-        } else {
-            $version = defined('SNIPESCHEDULER_VERSION') ? SNIPESCHEDULER_VERSION : '2.0.0';
+            $fileContent = trim(file_get_contents($versionFile));
+            if ($fileContent !== '') {
+                $version = $fileContent;
+            }
+        } elseif (defined('SNIPESCHEDULER_VERSION')) {
+            $version = SNIPESCHEDULER_VERSION;
         }
 
         $versionEsc = htmlspecialchars($version, ENT_QUOTES, 'UTF-8');
@@ -202,6 +210,7 @@ if (!function_exists('layout_footer')) {
             . '</footer>';
     }
 }
+
 
 if (!function_exists('layout_logo_tag')) {
     function layout_default_logo_url(): string

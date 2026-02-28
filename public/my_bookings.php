@@ -278,6 +278,7 @@ if (!empty($_GET['deleted'])) {
                                 <form method="post"
                                       action="delete_reservation.php"
                                       onsubmit="return confirm('Delete this reservation and all its items? This cannot be undone.');">
+                                    <?= csrf_field() ?>
                                     <input type="hidden" name="reservation_id" value="<?= $resId ?>">
                                     <button type="submit" class="btn btn-outline-danger btn-sm">
                                         Delete reservation
