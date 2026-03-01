@@ -41,12 +41,17 @@ const NAMES_TO_REPLACE = [
 
 // Location/address patterns to anonymize
 const LOCATIONS_TO_REPLACE = [
+    ['inventory.amtrakfdt.com', 'yoursite.com'],
+    ['amtrakfdt.com', 'yoursite.com'],
+    ['@amtrak.com', '@email.com'],
+    ['BPTR', 'FLEET'],
     ['B&P Office', 'Main Office'],
     ['B&P', 'Company'],
     ['Main office - primary vehicle pickup location', 'Main Office - Vehicle Pickup'],
     ['North Vent Facility', 'North Facility'],
     ['Area 4d:', 'Zone A:'],
     ['Amtrak', 'Transit Co'],
+    ['FDT', 'Fleet'],
 ];
 
 async function anonymizePage(page) {
