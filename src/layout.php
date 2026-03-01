@@ -136,22 +136,22 @@ if (!function_exists('layout_render_nav')) {
     function layout_render_nav(string $active, bool $isStaff, bool $isAdmin = false): string
     {
         $links = [
-//            ['href' => 'index.php',             'label' => 'Dashboard',           'staff' => false],
-//            ['href' => 'catalogue.php',         'label' => 'Catalogue',           'staff' => false],
+//            ['href' => 'index',             'label' => 'Dashboard',           'staff' => false],
+//            ['href' => 'catalogue',         'label' => 'Catalogue',           'staff' => false],
             
-            ['href' => 'dashboard.php',         'label' => 'Dashboard',           'staff' => false],
-	    ['href' => 'vehicle_reserve.php',   'label' => 'Book Vehicle',        'staff' => false],
+            ['href' => 'dashboard',         'label' => 'Dashboard',           'staff' => false],
+	    ['href' => 'vehicle_reserve',   'label' => 'Book Vehicle',        'staff' => false],
 
-            ['href' => 'my_bookings.php',       'label' => 'My Reservations',     'staff' => false],
-            ['href' => 'approval.php',          'label' => 'Approvals',           'staff' => true],
-	    ['href' => 'vehicle_catalogue.php', 'label' => 'List of Vehicles',            'staff' => false],
-            ['href' => 'reservations.php',      'label' => 'Reservations',        'staff' => true],
-            ['href' => 'maintenance.php',       'label' => 'Maintenance',         'staff' => true],
-            ['href' => 'reports.php',           'label' => 'Reports',             'staff' => true],
-            ['href' => 'scan.php',              'label' => 'Scan QR',             'staff' => false],
-//            ['href' => 'quick_checkout.php',    'label' => 'Quick Checkout',      'staff' => true],
-//            ['href' => 'quick_checkin.php',     'label' => 'Quick Checkin',       'staff' => true],
-            ['href' => 'activity_log.php',      'label' => 'Admin',               'staff' => false, 'admin_only' => true],
+            ['href' => 'my_bookings',       'label' => 'My Reservations',     'staff' => false],
+            ['href' => 'approval',          'label' => 'Approvals',           'staff' => true],
+	    ['href' => 'vehicle_catalogue', 'label' => 'List of Vehicles',            'staff' => false],
+            ['href' => 'reservations',      'label' => 'Reservations',        'staff' => true],
+            ['href' => 'maintenance',       'label' => 'Maintenance',         'staff' => true],
+            ['href' => 'reports',           'label' => 'Reports',             'staff' => true],
+            ['href' => 'scan',              'label' => 'Scan QR',             'staff' => false],
+//            ['href' => 'quick_checkout',    'label' => 'Quick Checkout',      'staff' => true],
+//            ['href' => 'quick_checkin',     'label' => 'Quick Checkin',       'staff' => true],
+            ['href' => 'activity_log',      'label' => 'Admin',               'staff' => false, 'admin_only' => true],
 
 
 
@@ -248,7 +248,7 @@ if (!function_exists('layout_logo_tag')) {
 
         $urlEsc = htmlspecialchars($logoUrl, ENT_QUOTES, 'UTF-8');
         return '<div class="app-logo text-center mb-3">'
-            . '<a href="index.php" aria-label="Go to dashboard">'
+            . '<a href="index" aria-label="Go to dashboard">'
             . '<img src="' . $urlEsc . '" alt="SnipeScheduler logo" style="max-height:80px; width:auto; height:auto; max-width:100%; object-fit:contain;">'
             . '</a>'
             . '</div>';

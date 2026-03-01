@@ -140,7 +140,7 @@ $weeklyStats = $stmt->fetch(PDO::FETCH_ASSOC);
     <title>Fleet Dashboard</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/style.css?v=1.3.1">
     <link rel="stylesheet" href="/booking/css/mobile.css">
     <?= layout_theme_styles() ?>
     <style>
@@ -214,7 +214,7 @@ $weeklyStats = $stmt->fetch(PDO::FETCH_ASSOC);
                 (<?= h($currentUser['email'] ?? '') ?>)
             </div>
             <div class="top-bar-actions">
-                <a href="logout.php" class="btn btn-link btn-sm">Log out</a>
+                <a href="logout" class="btn btn-link btn-sm">Log out</a>
             </div>
         </div>
 
@@ -289,7 +289,7 @@ $weeklyStats = $stmt->fetch(PDO::FETCH_ASSOC);
                     <div class="card-body">
                         <h6 class="text-warning"><i class="bi bi-clock me-2"></i>Pending Approvals</h6>
                         <div class="stat-number text-warning"><?= count($pendingApprovals) ?></div>
-                        <a href="approval.php" class="btn btn-sm btn-outline-warning mt-2">Review Now</a>
+                        <a href="approval" class="btn btn-sm btn-outline-warning mt-2">Review Now</a>
                     </div>
                 </div>
             </div>
@@ -464,17 +464,17 @@ $weeklyStats = $stmt->fetch(PDO::FETCH_ASSOC);
                     </div>
                     <div class="card-body">
                         <div class="d-grid gap-2">
-                            <a href="scan.php" class="btn btn-primary">
+                            <a href="scan" class="btn btn-primary">
                                 <i class="bi bi-qr-code-scan me-2"></i>Scan QR Code
                             </a>
-                            <a href="vehicle_reserve.php" class="btn btn-outline-primary">
+                            <a href="vehicle_reserve" class="btn btn-outline-primary">
                                 <i class="bi bi-calendar-plus me-2"></i>New Reservation
                             </a>
                             <?php if ($isStaff): ?>
-                            <a href="approval.php" class="btn btn-outline-warning">
+                            <a href="approval" class="btn btn-outline-warning">
                                 <i class="bi bi-check-square me-2"></i>Approvals (<?= count($pendingApprovals) ?>)
                             </a>
-                            <a href="reservations.php" class="btn btn-outline-secondary">
+                            <a href="reservations" class="btn btn-outline-secondary">
                                 <i class="bi bi-list-ul me-2"></i>All Reservations
                             </a>
                             <?php endif; ?>

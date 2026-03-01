@@ -122,8 +122,8 @@ activity_log_event('reservation_submitted', 'Reservation submitted', [
     <h1>Thank you</h1>
     <p>Your booking has been submitted.</p>
     <p>
-        <a href="catalogue.php" class="btn btn-primary">Book more vehicle</a>
-        <a href="my_bookings.php" class="btn btn-secondary">View my bookings</a>
+        <a href="catalogue" class="btn btn-primary">Book more vehicle</a>
+        <a href="my_bookings" class="btn btn-secondary">View my bookings</a>
     </p>
 </div>
 <?php layout_footer(); ?>

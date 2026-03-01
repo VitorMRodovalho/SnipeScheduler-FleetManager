@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && !isset($_GET['prefetch']) && !isset(
         <title>Catalogue – Book Vehicle</title>
         <link rel="stylesheet"
               href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-        <link rel="stylesheet" href="assets/style.css">
+        <link rel="stylesheet" href="assets/style.css?v=1.3.1">
     <link rel="stylesheet" href="/booking/css/mobile.css">
         <?= layout_theme_styles() ?>
     </head>
@@ -489,7 +489,7 @@ if ($isStaff && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['mode'] ?? '') 
             'id'         => 0,
         ];
     }
-    header('Location: catalogue.php');
+    header('Location: catalogue');
     exit;
 }
 
@@ -1067,7 +1067,7 @@ $checkedOutCounts = [];
 
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/style.css?v=1.3.1">
     <link rel="stylesheet" href="/booking/css/mobile.css">
     <?= layout_theme_styles() ?>
 </head>
@@ -1191,13 +1191,13 @@ if (!empty($allowedCategoryMap) && !empty($categories)) {
                 (<?= htmlspecialchars($currentUser['email']) ?>)
             </div>
             <div class="top-bar-actions d-flex gap-2">
-                <a href="basket.php"
+                <a href="basket"
                    class="btn btn-lg btn-primary fw-semibold shadow-sm px-4"
                    style="font-size:16px;"
                    id="view-basket-btn">
                     View basket<?= $basketCount > 0 ? ' (' . $basketCount . ')' : '' ?>
                 </a>
-                <a href="logout.php" class="btn btn-link btn-sm">Log out</a>
+                <a href="logout" class="btn btn-link btn-sm">Log out</a>
             </div>
         </div>
 
@@ -1268,7 +1268,7 @@ if (!empty($allowedCategoryMap) && !empty($categories)) {
 
         <!-- Filters -->
 
-        <form class="filter-panel mb-4" method="get" action="catalogue.php" id="catalogue-filter-form">
+        <form class="filter-panel mb-4" method="get" action="catalogue" id="catalogue-filter-form">
             <div class="filter-panel__header d-flex align-items-center gap-3">
                 <span class="filter-panel__dot"></span>
                 <div class="filter-panel__title">SEARCH</div>
@@ -1332,7 +1332,7 @@ if (!empty($allowedCategoryMap) && !empty($categories)) {
             </div>
         </form>
 
-        <form class="filter-panel filter-panel--compact mb-4" method="get" action="catalogue.php" id="catalogue-window-form">
+        <form class="filter-panel filter-panel--compact mb-4" method="get" action="catalogue" id="catalogue-window-form">
             <div class="filter-panel__header d-flex align-items-center gap-3">
                 <span class="filter-panel__dot"></span>
                 <div class="filter-panel__title">RESERVATION WINDOW</div>
@@ -1502,7 +1502,7 @@ if (!empty($allowedCategoryMap) && !empty($categories)) {
                                 </p>
 
                                 <form method="post"
-                                      action="basket_add.php"
+                                      action="basket_add"
                                       class="mt-auto add-to-basket-form">
                                     <input type="hidden" name="model_id" value="<?= $modelId ?>">
                                     <?php if ($windowActive): ?>
@@ -1565,7 +1565,7 @@ if (!empty($allowedCategoryMap) && !empty($categories)) {
                         <?php for ($p = 1; $p <= $totalPages; $p++): ?>
                             <?php $q = http_build_query(array_merge($baseQuery, ['page' => $p])); ?>
                             <li class="page-item <?= $p === $page ? 'active' : '' ?>">
-                                <a class="page-link" href="catalogue.php?<?= $q ?>">
+                                <a class="page-link" href="catalogue?<?= $q ?>">
                                     <?= $p ?>
                                 </a>
                             </li>

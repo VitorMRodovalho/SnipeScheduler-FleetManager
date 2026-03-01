@@ -60,7 +60,7 @@ if (isset($_GET['remove'])) {
     if ($rid > 0 && isset($checkinAssets[$rid])) {
         unset($checkinAssets[$rid]);
     }
-    header('Location: quick_checkin.php');
+    header('Location: quick_checkin');
     exit;
 }
 
@@ -392,7 +392,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Quick Checkin – SnipeScheduler</title>
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/style.css?v=1.3.1">
     <link rel="stylesheet" href="/booking/css/mobile.css">
     <?= layout_theme_styles() ?>
 </head>
@@ -496,7 +496,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         ?>
                                         <td><?= h($assignedLabel) ?></td>
                                         <td>
-                                            <a href="quick_checkin.php?remove=<?= (int)$asset['id'] ?>"
+                                            <a href="quick_checkin?remove=<?= (int)$asset['id'] ?>"
                                                class="btn btn-sm btn-outline-danger">
                                                 Remove
                                             </a>

@@ -18,7 +18,7 @@ $isAdmin = !empty($currentUser['is_admin']);
 $isStaff = !empty($currentUser['is_staff']) || $isAdmin;
 
 if (!$isAdmin) {
-    header('Location: dashboard.php');
+    header('Location: dashboard');
     exit;
 }
 
@@ -81,7 +81,7 @@ $userName = trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_
     <title>Blackout Slots</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/style.css?v=1.3.1">
     <link rel="stylesheet" href="/booking/css/mobile.css">
     <?= layout_theme_styles() ?>
 </head>
@@ -101,10 +101,10 @@ $userName = trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_
                     Logged in as: <strong><?= h($userName) ?></strong>
                 </div>
                 <div class="top-bar-actions">
-                    <a href="settings.php" class="btn btn-outline-secondary btn-sm me-2">
+                    <a href="settings" class="btn btn-outline-secondary btn-sm me-2">
                         <i class="bi bi-arrow-left me-1"></i>Back to Settings
                     </a>
-                    <a href="logout.php" class="btn btn-link btn-sm">Log out</a>
+                    <a href="logout" class="btn btn-link btn-sm">Log out</a>
                 </div>
             </div>
             

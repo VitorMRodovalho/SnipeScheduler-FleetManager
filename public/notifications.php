@@ -18,7 +18,7 @@ $isSuperAdmin = !empty($currentUser['is_super_admin']);
 
 // Only Fleet Admin or Super Admin can access
 if (!$isAdmin) {
-    header('Location: dashboard.php');
+    header('Location: dashboard');
     exit;
 }
 
@@ -140,7 +140,7 @@ $defaultSubjects = [
     <title>Email Notifications</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/style.css?v=1.3.1">
     <link rel="stylesheet" href="/booking/css/mobile.css">
     <?= layout_theme_styles() ?>
     <style>
@@ -164,23 +164,23 @@ $defaultSubjects = [
             
             <ul class="nav nav-tabs reservations-subtabs mb-3">
                 <li class="nav-item">
-                    <a class="nav-link" href="vehicles.php">Vehicles</a>
+                    <a class="nav-link" href="vehicles">Vehicles</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="users.php">Users</a>
+                    <a class="nav-link" href="users">Users</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="activity_log.php">Activity Log</a>
+                    <a class="nav-link" href="activity_log">Activity Log</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link active" href="notifications.php">Notifications</a>
+                    <a class="nav-link active" href="notifications">Notifications</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="announcements.php">Announcements</a>
+                    <a class="nav-link" href="announcements">Announcements</a>
                 </li>
                 <?php if (!empty($currentUser['is_super_admin'])): ?>
                 <li class="nav-item">
-                    <a class="nav-link" href="settings.php">Settings</a>
+                    <a class="nav-link" href="settings">Settings</a>
                 </li>
                 <?php endif; ?>
             </ul>
@@ -190,7 +190,7 @@ $defaultSubjects = [
                     Logged in as: <strong><?= h($userName) ?></strong>
                 </div>
                 <div class="top-bar-actions">
-                    <a href="logout.php" class="btn btn-link btn-sm">Log out</a>
+                    <a href="logout" class="btn btn-link btn-sm">Log out</a>
                 </div>
             </div>
             

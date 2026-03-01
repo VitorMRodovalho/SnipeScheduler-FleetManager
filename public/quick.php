@@ -132,7 +132,7 @@ if ($asset && !$error) {
     <title>Quick Action</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/style.css?v=1.3.1">
     <link rel="stylesheet" href="/booking/css/mobile.css">
     <?= layout_theme_styles() ?>
 </head>
@@ -170,7 +170,7 @@ if ($asset && !$error) {
                             </form>
                             <hr>
                             <div class="text-center">
-                                <a href="scan.php" class="btn btn-outline-secondary btn-lg">
+                                <a href="scan" class="btn btn-outline-secondary btn-lg">
                                     <i class="bi bi-qr-code-scan me-2"></i>Scan QR Code
                                 </a>
                             </div>
@@ -181,7 +181,7 @@ if ($asset && !$error) {
                     <div class="alert alert-danger">
                         <i class="bi bi-exclamation-triangle me-2"></i><?= h($error) ?>
                     </div>
-                    <a href="quick.php" class="btn btn-outline-primary">
+                    <a href="quick" class="btn btn-outline-primary">
                         <i class="bi bi-arrow-left me-2"></i>Try Again
                     </a>
                 
@@ -223,7 +223,7 @@ if ($asset && !$error) {
                                     <?= date('M j, Y g:i A', strtotime($reservation['start_datetime'])) ?> - 
                                     <?= date('M j, Y g:i A', strtotime($reservation['end_datetime'])) ?></p>
                                 <?php endif; ?>
-                                <a href="vehicle_checkout.php?reservation_id=<?= $reservation['id'] ?>" class="btn btn-success btn-lg">
+                                <a href="vehicle_checkout?reservation_id=<?= $reservation['id'] ?>" class="btn btn-success btn-lg">
                                     <i class="bi bi-check-circle me-2"></i>Proceed to Checkout
                                 </a>
                             </div>
@@ -239,7 +239,7 @@ if ($asset && !$error) {
                                     <p><strong>Reservation #<?= $reservation['id'] ?></strong><br>
                                     Return by: <?= date('M j, Y g:i A', strtotime($reservation['end_datetime'])) ?></p>
                                 <?php endif; ?>
-                                <a href="vehicle_checkin.php?reservation_id=<?= $reservation['id'] ?>" class="btn btn-info btn-lg text-white">
+                                <a href="vehicle_checkin?reservation_id=<?= $reservation['id'] ?>" class="btn btn-info btn-lg text-white">
                                     <i class="bi bi-box-arrow-in-left me-2"></i>Proceed to Return
                                 </a>
                             </div>
@@ -251,7 +251,7 @@ if ($asset && !$error) {
                                 <i class="bi bi-calendar-plus text-primary" style="font-size: 3rem;"></i>
                                 <h4 class="mt-3">Vehicle Available</h4>
                                 <p class="text-muted">This vehicle is available. Would you like to reserve it?</p>
-                                <a href="vehicle_reserve.php?asset_id=<?= $assetId ?>" class="btn btn-primary btn-lg">
+                                <a href="vehicle_reserve?asset_id=<?= $assetId ?>" class="btn btn-primary btn-lg">
                                     <i class="bi bi-calendar-plus me-2"></i>Reserve This Vehicle
                                 </a>
                             </div>
@@ -263,7 +263,7 @@ if ($asset && !$error) {
                                 <i class="bi bi-clock text-warning" style="font-size: 3rem;"></i>
                                 <h4 class="mt-3">Vehicle Reserved</h4>
                                 <p class="text-muted">This vehicle is reserved by another user.</p>
-                                <a href="vehicle_catalogue.php" class="btn btn-outline-primary btn-lg">
+                                <a href="vehicle_catalogue" class="btn btn-outline-primary btn-lg">
                                     <i class="bi bi-search me-2"></i>Find Another Vehicle
                                 </a>
                             </div>
@@ -278,7 +278,7 @@ if ($asset && !$error) {
                                 <?php if (isset($asset['assigned_to']['name'])): ?>
                                     <p><strong>Assigned to:</strong> <?= h($asset['assigned_to']['name']) ?></p>
                                 <?php endif; ?>
-                                <a href="vehicle_catalogue.php" class="btn btn-outline-primary btn-lg">
+                                <a href="vehicle_catalogue" class="btn btn-outline-primary btn-lg">
                                     <i class="bi bi-search me-2"></i>Find Another Vehicle
                                 </a>
                             </div>
@@ -290,7 +290,7 @@ if ($asset && !$error) {
                                 <i class="bi bi-tools text-danger" style="font-size: 3rem;"></i>
                                 <h4 class="mt-3">Out of Service</h4>
                                 <p class="text-muted">This vehicle is currently out of service for maintenance.</p>
-                                <a href="vehicle_catalogue.php" class="btn btn-outline-primary btn-lg">
+                                <a href="vehicle_catalogue" class="btn btn-outline-primary btn-lg">
                                     <i class="bi bi-search me-2"></i>Find Another Vehicle
                                 </a>
                             </div>
@@ -302,7 +302,7 @@ if ($asset && !$error) {
                                 <i class="bi bi-question-circle text-muted" style="font-size: 3rem;"></i>
                                 <h4 class="mt-3">No Action Available</h4>
                                 <p class="text-muted">You don't have a reservation for this vehicle.</p>
-                                <a href="vehicle_reserve.php" class="btn btn-primary btn-lg">
+                                <a href="vehicle_reserve" class="btn btn-primary btn-lg">
                                     <i class="bi bi-calendar-plus me-2"></i>Book a Vehicle
                                 </a>
                             </div>
@@ -310,7 +310,7 @@ if ($asset && !$error) {
                     <?php endif; ?>
 
                     <div class="text-center">
-                        <a href="quick.php" class="btn btn-outline-secondary">
+                        <a href="quick" class="btn btn-outline-secondary">
                             <i class="bi bi-qr-code-scan me-2"></i>Scan Another Vehicle
                         </a>
                     </div>

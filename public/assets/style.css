@@ -59,9 +59,7 @@ a.btn.btn-link:visited {
     color: var(--primary);
 }
 
-input[type="checkbox"] {
-    accent-color: var(--primary);
-}
+/* Checkbox styling moved to .form-check-input section below */
 
 
 

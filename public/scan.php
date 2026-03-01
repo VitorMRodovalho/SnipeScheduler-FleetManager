@@ -19,7 +19,7 @@ $isStaff = !empty($currentUser['is_staff']) || $isAdmin;
     <title>Scan QR Code</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/style.css?v=1.3.1">
     <link rel="stylesheet" href="/booking/css/mobile.css">
     <?= layout_theme_styles() ?>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
@@ -65,7 +65,7 @@ $isStaff = !empty($currentUser['is_staff']) || $isAdmin;
                 (<?= h($currentUser['email'] ?? '') ?>)
             </div>
             <div class="top-bar-actions">
-                <a href="logout.php" class="btn btn-link btn-sm">Log out</a>
+                <a href="logout" class="btn btn-link btn-sm">Log out</a>
             </div>
         </div>
         <div class="row justify-content-center">
@@ -97,7 +97,7 @@ $isStaff = !empty($currentUser['is_staff']) || $isAdmin;
                         <h6 class="mb-0"><i class="bi bi-keyboard me-2"></i>Or Enter Manually</h6>
                     </div>
                     <div class="card-body">
-                        <form action="quick.php" method="get" class="row g-2">
+                        <form action="quick" method="get" class="row g-2">
                             <div class="col-8">
                                 <input type="text" name="tag" class="form-control" placeholder="Asset Tag (e.g., BPTR-VEH-001)">
                             </div>
@@ -109,7 +109,7 @@ $isStaff = !empty($currentUser['is_staff']) || $isAdmin;
                 </div>
 
                 <div class="text-center">
-                    <a href="quick.php" class="btn btn-outline-secondary">
+                    <a href="quick" class="btn btn-outline-secondary">
                         <i class="bi bi-arrow-left me-2"></i>Back
                     </a>
                 </div>
@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Redirect to quick action page
                 setTimeout(() => {
-                    window.location.href = 'quick.php?asset_id=' + assetId;
+                    window.location.href = 'quick?asset_id=' + assetId;
                 }, 500);
             } else {
                 // Try to use the URL directly

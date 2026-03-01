@@ -87,7 +87,7 @@ $ensureProviderParam = static function (string $uri, string $provider): string {
 
 $redirectWithError = static function (string $message) {
     $_SESSION['login_error'] = $message;
-    header('Location: login.php');
+    header('Location: login');
     exit;
 };
 
@@ -286,7 +286,7 @@ if ($provider === 'google') {
         ],
     ]);
 
-    header('Location: index.php');
+    header('Location: index');
     exit;
 }
 
@@ -518,7 +518,7 @@ if ($provider === 'microsoft') {
         ],
     ]);
 
-    header('Location: index.php');
+    header('Location: index');
     exit;
 
 
@@ -756,5 +756,5 @@ activity_log_event('user_login', 'User logged in', [
 
 ldap_unbind($ldap);
 
-header('Location: index.php');
+header('Location: index');
 exit;

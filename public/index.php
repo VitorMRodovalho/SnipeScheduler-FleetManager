@@ -20,7 +20,7 @@ $userEmail = $currentUser['email'] ?? '';
     <title>FDT Fleet Management</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/style.css?v=1.3.1">
     <link rel="stylesheet" href="/booking/css/mobile.css">
     <?= layout_theme_styles() ?>
     <style>
@@ -77,7 +77,7 @@ $userEmail = $currentUser['email'] ?? '';
                     <span class="badge bg-danger ms-2">Admin</span>
                 <?php endif; ?>
             </div>
-            <a href="logout.php" class="btn btn-outline-secondary btn-sm">Log out</a>
+            <a href="logout" class="btn btn-outline-secondary btn-sm">Log out</a>
         </div>
 
         <!-- Main Actions for All Users -->
@@ -91,7 +91,7 @@ $userEmail = $currentUser['email'] ?? '';
                         </div>
                         <h5 class="card-title">Book a Vehicle</h5>
                         <p class="card-text text-muted">Reserve a vehicle for your upcoming trip. Select dates, pickup location, and destination.</p>
-                        <a href="vehicle_reserve.php" class="btn btn-primary mt-auto">
+                        <a href="vehicle_reserve" class="btn btn-primary mt-auto">
                             <i class="bi bi-plus-circle me-2"></i>New Booking
                         </a>
                     </div>
@@ -107,7 +107,7 @@ $userEmail = $currentUser['email'] ?? '';
                         </div>
                         <h5 class="card-title">My Reservations</h5>
                         <p class="card-text text-muted">View your upcoming and past reservations. Check status and cancel bookings if needed.</p>
-                        <a href="my_bookings.php" class="btn btn-outline-info mt-auto">
+                        <a href="my_bookings" class="btn btn-outline-info mt-auto">
                             <i class="bi bi-eye me-2"></i>View Reservations
                         </a>
                     </div>
@@ -123,7 +123,7 @@ $userEmail = $currentUser['email'] ?? '';
                         </div>
                         <h5 class="card-title">Scan QR Code</h5>
                         <p class="card-text text-muted">Scan vehicle QR code for quick checkout or return. Automatically detects the right action.</p>
-                        <a href="scan.php" class="btn btn-outline-success mt-auto">
+                        <a href="scan" class="btn btn-outline-success mt-auto">
                             <i class="bi bi-qr-code me-2"></i>Open Scanner
                         </a>
                     </div>
@@ -139,7 +139,7 @@ $userEmail = $currentUser['email'] ?? '';
                         </div>
                         <h5 class="card-title">Vehicle Catalogue</h5>
                         <p class="card-text text-muted">Browse available vehicles, view details, specifications, and current availability status.</p>
-                        <a href="vehicle_catalogue.php" class="btn btn-outline-secondary mt-auto">
+                        <a href="vehicle_catalogue" class="btn btn-outline-secondary mt-auto">
                             <i class="bi bi-grid me-2"></i>Browse Vehicles
                         </a>
                     </div>
@@ -155,7 +155,7 @@ $userEmail = $currentUser['email'] ?? '';
                         </div>
                         <h5 class="card-title">Dashboard</h5>
                         <p class="card-text text-muted">View fleet overview, today's schedule, and quick stats on vehicle availability.</p>
-                        <a href="dashboard.php" class="btn btn-outline-warning mt-auto">
+                        <a href="dashboard" class="btn btn-outline-warning mt-auto">
                             <i class="bi bi-graph-up me-2"></i>View Dashboard
                         </a>
                     </div>
@@ -172,7 +172,7 @@ $userEmail = $currentUser['email'] ?? '';
                         </div>
                         <h5 class="card-title">Approvals <span class="badge bg-primary">Staff</span></h5>
                         <p class="card-text text-muted">Review and approve pending vehicle reservation requests from users.</p>
-                        <a href="approval.php" class="btn btn-primary mt-auto">
+                        <a href="approval" class="btn btn-primary mt-auto">
                             <i class="bi bi-check-circle me-2"></i>Review Requests
                         </a>
                     </div>
@@ -187,23 +187,23 @@ $userEmail = $currentUser['email'] ?? '';
             <h5 class="mb-3"><i class="bi bi-shield-check me-2"></i>Staff Tools</h5>
             <div class="row g-3">
                 <div class="col-md-4 col-lg-3">
-                    <a href="reservations.php" class="btn btn-outline-dark w-100">
+                    <a href="reservations" class="btn btn-outline-dark w-100">
                         <i class="bi bi-calendar-range me-2"></i>All Reservations
                     </a>
                 </div>
                 <div class="col-md-4 col-lg-3">
-                    <a href="maintenance.php" class="btn btn-outline-dark w-100">
+                    <a href="maintenance" class="btn btn-outline-dark w-100">
                         <i class="bi bi-wrench me-2"></i>Maintenance
                     </a>
                 </div>
                 <div class="col-md-4 col-lg-3">
-                    <a href="reports.php" class="btn btn-outline-dark w-100">
+                    <a href="reports" class="btn btn-outline-dark w-100">
                         <i class="bi bi-bar-chart me-2"></i>Reports
                     </a>
                 </div>
                 <?php if ($isAdmin): ?>
                 <div class="col-md-4 col-lg-3">
-                    <a href="activity_log.php" class="btn btn-outline-danger w-100">
+                    <a href="activity_log" class="btn btn-outline-danger w-100">
                         <i class="bi bi-gear me-2"></i>Admin
                     </a>
                 </div>

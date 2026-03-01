@@ -63,7 +63,7 @@ $active  = 'staff_reservations.php'; // Treat detail view as part of booking his
 
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/style.css?v=1.3.1">
     <link rel="stylesheet" href="/booking/css/mobile.css">
     <?= layout_theme_styles() ?>
 </head>
@@ -88,8 +88,8 @@ $active  = 'staff_reservations.php'; // Treat detail view as part of booking his
                 (<?= h($currentUser['email'] ?? '') ?>)
             </div>
             <div class="top-bar-actions">
-                <a href="staff_reservations.php" class="btn btn-outline-secondary btn-sm">Back to all bookings</a>
-                <a href="logout.php" class="btn btn-link btn-sm">Log out</a>
+                <a href="staff_reservations" class="btn btn-outline-secondary btn-sm">Back to all bookings</a>
+                <a href="logout" class="btn btn-link btn-sm">Log out</a>
             </div>
         </div>
 
@@ -145,7 +145,7 @@ $active  = 'staff_reservations.php'; // Treat detail view as part of booking his
         <?php endif; ?>
 
         <form method="post"
-              action="delete_reservation.php"
+              action="delete_reservation"
               onsubmit="return confirm('Delete this booking and all its items? This cannot be undone.');">
             <?= csrf_field() ?>
             <input type="hidden" name="reservation_id" value="<?= (int)$id ?>">

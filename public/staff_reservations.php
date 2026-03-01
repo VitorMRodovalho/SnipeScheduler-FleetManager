@@ -253,7 +253,7 @@ try {
 
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/style.css?v=1.3.1">
     <link rel="stylesheet" href="/booking/css/mobile.css">
     <?= layout_theme_styles() ?>
 </head>
@@ -283,7 +283,7 @@ try {
                     (<?= h($currentUser['email'] ?? '') ?>)
                 </div>
                 <div class="top-bar-actions">
-                    <a href="logout.php" class="btn btn-link btn-sm">Log out</a>
+                    <a href="logout" class="btn btn-link btn-sm">Log out</a>
                 </div>
             </div>
         <?php endif; ?>
@@ -472,12 +472,12 @@ try {
                                 <td data-label="Status"><?= h($r['status'] ?? '') ?></td>
                                 <td data-label="Actions" class="actions-cell">
                                     <div class="d-flex gap-2">
-                                        <a href="reservation_detail.php?id=<?= (int)$r['id'] ?>"
+                                        <a href="reservation_detail?id=<?= (int)$r['id'] ?>"
                                            class="btn btn-sm btn-outline-secondary btn-action">
                                             View
                                         </a>
                                         <?php if ($status === 'pending'): ?>
-                                            <a href="reservation_edit.php?id=<?= (int)$r['id'] ?><?= h($editSuffix) ?>"
+                                            <a href="reservation_edit?id=<?= (int)$r['id'] ?><?= h($editSuffix) ?>"
                                                class="btn btn-sm btn-outline-primary btn-action">
                                                 Edit
                                             </a>
@@ -507,7 +507,7 @@ try {
                                             </form>
                                         <?php endif; ?>
                                         <form method="post"
-                                              action="delete_reservation.php"
+                                              action="delete_reservation"
                                               onsubmit="return confirm('Delete this reservation and all its items? This cannot be undone.');">
                                             <input type="hidden"
                                                    name="reservation_id"

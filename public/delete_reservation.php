@@ -95,8 +95,8 @@ try {
 
 // Redirect back with a "deleted" flag
 $redirect = $isStaff
-    ? 'staff_reservations.php?deleted=' . $resId
-    : 'my_bookings.php?deleted=' . $resId;
+    ? 'staff_reservations?deleted=' . $resId
+    : 'my_bookings?deleted=' . $resId;
 
 header('Location: ' . $redirect);
 exit;

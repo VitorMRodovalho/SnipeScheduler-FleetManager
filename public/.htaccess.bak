@@ -1,35 +1,28 @@
 # Security Headers
 <IfModule mod_headers.c>
+    # Prevent clickjacking
     Header always set X-Frame-Options "SAMEORIGIN"
+    
+    # Prevent MIME type sniffing
     Header always set X-Content-Type-Options "nosniff"
+    
+    # Enable XSS protection
     Header always set X-XSS-Protection "1; mode=block"
+    
+    # Referrer Policy
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    
+    # Content Security Policy (adjust as needed)
     Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: https: blob:; font-src 'self' https://cdn.jsdelivr.net; connect-src 'self'; media-src 'self' blob:"
+    
+    # Permissions Policy
     Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(self)"
 </IfModule>
 
-# Disable directory listing and MultiViews
-Options -Indexes -MultiViews
+# Disable directory listing
+Options -Indexes
 
 # Deny access to sensitive files
 <FilesMatch "\.(htaccess|htpasswd|ini|log|sh|sql|bak|config|env)$">
     Require all denied
 </FilesMatch>
-
-# URL Rewriting - Hide .php extensions
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-    
-    # Redirect .php URLs to clean URLs (301 redirect) - MUST be before file check
-    RewriteCond %{THE_REQUEST} \s/booking/([^.]+)\.php[\s\?] [NC]
-    RewriteRule ^ /booking/%1 [R=301,L]
-    
-    # Don't rewrite existing files or directories
-    RewriteCond %{REQUEST_FILENAME} -f [OR]
-    RewriteCond %{REQUEST_FILENAME} -d
-    RewriteRule ^ - [L]
-    
-    # Rewrite clean URLs to .php files
-    RewriteCond %{REQUEST_FILENAME}.php -f
-    RewriteRule ^(.+)$ $1.php [L]
-</IfModule>

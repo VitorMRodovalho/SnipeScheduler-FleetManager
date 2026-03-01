@@ -173,7 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_reservation'])
                 }                
 
 
-header('Location: my_bookings.php?success=' . urlencode($successMsg));
+header('Location: my_bookings?success=' . urlencode($successMsg));
                 exit;
             }
         }
@@ -195,7 +195,7 @@ function get_location_name($locations, $id) {
     <title>Reserve Vehicle</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="assets/style.css?v=3">
+    <link rel="stylesheet" href="assets/style.css?v=1.3.1">
     <link rel="stylesheet" href="/booking/css/mobile.css">
     <?= layout_theme_styles() ?>
 </head>
@@ -219,7 +219,7 @@ function get_location_name($locations, $id) {
                 (<?= h($currentUser['email'] ?? '') ?>)
             </div>
             <div class="top-bar-actions">
-                <a href="logout.php" class="btn btn-link btn-sm">Log out</a>
+                <a href="logout" class="btn btn-link btn-sm">Log out</a>
             </div>
         </div>
 
@@ -357,7 +357,7 @@ function get_location_name($locations, $id) {
                         <div class="card mb-4">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between">
-                                    <a href="my_bookings.php" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Cancel</a>
+                                    <a href="my_bookings" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Cancel</a>
                                     <button type="submit" name="submit_reservation" class="btn btn-primary btn-lg">
                                         <i class="bi bi-check-circle me-1"></i><?= $isVip ? 'Reserve (Auto-Approved)' : 'Submit for Approval' ?>
                                     </button>

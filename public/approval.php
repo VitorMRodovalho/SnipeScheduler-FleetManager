@@ -17,7 +17,7 @@ $isAdmin = !empty($currentUser['is_admin']);
 $isStaff = !empty($currentUser['is_staff']) || $isAdmin;
 
 if (!$isStaff) {
-    header('Location: index.php');
+    header('Location: index');
     exit;
 }
 
@@ -108,7 +108,7 @@ $recentReservations = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <title>Reservation Approvals</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/style.css?v=1.3.1">
     <link rel="stylesheet" href="/booking/css/mobile.css">
     <?= layout_theme_styles() ?>
 </head>
@@ -132,7 +132,7 @@ $recentReservations = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 (<?= h($currentUser['email'] ?? '') ?>)
             </div>
             <div class="top-bar-actions">
-                <a href="logout.php" class="btn btn-link btn-sm">Log out</a>
+                <a href="logout" class="btn btn-link btn-sm">Log out</a>
             </div>
         </div>
 

@@ -55,5 +55,5 @@ activity_log_event('reservation_cancelled', 'Reservation cancelled', [
     ],
 ]);
 
-header('Location: my_bookings.php?email=' . urlencode($email) . '&cancelled=1');
+header('Location: my_bookings?email=' . urlencode($email) . '&cancelled=1');
 exit;

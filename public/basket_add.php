@@ -5,7 +5,7 @@ require_once SRC_PATH . '/snipeit_client.php';
 
 // Only allow POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: catalogue.php');
+    header('Location: catalogue');
     exit;
 }
 
@@ -25,7 +25,7 @@ if ($startRaw !== '' && $endRaw !== '') {
 
 if ($modelId <= 0 || $qtyRequested <= 0) {
     // Bad input; just go back to catalogue
-    header('Location: catalogue.php');
+    header('Location: catalogue');
     exit;
 }
 
@@ -89,5 +89,5 @@ if ($isAjax) {
 }
 
 // Fallback: normal redirect if not AJAX
-header('Location: catalogue.php');
+header('Location: catalogue');
 exit;

@@ -16,7 +16,7 @@ $isStaff = !empty($currentUser['is_staff']) || $isAdmin;
 $error = '';
 
 $reservationId = isset($_GET['reservation_id']) ? (int)$_GET['reservation_id'] : 0;
-if (!$reservationId) { header('Location: my_bookings.php'); exit; }
+if (!$reservationId) { header('Location: my_bookings'); exit; }
 
 $stmt = $pdo->prepare("SELECT * FROM reservations WHERE id = ?");
 $stmt->execute([$reservationId]);
@@ -111,7 +111,7 @@ if (!$snipeUserId) {
             $emailService = get_email_service($pdo);
             $emailService->notifyCheckout($reservation, $mileage);            
 $stmt->execute([json_encode($inspectionData), $reservationId]);
-            header('Location: my_bookings.php?success=' . urlencode('Vehicle checked out successfully at ' . $checkoutTime));
+            header('Location: my_bookings?success=' . urlencode('Vehicle checked out successfully at ' . $checkoutTime));
             exit;
         } catch (Exception $e) {
             $error = 'Failed to checkout: ' . $e->getMessage();
@@ -167,7 +167,7 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
     <title>Vehicle Checkout</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="assets/style.css?v=2">
+    <link rel="stylesheet" href="assets/style.css?v=1.3.1">
     <link rel="stylesheet" href="/booking/css/mobile.css">
     <?= layout_theme_styles() ?>
 </head>
@@ -186,7 +186,7 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
             <?php if ($error): ?>
                 <div class="alert alert-danger">
                     <i class="bi bi-exclamation-triangle me-2"></i><?= h($error) ?>
-                    <br><a href="my_bookings.php" class="btn btn-outline-danger btn-sm mt-2">Back to My Reservations</a>
+                    <br><a href="my_bookings" class="btn btn-outline-danger btn-sm mt-2">Back to My Reservations</a>
                 </div>
             <?php elseif ($asset && $reservation): ?>
                 
@@ -247,7 +247,7 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
                                 </label>
                             </div>
                             <div class="d-flex justify-content-between">
-                                <a href="my_bookings.php" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Cancel</a>
+                                <a href="my_bookings" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Cancel</a>
                                 <button type="submit" class="btn btn-success btn-lg"><i class="bi bi-check-circle me-1"></i>Complete Checkout</button>
                             </div>
                         </div>

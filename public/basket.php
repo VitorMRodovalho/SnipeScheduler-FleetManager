@@ -166,7 +166,7 @@ if (!empty($basket)) {
     <title>Basket – Book Vehicle</title>
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/style.css?v=1.3.1">
     <link rel="stylesheet" href="/booking/css/mobile.css">
     <?= layout_theme_styles() ?>
 </head>
@@ -195,7 +195,7 @@ if (!empty($basket)) {
                 <a href="<?= h($catalogueBackUrl) ?>" class="btn btn-outline-primary">
                     Back to catalogue
                 </a>
-                <a href="logout.php" class="btn btn-link btn-sm">Log out</a>
+                <a href="logout" class="btn btn-link btn-sm">Log out</a>
             </div>
         </div>
 
@@ -207,7 +207,7 @@ if (!empty($basket)) {
 
         <?php if (empty($basket)): ?>
             <div class="alert alert-info">
-                Your basket is empty. Add models from the <a href="catalogue.php">catalogue</a>.
+                Your basket is empty. Add models from the <a href="catalogue">catalogue</a>.
             </div>
         <?php else: ?>
             <div class="mb-3">
@@ -279,7 +279,7 @@ if (!empty($basket)) {
                             <td><?= $qty ?></td>
                             <td class="<?= $warnClass ?>"><?= htmlspecialchars($availText) ?></td>
                             <td>
-                                <a href="basket_remove.php?model_id=<?= (int)$model['id'] ?>"
+                                <a href="basket_remove?model_id=<?= (int)$model['id'] ?>"
                                    class="btn btn-sm btn-outline-danger">
                                     Remove
                                 </a>
@@ -296,7 +296,7 @@ if (!empty($basket)) {
                     <div class="availability-pill">Select reservation window</div>
                     <div class="text-muted small">Start defaults to now, end to tomorrow at 09:00</div>
                 </div>
-                <form method="get" action="basket.php" id="basket-window-form">
+                <form method="get" action="basket" id="basket-window-form">
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Start date &amp; time</label>
@@ -317,7 +317,7 @@ if (!empty($basket)) {
             </div>
 
             <!-- Final checkout form (uses the same dates, if provided) -->
-            <form method="post" action="basket_checkout.php">
+            <form method="post" action="basket_checkout">
                 <input type="hidden" name="start_datetime"
                        value="<?= htmlspecialchars($previewStartRaw) ?>">
                 <input type="hidden" name="end_datetime"

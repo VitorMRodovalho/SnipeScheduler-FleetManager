@@ -85,7 +85,7 @@ if (!empty($_GET['deleted'])) {
 
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/style.css?v=1.3.1">
     <link rel="stylesheet" href="/booking/css/mobile.css">
     <?= layout_theme_styles() ?>
 </head>
@@ -111,7 +111,7 @@ if (!empty($_GET['deleted'])) {
                 (<?= h($currentUser['email'] ?? '') ?>)
             </div>
             <div class="top-bar-actions">
-                <a href="logout.php" class="btn btn-link btn-sm">Log out</a>
+                <a href="logout" class="btn btn-link btn-sm">Log out</a>
             </div>
         </div>
 
@@ -253,12 +253,12 @@ if (!empty($_GET['deleted'])) {
 
 
                                 <?php if ($isApproved && $assetId && $status === 'confirmed'): ?>
-    <a href="vehicle_checkin.php?reservation_id=<?= $resId ?>"
+    <a href="vehicle_checkin?reservation_id=<?= $resId ?>"
        class="btn btn-primary btn-sm">
         <i class="bi bi-box-arrow-in-left"></i> Return Vehicle
     </a>
 <?php elseif ($isApproved && $assetId && $status !== 'completed' && $status !== 'confirmed'): ?>
-    <a href="vehicle_checkout.php?reservation_id=<?= $resId ?>"
+    <a href="vehicle_checkout?reservation_id=<?= $resId ?>"
        class="btn btn-success btn-sm">
         <i class="bi bi-box-arrow-right"></i> Checkout Vehicle
     </a>
@@ -267,7 +267,7 @@ if (!empty($_GET['deleted'])) {
 
 
                                 <?php if ($status === 'pending'): ?>
-                                    <a href="reservation_edit.php?id=<?= $resId ?>&from=my_bookings"
+                                    <a href="reservation_edit?id=<?= $resId ?>&from=my_bookings"
                                        class="btn btn-outline-primary btn-sm btn-action">
                                         Edit
                                     </a>
@@ -276,7 +276,7 @@ if (!empty($_GET['deleted'])) {
 
 
                                 <form method="post"
-                                      action="delete_reservation.php"
+                                      action="delete_reservation"
                                       onsubmit="return confirm('Delete this reservation and all its items? This cannot be undone.');">
                                     <?= csrf_field() ?>
                                     <input type="hidden" name="reservation_id" value="<?= $resId ?>">

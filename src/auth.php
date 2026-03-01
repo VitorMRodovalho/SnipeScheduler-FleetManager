@@ -7,8 +7,8 @@ require_once __DIR__ . '/bootstrap.php';
 session_start();
 
 $script = basename($_SERVER['PHP_SELF']);
-$loginPath = defined('AUTH_LOGIN_PATH') ? AUTH_LOGIN_PATH : 'login.php';
-$loginProcessPath = defined('AUTH_LOGIN_PROCESS_PATH') ? AUTH_LOGIN_PROCESS_PATH : 'login_process.php';
+$loginPath = defined('AUTH_LOGIN_PATH') ? AUTH_LOGIN_PATH : 'login';
+$loginProcessPath = defined('AUTH_LOGIN_PROCESS_PATH') ? AUTH_LOGIN_PROCESS_PATH : 'login_process';
 
 // If no logged-in user, redirect to login.php (except on login pages themselves)
 if (empty($_SESSION['user'])) {

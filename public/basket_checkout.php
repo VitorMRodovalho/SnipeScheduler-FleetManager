@@ -188,8 +188,8 @@ try {
     <h1>Thank you</h1>
     <p>Your booking has been submitted for <?= (int)$totalRequestedItems ?> item(s).</p>
     <p>
-        <a href="catalogue.php" class="btn btn-primary">Book more vehicle</a>
-        <a href="my_bookings.php" class="btn btn-secondary">View my bookings</a>
+        <a href="catalogue" class="btn btn-primary">Book more vehicle</a>
+        <a href="my_bookings" class="btn btn-secondary">View my bookings</a>
     </p>
 </div>
 <?php layout_footer(); ?>

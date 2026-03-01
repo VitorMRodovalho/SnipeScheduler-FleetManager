@@ -37,7 +37,7 @@ $availableAssets = array_filter($assets, function($asset) {
     <title>Vehicle Catalogue</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/style.css?v=1.3.1">
     <link rel="stylesheet" href="/booking/css/mobile.css">
     <?= layout_theme_styles() ?>
     <style>
@@ -65,7 +65,7 @@ $availableAssets = array_filter($assets, function($asset) {
                 (<?= h($currentUser['email'] ?? '') ?>)
             </div>
             <div class="top-bar-actions">
-                <a href="logout.php" class="btn btn-link btn-sm">Log out</a>
+                <a href="logout" class="btn btn-link btn-sm">Log out</a>
             </div>
         </div>        
 
@@ -95,7 +95,7 @@ $availableAssets = array_filter($assets, function($asset) {
                         <button type="submit" class="btn btn-primary me-2">
                             <i class="bi bi-search"></i> Search
                         </button>
-                        <a href="vehicle_catalogue.php" class="btn btn-outline-secondary">
+                        <a href="vehicle_catalogue" class="btn btn-outline-secondary">
                             <i class="bi bi-x-circle"></i> Clear
                         </a>
                     </div>
@@ -163,7 +163,7 @@ $availableAssets = array_filter($assets, function($asset) {
                                 </span>
                             </div>
                             <div class="card-footer bg-transparent">
-                                <a href="vehicle_reserve.php?asset_id=<?= $asset['id'] ?>" class="btn btn-primary w-100">
+                                <a href="vehicle_reserve?asset_id=<?= $asset['id'] ?>" class="btn btn-primary w-100">
                                     <i class="bi bi-calendar-plus me-1"></i> Reserve Vehicle
                                 </a>
                             </div>

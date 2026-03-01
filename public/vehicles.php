@@ -20,7 +20,7 @@ $isSuperAdmin = !empty($currentUser['is_super_admin']);
 
 // Admin only access
 if (!$isAdmin) {
-    header('Location: dashboard.php');
+    header('Location: dashboard');
     exit;
 }
 
@@ -94,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($result && isset($result['id'])) {
                 $success = "Vehicle created successfully (Asset Tag: " . ($result['asset_tag'] ?? $result['id']) . ").";
                 // Redirect to list to see new vehicle
-                header('Location: vehicles.php?tab=list&success=' . urlencode($success));
+                header('Location: vehicles?tab=list&success=' . urlencode($success));
                 exit;
             } else {
                 $error = 'Failed to create vehicle in Snipe-IT. Check logs for details.';
@@ -169,7 +169,7 @@ $vehicles = get_fleet_vehicles(200);
     <title>Vehicle Management - Admin</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/style.css?v=1.3.1">
     <link rel="stylesheet" href="/booking/css/mobile.css">
     <?= layout_theme_styles() ?>
 </head>
@@ -190,29 +190,29 @@ $vehicles = get_fleet_vehicles(200);
                 <strong><?= h($userName) ?></strong> 
                 <span class="text-muted">(<?= h($userEmail) ?>)</span>
             </div>
-            <a href="logout.php" class="text-decoration-none">Log out</a>
+            <a href="logout" class="text-decoration-none">Log out</a>
         </div>
 
         <!-- Admin Tabs -->
         <ul class="nav nav-tabs reservations-subtabs mb-3">
             <li class="nav-item">
-                <a class="nav-link active" href="vehicles.php">Vehicles</a>
+                <a class="nav-link active" href="vehicles">Vehicles</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="users.php">Users</a>
+                <a class="nav-link" href="users">Users</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="activity_log.php">Activity Log</a>
+                <a class="nav-link" href="activity_log">Activity Log</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="notifications.php">Notifications</a>
+                <a class="nav-link" href="notifications">Notifications</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="announcements.php">Announcements</a>
+                <a class="nav-link" href="announcements">Announcements</a>
             </li>
             <?php if ($isSuperAdmin): ?>
             <li class="nav-item">
-                <a class="nav-link" href="settings.php">Settings</a>
+                <a class="nav-link" href="settings">Settings</a>
             </li>
             <?php endif; ?>
         </ul>

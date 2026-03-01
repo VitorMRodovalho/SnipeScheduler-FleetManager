@@ -46,7 +46,7 @@ if (!$tabFile || !is_file($tabFile)) {
     <title>Reservations</title>
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/style.css?v=1.3.1">
     <link rel="stylesheet" href="/booking/css/mobile.css">
     <?= layout_theme_styles() ?>
     <style>
@@ -103,22 +103,22 @@ if (!$tabFile || !is_file($tabFile)) {
                 (<?= h($currentUser['email'] ?? '') ?>)
             </div>
             <div class="top-bar-actions">
-                <a href="logout.php" class="btn btn-link btn-sm">Log out</a>
+                <a href="logout" class="btn btn-link btn-sm">Log out</a>
             </div>
         </div>
 
         <ul class="nav nav-tabs reservations-tabs">
             <li class="nav-item">
                 <a class="nav-link <?= $tab === 'today' ? 'active' : '' ?>"
-                   href="reservations.php?tab=today">Today’s Reservations (Checkout)</a>
+                   href="reservations?tab=today">Today’s Reservations (Checkout)</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link <?= $tab === 'checked_out' ? 'active' : '' ?>"
-                   href="reservations.php?tab=checked_out">Checked Out Reservations</a>
+                   href="reservations?tab=checked_out">Checked Out Reservations</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link <?= $tab === 'history' ? 'active' : '' ?>"
-                   href="reservations.php?tab=history">All Reservations</a>
+                   href="reservations?tab=history">All Reservations</a>
             </li>
         </ul>
 

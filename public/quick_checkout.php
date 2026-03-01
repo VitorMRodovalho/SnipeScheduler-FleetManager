@@ -116,7 +116,7 @@ if (isset($_GET['remove'])) {
     if ($rid > 0 && isset($checkoutAssets[$rid])) {
         unset($checkoutAssets[$rid]);
     }
-    header('Location: quick_checkout.php');
+    header('Location: quick_checkout');
     exit;
 }
 
@@ -403,7 +403,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Quick Checkout – SnipeScheduler</title>
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/style.css?v=1.3.1">
     <link rel="stylesheet" href="/booking/css/mobile.css">
     <?= layout_theme_styles() ?>
 </head>
@@ -511,7 +511,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         ?>
                                         <td><?= h((string)$statusText) ?></td>
                                         <td>
-                                            <a href="quick_checkout.php?remove=<?= (int)$asset['id'] ?>"
+                                            <a href="quick_checkout?remove=<?= (int)$asset['id'] ?>"
                                                class="btn btn-sm btn-outline-danger">
                                                 Remove
                                             </a>

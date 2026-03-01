@@ -27,7 +27,7 @@ unset($_SESSION['login_error']);
 
 // Already logged in? Go to dashboard
 if (!empty($_SESSION['user']['email'])) {
-    header('Location: index.php');
+    header('Location: index');
     exit;
 }
 ?>
@@ -39,7 +39,7 @@ if (!empty($_SESSION['user']['email'])) {
     <title>Vehicle Booking – Login</title>
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/style.css?v=1.3.1">
     <link rel="stylesheet" href="/booking/css/mobile.css">
     <?= layout_theme_styles($config) ?>
 </head>
@@ -61,7 +61,7 @@ if (!empty($_SESSION['user']['email'])) {
         <?php endif; ?>
 
         <?php if ($showLdap): ?>
-            <form method="post" action="login_process.php" class="card p-3 mt-3">
+            <form method="post" action="login_process" class="card p-3 mt-3">
                 <input type="hidden" name="provider" value="ldap">
                 <div class="mb-3">
                     <label for="email" class="form-label">Email address</label>
@@ -88,7 +88,7 @@ if (!empty($_SESSION['user']['email'])) {
                 </button>
 
                 <?php if ($showGoogle): ?>
-                    <a href="login_process.php?provider=google" class="btn btn-outline-dark w-100 mt-3 d-flex align-items-center justify-content-center gap-2">
+                    <a href="login_process?provider=google" class="btn btn-outline-dark w-100 mt-3 d-flex align-items-center justify-content-center gap-2">
                         <svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 533.5 544.3">
                             <path fill="#EA4335" d="M533.5 278.4c0-18.6-1.5-37.3-4.8-55.5H272v105h147.6c-6.3 34-25 62.8-53.3 82.1l86.2 67.2c50.6-46.6 80-115.3 80-198.8z"/>
                             <path fill="#34A853" d="M272 544.3c71.8 0 132-23.5 176-64.1l-86.2-67.2c-24 16.4-54.8 26-89.8 26-69 0-127.5-46.5-148.4-108.9l-90 69.4C72.8 483.3 163.1 544.3 272 544.3z"/>
@@ -100,7 +100,7 @@ if (!empty($_SESSION['user']['email'])) {
                 <?php endif; ?>
 
                 <?php if ($showMicrosoft): ?>
-                    <a href="login_process.php?provider=microsoft" class="btn btn-outline-dark w-100 mt-2 d-flex align-items-center justify-content-center gap-2">
+                    <a href="login_process?provider=microsoft" class="btn btn-outline-dark w-100 mt-2 d-flex align-items-center justify-content-center gap-2">
                         <svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 23 23">
                             <rect width="10.5" height="10.5" x="0.5" y="0.5" fill="#F35325"/>
                             <rect width="10.5" height="10.5" x="12" y="0.5" fill="#81BC06"/>
@@ -113,7 +113,7 @@ if (!empty($_SESSION['user']['email'])) {
             </form>
         <?php elseif ($showGoogle || $showMicrosoft): ?>
             <?php if ($showGoogle): ?>
-                <a href="login_process.php?provider=google" class="btn btn-outline-dark w-100 mt-3 d-flex align-items-center justify-content-center gap-2">
+                <a href="login_process?provider=google" class="btn btn-outline-dark w-100 mt-3 d-flex align-items-center justify-content-center gap-2">
                     <svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 533.5 544.3">
                         <path fill="#EA4335" d="M533.5 278.4c0-18.6-1.5-37.3-4.8-55.5H272v105h147.6c-6.3 34-25 62.8-53.3 82.1l86.2 67.2c50.6-46.6 80-115.3 80-198.8z"/>
                         <path fill="#34A853" d="M272 544.3c71.8 0 132-23.5 176-64.1l-86.2-67.2c-24 16.4-54.8 26-89.8 26-69 0-127.5-46.5-148.4-108.9l-90 69.4C72.8 483.3 163.1 544.3 272 544.3z"/>
@@ -124,7 +124,7 @@ if (!empty($_SESSION['user']['email'])) {
                 </a>
             <?php endif; ?>
             <?php if ($showMicrosoft): ?>
-                <a href="login_process.php?provider=microsoft" class="btn btn-outline-dark w-100 mt-2 d-flex align-items-center justify-content-center gap-2">
+                <a href="login_process?provider=microsoft" class="btn btn-outline-dark w-100 mt-2 d-flex align-items-center justify-content-center gap-2">
                     <svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 23 23">
                         <rect width="10.5" height="10.5" x="0.5" y="0.5" fill="#F35325"/>
                         <rect width="10.5" height="10.5" x="12" y="0.5" fill="#81BC06"/>

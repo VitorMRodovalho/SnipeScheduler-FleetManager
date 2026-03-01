@@ -594,7 +594,7 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
     <title>Admin – SnipeScheduler</title>
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/style.css?v=1.3.1">
     <link rel="stylesheet" href="/booking/css/mobile.css">
     <?= layout_theme_styles($config) ?>
 </head>
@@ -618,7 +618,7 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
                 (<?= h($currentUser['email'] ?? '') ?>)
             </div>
             <div class="top-bar-actions">
-                <a href="logout.php" class="btn btn-link btn-sm">Log out</a>
+                <a href="logout" class="btn btn-link btn-sm">Log out</a>
             </div>
         </div>
 
@@ -636,22 +636,22 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
 
         <ul class="nav nav-tabs reservations-subtabs mb-3">
             <li class="nav-item">
-                <a class="nav-link" href="vehicles.php">Vehicles</a>
+                <a class="nav-link" href="vehicles">Vehicles</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="users.php">Users</a>
+                <a class="nav-link" href="users">Users</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="activity_log.php">Activity Log</a>
+                <a class="nav-link" href="activity_log">Activity Log</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="notifications.php">Notifications</a>
+                <a class="nav-link" href="notifications">Notifications</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="announcements.php">Announcements</a>
+                <a class="nav-link" href="announcements">Announcements</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link active" href="settings.php">Settings</a>
+                <a class="nav-link active" href="settings">Settings</a>
             </li>
         </ul>
 
@@ -1134,7 +1134,7 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
                             </div>
                         </div>
                         <div class="mt-3">
-                            <a href="blackouts.php" class="btn btn-outline-secondary btn-sm">
+                            <a href="blackouts" class="btn btn-outline-secondary btn-sm">
                                 <i class="bi bi-calendar-x me-1"></i>Manage Blackout Slots
                             </a>
                             <span class="text-muted small ms-2">Block specific dates/times from reservations</span>
