@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && !isset($_GET['prefetch']) && !isset(
         <title>Catalogue – Book Vehicle</title>
         <link rel="stylesheet"
               href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-        <link rel="stylesheet" href="assets/style.css?v=1.3.1">
+        <link rel="stylesheet" href="assets/style.css?v=1.3.2">
     <link rel="stylesheet" href="/booking/css/mobile.css">
         <?= layout_theme_styles() ?>
     </head>
@@ -1067,7 +1067,7 @@ $checkedOutCounts = [];
 
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="assets/style.css?v=1.3.1">
+    <link rel="stylesheet" href="assets/style.css?v=1.3.2">
     <link rel="stylesheet" href="/booking/css/mobile.css">
     <?= layout_theme_styles() ?>
 </head>

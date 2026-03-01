@@ -51,6 +51,20 @@ const LOCATIONS_TO_REPLACE = [
 
 async function anonymizePage(page) {
     await page.evaluate((names, locations) => {
+        // Check if element is inside footer (should NOT be anonymized)
+        function isInFooter(node) {
+            let current = node;
+            while (current) {
+                if (current.tagName === 'FOOTER' || 
+                    (current.classList && current.classList.contains('footer')) ||
+                    (current.classList && current.classList.contains('site-footer'))) {
+                    return true;
+                }
+                current = current.parentElement;
+            }
+            return false;
+        }
+
         function walkTextNodes(node, callback) {
             if (node.nodeType === Node.TEXT_NODE) {
                 callback(node);
@@ -64,8 +78,11 @@ async function anonymizePage(page) {
         // Combine all replacements
         const allReplacements = [...names, ...locations];
 
-        // Anonymize text content
+        // Anonymize text content (skip footer)
         walkTextNodes(document.body, (textNode) => {
+            // Skip if in footer
+            if (isInFooter(textNode)) return;
+            
             let text = textNode.textContent;
             
             for (const [find, replace] of allReplacements) {
@@ -84,8 +101,11 @@ async function anonymizePage(page) {
             }
         });
 
-        // Also handle innerHTML for elements that might have nested content
+        // Also handle innerHTML for elements that might have nested content (skip footer)
         document.querySelectorAll('td, th, span, div, p, strong, a, label').forEach(el => {
+            // Skip if in footer
+            if (isInFooter(el)) return;
+            
             if (el.children.length === 0 || el.tagName === 'A') {
                 let text = el.innerHTML;
                 for (const [find, replace] of allReplacements) {
@@ -99,7 +119,7 @@ async function anonymizePage(page) {
             }
         });
 
-        // Input values
+        // Input values (these won't be in footer anyway)
         document.querySelectorAll('input, textarea').forEach(el => {
             let val = el.value;
             for (const [find, replace] of allReplacements) {
@@ -114,7 +134,7 @@ async function anonymizePage(page) {
 }
 
 async function takeScreenshots(sessionId) {
-    console.log('Starting screenshot capture v3 (wider viewport, centered)...\n');
+    console.log('Starting screenshot capture v3 (wider viewport, footer preserved)...\n');
     
     if (!fs.existsSync(SCREENSHOT_DIR)) {
         fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
@@ -127,7 +147,7 @@ async function takeScreenshots(sessionId) {
     
     const page = await browser.newPage();
     
-    // Wide viewport to prevent menu wrapping - 1600px width at 85% zoom
+    // Wide viewport to prevent menu wrapping - 1920px width
     await page.setViewport({ 
         width: 1920, 
         height: 1080,
@@ -157,7 +177,7 @@ async function takeScreenshots(sessionId) {
             // Wait for page to fully render
             await new Promise(r => setTimeout(r, 1500));
             
-            // Run anonymization on ALL pages (including login)
+            // Run anonymization on ALL pages (including login) - footer is excluded
             await anonymizePage(page);
             await new Promise(r => setTimeout(r, 500));
             
