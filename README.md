@@ -85,24 +85,136 @@ Permissions are managed through **Snipe-IT Groups**:
 
 ## Screenshots
 
-*Screenshots coming soon. See [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md) for documentation guidelines.*
+### Login
+![Login](docs/screenshots/login.png)
 
-### Key Screens
+*Secure authentication via Microsoft OAuth or Google Sign-In. Users are automatically assigned permissions based on their Snipe-IT group membership.*
 
-| Screen | Access Level | Description |
-|--------|--------------|-------------|
-| Dashboard | All Users | Today's schedule, stats, overdue alerts |
-| Vehicle Catalogue | All Users | Browse available vehicles |
-| Book Vehicle | All Users | Reservation form with date/time |
-| My Reservations | All Users | View and manage own bookings |
-| Checkout/Checkin | Drivers | Digital inspection forms |
-| Approval Queue | Staff+ | Review pending reservations |
-| Maintenance | Staff+ | Track vehicle maintenance |
-| Reports | Staff+ | Utilization, compliance, history |
-| Notifications | Admin | Email configuration |
-| Announcements | Admin | System notices |
-| Security | Super Admin | Backup status, security checks |
-| Settings | Super Admin | Full system configuration |
+---
+
+### Dashboard
+![Dashboard](docs/screenshots/dashboard.png)
+
+*The main dashboard displays today's schedule, quick statistics, and overdue vehicle alerts. Users see their upcoming reservations at a glance.*
+
+**Access:** All authenticated users
+
+---
+
+### Vehicle Catalogue
+![Vehicle Catalogue](docs/screenshots/vehicle_catalogue.png)
+
+*Browse all available fleet vehicles with real-time availability pulled from Snipe-IT. Filter by type, status, or availability window.*
+
+**Access:** All authenticated users
+
+---
+
+### Book Vehicle
+![Book Vehicle](docs/screenshots/vehicle_reserve.png)
+
+*Reserve a vehicle by selecting pickup/return dates, times, and location. Include purpose notes for approval workflow.*
+
+**Access:** All authenticated users
+
+---
+
+### My Reservations
+![My Reservations](docs/screenshots/my_bookings.png)
+
+*View and manage your own reservations. Cancel pending bookings, see approval status, and access checkout forms when ready.*
+
+**Access:** All authenticated users
+
+---
+
+### Approval Queue
+![Approval Queue](docs/screenshots/approval.png)
+
+*Fleet Staff review pending reservation requests. Approve or reject with notes, view requester history and vehicle availability.*
+
+**Access:** Fleet Staff and above
+
+---
+
+### All Reservations
+![Reservations](docs/screenshots/reservations.png)
+
+*Administrative view of all reservations across the fleet. Filter by status, date range, or vehicle.*
+
+**Access:** Fleet Staff and above
+
+---
+
+### Maintenance Log
+![Maintenance](docs/screenshots/maintenance.png)
+
+*Track maintenance issues flagged during check-in. Log repairs, schedule service, and sync maintenance data back to Snipe-IT custom fields.*
+
+**Access:** Fleet Staff and above
+
+---
+
+### Reports
+![Reports](docs/screenshots/reports.png)
+
+*Comprehensive reporting including utilization rates, compliance status, and usage history. Export to CSV for further analysis.*
+
+**Access:** Fleet Staff and above
+
+---
+
+### Vehicle Management
+![Vehicles Admin](docs/screenshots/vehicles.png)
+
+*Administrative vehicle management. View all fleet assets, their current status, and quick links to Snipe-IT for detailed editing.*
+
+**Access:** Fleet Admin
+
+---
+
+### User Management
+![Users Admin](docs/screenshots/users.png)
+
+*View users and their Snipe-IT group assignments. Track VIP status for auto-approval workflows.*
+
+**Access:** Fleet Admin
+
+---
+
+### Email Notifications
+![Notifications](docs/screenshots/notifications.png)
+
+*Configure email notifications per event type. Set recipients, customize templates, toggle SMTP, and view default templates.*
+
+**Access:** Fleet Admin
+
+---
+
+### Announcements
+![Announcements](docs/screenshots/announcements.png)
+
+*Create and manage system-wide announcements. Schedule display windows, set urgency levels, and make notices dismissible.*
+
+**Access:** Fleet Admin
+
+---
+
+### Security Dashboard
+![Security](docs/screenshots/security.png)
+
+*Monitor system security status, view backup logs, and reference maintenance commands. Real-time checks for config permissions, security headers, and backup recency.*
+
+**Access:** Super Admin only
+
+---
+
+### Settings
+![Settings](docs/screenshots/settings.png)
+
+*Full system configuration including authentication providers, SMTP settings, reservation controls, and blackout period management.*
+
+**Access:** Super Admin only
 
 ## Installation
 

@@ -1,0 +1,9 @@
+{
+  "name": "snipescheduler-screenshots",
+  "version": "1.0.0",
+  "description": "Automated screenshot generator",
+  "main": "take-screenshots.js",
+  "dependencies": {
+    "puppeteer": "^21.11.0"
+  }
+}
