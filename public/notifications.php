@@ -175,6 +175,9 @@ $defaultSubjects = [
                 <li class="nav-item">
                     <a class="nav-link active" href="notifications.php">Notifications</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="announcements.php">Announcements</a>
+                </li>
                 <?php if (!empty($currentUser['is_super_admin'])): ?>
                 <li class="nav-item">
                     <a class="nav-link" href="settings.php">Settings</a>

@@ -207,6 +207,9 @@ $vehicles = get_fleet_vehicles(200);
             <li class="nav-item">
                 <a class="nav-link" href="notifications.php">Notifications</a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link" href="announcements.php">Announcements</a>
+            </li>
             <?php if ($isSuperAdmin): ?>
             <li class="nav-item">
                 <a class="nav-link" href="settings.php">Settings</a>

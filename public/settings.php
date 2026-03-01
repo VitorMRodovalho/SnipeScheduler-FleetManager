@@ -648,6 +648,9 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
                 <a class="nav-link" href="notifications.php">Notifications</a>
             </li>
             <li class="nav-item">
+                <a class="nav-link" href="announcements.php">Announcements</a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link active" href="settings.php">Settings</a>
             </li>
         </ul>

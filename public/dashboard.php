@@ -8,6 +8,7 @@ require_once SRC_PATH . '/auth.php';
 require_once SRC_PATH . '/snipeit_client.php';
 require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/layout.php';
+require_once SRC_PATH . '/announcements.php';
 
 $active = 'dashboard.php';
 $isAdmin = !empty($currentUser['is_admin']);
@@ -528,6 +529,11 @@ $weeklyStats = $stmt->fetch(PDO::FETCH_ASSOC);
         </div>
     </div><!-- page-shell -->
 </div>
+<!-- Announcements Modal -->
+<?php 
+$userEmail = $currentUser['email'] ?? '';
+echo render_announcements_modal($userEmail, $pdo); 
+?>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <?php layout_footer(); ?>
 </body>
