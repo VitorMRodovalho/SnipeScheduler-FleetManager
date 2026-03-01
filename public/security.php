@@ -149,10 +149,17 @@ $totalChecks = count($checkResults);
             
             <div class="top-bar mb-3">
                 <div class="top-bar-user">
-                    Logged in as: <strong><?= h($userName) ?></strong>
+                    <span class="text-muted">Logged in as:</span>
+                    <strong><?= h($userName) ?></strong>
+                    <span class="text-muted">(<?= h($currentUser['email'] ?? '') ?>)</span>
+                    <?php if ($isAdmin): ?>
+                        <span class="badge bg-danger ms-2">Admin</span>
+                    <?php elseif ($isStaff): ?>
+                        <span class="badge bg-primary ms-2">Staff</span>
+                    <?php endif; ?>
                 </div>
                 <div class="top-bar-actions">
-                    <a href="logout" class="btn btn-link btn-sm">Log out</a>
+                    <a href="logout" class="btn btn-outline-secondary btn-sm">Log out</a>
                 </div>
             </div>
             

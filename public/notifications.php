@@ -131,6 +131,112 @@ $defaultSubjects = [
     'pickup_reminder' => '⏰ Pickup Reminder - {vehicle}',
     'return_overdue' => '🚨 Overdue Return - {vehicle}',
 ];
+
+$defaultBodies = [
+    'reservation_submitted' => 'Hi {user},
+
+Your reservation request has been submitted and is pending approval.
+
+Vehicle: {vehicle}
+Pickup: {date} at {time}
+Return: {return_date} at {return_time}
+Purpose: {purpose}
+
+You will receive an email once your request is reviewed.
+
+Thank you,
+Fleet Management Team',
+
+    'reservation_approved' => 'Hi {user},
+
+Great news! Your reservation has been approved by {approver}.
+
+Vehicle: {vehicle}
+Pickup: {date} at {time}
+Return: {return_date} at {return_time}
+Location: {location}
+
+Please arrive on time for your pickup. Remember to complete the checkout inspection.
+
+Thank you,
+Fleet Management Team',
+
+    'reservation_rejected' => 'Hi {user},
+
+Unfortunately, your reservation request has been declined.
+
+Vehicle: {vehicle}
+Requested: {date} at {time}
+Reason: {reason}
+
+If you have questions, please contact the Fleet Administrator.
+
+Thank you,
+Fleet Management Team',
+
+    'vehicle_checked_out' => 'Hi {user},
+
+You have successfully checked out the vehicle.
+
+Vehicle: {vehicle}
+Mileage: {mileage}
+Expected Return: {return_date} at {return_time}
+
+Please return the vehicle on time and complete the check-in inspection.
+
+Drive safely!
+Fleet Management Team',
+
+    'vehicle_checked_in' => 'Hi {user},
+
+Thank you for returning the vehicle.
+
+Vehicle: {vehicle}
+Mileage: {mileage}
+Return Time: {date} at {time}
+
+Your reservation is now complete.
+
+Thank you,
+Fleet Management Team',
+
+    'maintenance_flagged' => 'ATTENTION: Maintenance Required
+
+Vehicle: {vehicle}
+Flagged by: {user}
+Issue: {notes}
+
+Please schedule maintenance as soon as possible.
+
+Fleet Management System',
+
+    'pickup_reminder' => 'Hi {user},
+
+Reminder: Your vehicle reservation is coming up in 1 hour.
+
+Vehicle: {vehicle}
+Pickup: {date} at {time}
+Location: {location}
+
+Please arrive on time to complete the checkout inspection.
+
+Thank you,
+Fleet Management Team',
+
+    'return_overdue' => 'Hi {user},
+
+OVERDUE NOTICE: Your vehicle was due to be returned.
+
+Vehicle: {vehicle}
+Expected Return: {date} at {time}
+
+Please return the vehicle as soon as possible and complete the check-in inspection.
+
+If you need to extend your reservation, please contact Fleet Management immediately.
+
+Thank you,
+Fleet Management Team',
+];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -190,10 +296,17 @@ $defaultSubjects = [
             
             <div class="top-bar mb-3">
                 <div class="top-bar-user">
-                    Logged in as: <strong><?= h($userName) ?></strong>
+                    <span class="text-muted">Logged in as:</span>
+                    <strong><?= h($userName) ?></strong>
+                    <span class="text-muted">(<?= h($currentUser['email'] ?? '') ?>)</span>
+                    <?php if ($isAdmin): ?>
+                        <span class="badge bg-danger ms-2">Admin</span>
+                    <?php elseif ($isStaff): ?>
+                        <span class="badge bg-primary ms-2">Staff</span>
+                    <?php endif; ?>
                 </div>
                 <div class="top-bar-actions">
-                    <a href="logout" class="btn btn-link btn-sm">Log out</a>
+                    <a href="logout" class="btn btn-outline-secondary btn-sm">Log out</a>
                 </div>
             </div>
             
@@ -473,9 +586,20 @@ $defaultSubjects = [
                         </div>
                         
                         <div class="mb-3">
-                            <label class="form-label">Email Body (HTML)</label>
-                            <textarea name="body_template" class="form-control" rows="6"
+                            <label class="form-label">Email Body</label>
+                            <textarea name="body_template" class="form-control" rows="8"
                                 placeholder="Leave blank to use default template..."><?= h($n['body_template'] ?? '') ?></textarea>
+                        </div>
+                        
+                        <div class="card bg-light">
+                            <div class="card-header py-2">
+                                <small class="fw-bold"><i class="bi bi-eye me-1"></i>Default Template Preview</small>
+                            </div>
+                            <div class="card-body py-2">
+                                <small><strong>Subject:</strong> <?= h($defaultSubjects[$n['event_key']] ?? '') ?></small>
+                                <hr class="my-2">
+                                <pre class="mb-0 small" style="white-space: pre-wrap; font-family: inherit;"><?= h($defaultBodies[$n['event_key']] ?? 'No default template') ?></pre>
+                            </div>
                         </div>
                     </div>
                     

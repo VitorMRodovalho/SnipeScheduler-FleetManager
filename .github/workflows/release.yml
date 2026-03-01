@@ -13,12 +13,48 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-
+        
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+        
+      - name: Extract release notes from CHANGELOG
+        id: changelog
+        run: |
+          # Extract the section for this version from CHANGELOG.md
+          VERSION="${GITHUB_REF_NAME}"
+          # Get content between this version header and the next version header
+          NOTES=$(awk "/^## $VERSION/,/^## v[0-9]/" CHANGELOG.md | head -n -1 | tail -n +2)
+          # If no notes found, use a default message
+          if [ -z "$NOTES" ]; then
+            NOTES="Release $VERSION - See CHANGELOG.md for details."
+          fi
+          # Handle multiline output
+          echo "NOTES<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
       - name: Zip the application
-        run: zip -r SnipeScheduler-FleetManager-${GITHUB_REF_NAME}.zip . -x "*.git*" ".github*"
-
+        run: |
+          zip -r SnipeScheduler-FleetManager-${{ steps.get_version.outputs.VERSION }}.zip . \
+            -x "*.git*" \
+            -x ".github*" \
+            -x "archive/*" \
+            -x "*.bak"
+            
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          name: "SnipeScheduler FleetManager ${{ steps.get_version.outputs.VERSION }}"
+          body: |
+            ## What's New in ${{ steps.get_version.outputs.VERSION }}
+            
+            ${{ steps.changelog.outputs.NOTES }}
+            
+            ---
+            
+            **Installation:** See [INSTALLATION.md](docs/INSTALLATION.md)
+            
+            **Full Changelog:** See [CHANGELOG.md](CHANGELOG.md)
           files: SnipeScheduler-FleetManager-*.zip
-          generate_release_notes: true
+          generate_release_notes: false

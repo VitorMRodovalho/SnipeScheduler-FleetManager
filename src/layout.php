@@ -254,3 +254,35 @@ if (!function_exists('layout_logo_tag')) {
             . '</div>';
     }
 }
+
+/**
+ * Render standardized top-bar with user info and logout
+ */
+function render_top_bar(array $currentUser, bool $isStaff = false, bool $isAdmin = false): string
+{
+    $userName = trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''));
+    if (empty($userName)) {
+        $userName = $currentUser['name'] ?? 'User';
+    }
+    $userEmail = $currentUser['email'] ?? '';
+    
+    $badges = '';
+    if ($isAdmin) {
+        $badges .= '<span class="badge bg-danger ms-2">Admin</span>';
+    } elseif ($isStaff) {
+        $badges .= '<span class="badge bg-primary ms-2">Staff</span>';
+    }
+    
+    return '
+        <div class="top-bar mb-3">
+            <div class="top-bar-user">
+                <span class="text-muted">Logged in as:</span>
+                <strong>' . htmlspecialchars($userName, ENT_QUOTES, 'UTF-8') . '</strong>
+                <span class="text-muted">(' . htmlspecialchars($userEmail, ENT_QUOTES, 'UTF-8') . ')</span>
+                ' . $badges . '
+            </div>
+            <div class="top-bar-actions">
+                <a href="logout" class="btn btn-outline-secondary btn-sm">Log out</a>
+            </div>
+        </div>';
+}
