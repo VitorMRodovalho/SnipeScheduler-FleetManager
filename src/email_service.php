@@ -94,6 +94,104 @@ class FleetEmailService
         );
         return array_unique(array_filter($emails));
     }
+
+    /**
+     * Get notification settings for an event
+     */
+    public function getNotificationSettings(string $eventKey): ?array
+    {
+        $stmt = $this->pdo->prepare("SELECT * FROM email_notification_settings WHERE event_key = ?");
+        $stmt->execute([$eventKey]);
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
+    /**
+     * Check if SMTP is enabled globally
+     */
+    public function isSmtpEnabled(): bool
+    {
+        $stmt = $this->pdo->query("SELECT setting_value FROM system_settings WHERE setting_key = 'smtp_enabled'");
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row && $row['setting_value'] === '1';
+    }
+
+    /**
+     * Get recipients for an event based on settings
+     */
+    public function getEventRecipients(string $eventKey, ?string $requesterEmail = null, ?string $requesterName = null): array
+    {
+        $recipients = [];
+        $settings = $this->getNotificationSettings($eventKey);
+        
+        if (!$settings || !$settings['enabled']) {
+            return $recipients;
+        }
+        
+        if ($settings['notify_requester'] && $requesterEmail) {
+            $recipients[] = ['email' => $requesterEmail, 'name' => $requesterName ?? ''];
+        }
+        
+        if ($settings['notify_staff']) {
+            foreach ($this->getStaffEmails() as $email) {
+                $recipients[] = ['email' => $email, 'name' => ''];
+            }
+        }
+        
+        if ($settings['notify_admin']) {
+            foreach ($this->getAdminEmails() as $email) {
+                $recipients[] = ['email' => $email, 'name' => ''];
+            }
+        }
+        
+        if (!empty($settings['custom_emails'])) {
+            $customEmails = array_map('trim', explode(',', $settings['custom_emails']));
+            foreach ($customEmails as $email) {
+                if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    $recipients[] = ['email' => $email, 'name' => ''];
+                }
+            }
+        }
+        
+        return $recipients;
+    }
+
+    /**
+     * Check if notification is enabled for an event
+     */
+    public function isNotificationEnabled(string $eventKey): bool
+    {
+        $settings = $this->getNotificationSettings($eventKey);
+        return $settings && $settings['enabled'];
+    }
+
+    /**
+     * Send a test email
+     */
+    public function sendTestEmail(string $toEmail): bool
+    {
+        try {
+            $mail = $this->createMailer();
+            $mail->addAddress($toEmail);
+            $mail->Subject = "Test Email - Fleet Management System";
+            
+            $content = "
+                <p>This is a test email from the Fleet Management System.</p>
+                <p>If you received this email, your SMTP configuration is working correctly!</p>
+                <div class='info-box'>
+                    <strong>Sent at:</strong> " . date('M j, Y g:i A') . "<br>
+                    <strong>Server:</strong> " . gethostname() . "
+                </div>
+            ";
+            
+            $mail->Body = $this->template('Test Email', $content);
+            $mail->send();
+            error_log("Test email sent to: " . $toEmail);
+            return true;
+        } catch (Exception $e) {
+            error_log("Test email failed: " . $e->getMessage());
+            throw $e;
+        }
+    }
    
     /**
      * Send email - queues if SMTP fails (AWS blocks port 587)

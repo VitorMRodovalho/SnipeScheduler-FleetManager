@@ -182,6 +182,9 @@ foreach ($allUsers as $user) {
             <li class="nav-item">
                 <a class="nav-link" href="activity_log.php">Activity Log</a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link" href="notifications.php">Notifications</a>
+            </li>
             <?php if (!empty($currentUser['is_super_admin'])): ?>
             <li class="nav-item">
                 <a class="nav-link" href="settings.php">Settings</a>
