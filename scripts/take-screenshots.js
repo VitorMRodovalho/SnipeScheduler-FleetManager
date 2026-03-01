@@ -1,6 +1,6 @@
 /**
  * Automated Screenshot Generator for SnipeScheduler FleetManager
- * v2 - Improved anonymization and 67% zoom
+ * v3 - Wider viewport, centered capture, improved anonymization
  */
 
 const puppeteer = require('puppeteer');
@@ -28,30 +28,29 @@ const PAGES = [
     { name: 'settings', path: '/settings', auth: true },
 ];
 
-// Anonymization patterns
-const ANONYMIZE_PATTERNS = [
-    // Email patterns - replace with generic
-    { pattern: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, replacement: 'user@example.com' },
-    // VIN (17 alphanumeric, no I, O, Q)
-    { pattern: /\b[A-HJ-NPR-Z0-9]{17}\b/g, replacement: '1HGBH41JXMN######' },
-    // Phone numbers
-    { pattern: /\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b/g, replacement: '(555) 555-0000' },
-    // License plates (various formats)
-    { pattern: /\b[A-Z0-9]{1,3}[-\s]?[A-Z0-9]{1,4}\b/g, replacement: 'ABC-1234' },
-];
-
-// Names to anonymize (add your actual names here)
+// Names to anonymize - ADD YOUR REAL NAMES HERE
 const NAMES_TO_REPLACE = [
-    // Format: [fullName, replacement]
     ['Vitor Rodovalho', 'John D.'],
+    ['Vitor Maiarodovalho', 'John D.'],
+    ['vitor.maiarodovalho@aecom.com', 'user@example.com'],
+    ['vitor.rodovalho@aecom.com', 'user@example.com'],
     ['Rodovalho', 'Doe'],
     ['Vitor', 'John'],
-    // Add more names as needed
+    ['maiarodovalho', 'doe'],
+];
+
+// Location/address patterns to anonymize
+const LOCATIONS_TO_REPLACE = [
+    ['B&P Office', 'Main Office'],
+    ['B&P', 'Company'],
+    ['Main office - primary vehicle pickup location', 'Main Office - Vehicle Pickup'],
+    ['North Vent Facility', 'North Facility'],
+    ['Area 4d:', 'Zone A:'],
+    ['Amtrak', 'Transit Co'],
 ];
 
 async function anonymizePage(page) {
-    await page.evaluate((patterns, names) => {
-        // Function to walk all text nodes
+    await page.evaluate((names, locations) => {
         function walkTextNodes(node, callback) {
             if (node.nodeType === Node.TEXT_NODE) {
                 callback(node);
@@ -62,71 +61,60 @@ async function anonymizePage(page) {
             }
         }
 
+        // Combine all replacements
+        const allReplacements = [...names, ...locations];
+
         // Anonymize text content
         walkTextNodes(document.body, (textNode) => {
             let text = textNode.textContent;
             
-            // Replace names first (longer names first to avoid partial matches)
-            for (const [name, replacement] of names) {
-                const regex = new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-                text = text.replace(regex, replacement);
+            for (const [find, replace] of allReplacements) {
+                const regex = new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                text = text.replace(regex, replace);
             }
             
-            // Replace patterns
-            for (const p of patterns) {
-                const regex = new RegExp(p.pattern, p.flags || 'g');
-                text = text.replace(regex, p.replacement);
-            }
+            // Email pattern
+            text = text.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, 'user@example.com');
+            
+            // VIN pattern
+            text = text.replace(/\b[A-HJ-NPR-Z0-9]{17}\b/g, '1HGBH41JXMN######');
             
             if (text !== textNode.textContent) {
                 textNode.textContent = text;
             }
         });
 
-        // Also anonymize input values
+        // Also handle innerHTML for elements that might have nested content
+        document.querySelectorAll('td, th, span, div, p, strong, a, label').forEach(el => {
+            if (el.children.length === 0 || el.tagName === 'A') {
+                let text = el.innerHTML;
+                for (const [find, replace] of allReplacements) {
+                    const regex = new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                    text = text.replace(regex, replace);
+                }
+                text = text.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, 'user@example.com');
+                if (text !== el.innerHTML) {
+                    el.innerHTML = text;
+                }
+            }
+        });
+
+        // Input values
         document.querySelectorAll('input, textarea').forEach(el => {
             let val = el.value;
-            for (const [name, replacement] of names) {
-                const regex = new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-                val = val.replace(regex, replacement);
+            for (const [find, replace] of allReplacements) {
+                const regex = new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                val = val.replace(regex, replace);
             }
-            for (const p of patterns) {
-                const regex = new RegExp(p.pattern, p.flags || 'g');
-                val = val.replace(regex, p.replacement);
-            }
-            if (val !== el.value) {
-                el.value = val;
-            }
+            val = val.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, 'user@example.com');
+            if (val !== el.value) el.value = val;
         });
 
-        // Anonymize table cells specifically
-        document.querySelectorAll('td, th').forEach(cell => {
-            let html = cell.innerHTML;
-            for (const [name, replacement] of names) {
-                const regex = new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-                html = html.replace(regex, replacement);
-            }
-            for (const p of patterns) {
-                const regex = new RegExp(p.pattern, p.flags || 'g');
-                html = html.replace(regex, p.replacement);
-            }
-            if (html !== cell.innerHTML) {
-                cell.innerHTML = html;
-            }
-        });
-
-    }, ANONYMIZE_PATTERNS.map(p => ({
-        pattern: p.pattern.source,
-        flags: p.pattern.flags,
-        replacement: p.replacement
-    })), NAMES_TO_REPLACE);
+    }, NAMES_TO_REPLACE, LOCATIONS_TO_REPLACE);
 }
 
-async function takeScreenshots(sessionId, extraNames = []) {
-    console.log('Starting screenshot capture (v2 - 67% zoom, improved anonymization)...\n');
-    
-    // Add extra names to anonymize
-    const allNames = [...NAMES_TO_REPLACE, ...extraNames];
+async function takeScreenshots(sessionId) {
+    console.log('Starting screenshot capture v3 (wider viewport, centered)...\n');
     
     if (!fs.existsSync(SCREENSHOT_DIR)) {
         fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
@@ -134,28 +122,16 @@ async function takeScreenshots(sessionId, extraNames = []) {
     
     const browser = await puppeteer.launch({
         headless: 'new',
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--window-size=1920,1080']
     });
     
     const page = await browser.newPage();
     
-    // Set larger viewport for 67% zoom effect (captures more content)
-    // 1400x900 at 100% = 1750x1125 at 67%
+    // Wide viewport to prevent menu wrapping - 1600px width at 85% zoom
     await page.setViewport({ 
-        width: 1750, 
-        height: 1125,
+        width: 1920, 
+        height: 1080,
         deviceScaleFactor: 1
-    });
-    
-    // Set CSS zoom to 67%
-    await page.evaluateOnNewDocument(() => {
-        const style = document.createElement('style');
-        style.textContent = `
-            html { 
-                zoom: 0.67 !important; 
-            }
-        `;
-        document.head.appendChild(style);
     });
     
     // Set session cookie
@@ -181,26 +157,17 @@ async function takeScreenshots(sessionId, extraNames = []) {
             // Wait for page to fully render
             await new Promise(r => setTimeout(r, 1500));
             
-            // Run anonymization
-            if (pageInfo.auth) {
-                await anonymizePage(page);
-                // Wait for DOM changes
-                await new Promise(r => setTimeout(r, 500));
-            }
+            // Run anonymization on ALL pages (including login)
+            await anonymizePage(page);
+            await new Promise(r => setTimeout(r, 500));
             
-            // Take screenshot
+            // Take full viewport screenshot (no clipping - capture full width)
             const filename = `${pageInfo.name}.png`;
             const filepath = path.join(SCREENSHOT_DIR, filename);
             
             await page.screenshot({ 
                 path: filepath, 
-                fullPage: false,
-                clip: {
-                    x: 0,
-                    y: 0,
-                    width: 1400,  // Output at standard width
-                    height: 900
-                }
+                fullPage: false  // Just viewport
             });
             
             console.log(`  ✓ Saved: ${filename}`);
@@ -218,37 +185,21 @@ async function takeScreenshots(sessionId, extraNames = []) {
 // Parse arguments
 const args = process.argv.slice(2);
 let sessionId = null;
-let extraNames = [];
 
 for (const arg of args) {
     if (arg.startsWith('--session=')) {
         sessionId = arg.split('=')[1];
     }
-    if (arg.startsWith('--names=')) {
-        // Format: --names="FirstName LastName:Replacement,AnotherName:Rep2"
-        const namesStr = arg.split('=')[1];
-        namesStr.split(',').forEach(pair => {
-            const [name, rep] = pair.split(':');
-            if (name && rep) {
-                extraNames.push([name.trim(), rep.trim()]);
-            }
-        });
-    }
 }
 
 if (!sessionId) {
     console.log(`
-Usage: node take-screenshots.js --session=<PHPSESSID> [--names="Name1:Rep1,Name2:Rep2"]
-
-Options:
-  --session=XXX     Your PHP session ID (required)
-  --names="..."     Additional names to anonymize (optional)
-                    Format: "Full Name:Replacement,Another:Rep2"
+Usage: node take-screenshots.js --session=<PHPSESSID>
 
 Example:
-  node take-screenshots.js --session=abc123 --names="John Smith:User A,Jane Doe:User B"
+  node take-screenshots.js --session=abc123def456
 `);
     process.exit(1);
 }
 
-takeScreenshots(sessionId, extraNames);
+takeScreenshots(sessionId);
