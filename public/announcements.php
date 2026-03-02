@@ -177,6 +177,37 @@ $typeOptions = [
                 </div>
             <?php endif; ?>
             
+            <?php if (isset($_GET['saved'])): ?>
+                <div class="alert alert-success alert-dismissible fade show">
+                    <i class="bi bi-check-circle me-2"></i>Settings saved successfully.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php endif; ?>
+            
+            <!-- System Settings Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-gear me-2"></i>System Announcement Settings
+                </div>
+                <div class="card-body">
+                    <form method="POST" class="d-flex align-items-center gap-3">
+                        <input type="hidden" name="toggle_release_announcements" value="1">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" 
+                                   id="showReleaseAnnouncements" name="show_release_announcements" 
+                                   value="1" <?= $showReleaseAnnouncements ? 'checked' : '' ?>
+                                   onchange="this.form.submit()">
+                            <label class="form-check-label" for="showReleaseAnnouncements">
+                                <strong>Show Release Announcements</strong>
+                            </label>
+                        </div>
+                        <small class="text-muted">
+                            When enabled, users will see a popup when a new version is released.
+                        </small>
+                    </form>
+                </div>
+            </div>
+            
             <?php if ($success): ?>
                 <div class="alert alert-success alert-dismissible fade show">
                     <i class="bi bi-check-circle me-2"></i><?= h($success) ?>
@@ -318,6 +349,9 @@ $typeOptions = [
                                                 <span>
                                                     <i class="bi <?= $opt['icon'] ?> me-2"></i>
                                                     <strong><?= h($a['title']) ?></strong>
+                                        <?php if ($a['is_system']): ?>
+                                            <span class="badge bg-secondary ms-2">System</span>
+                                        <?php endif; ?>
                                                 </span>
                                                 <span>
                                                     <?php if (!$a['is_active']): ?>
