@@ -1,5 +1,35 @@
 # Changelog
 
+## v1.3.2 (2026-03-02)
+
+### Email System
+- SMTP fully operational (port 587 enabled)
+- Processed 34 pending emails successfully
+- Added `cron/process_email_queue.php` for queue processing
+- Fixed `email_service.php` to send directly (removed queue bypass)
+- Cron configured: every 5 minutes
+
+### UI/UX Improvements
+- Reduced nav font-size (0.92rem → 0.82rem) to prevent line wrapping
+- Reduced nav padding and gap for compact display
+- Updated CSS cache bust to v=1.3.2
+
+### Screenshots & Documentation
+- 15 anonymized screenshots for README
+- Automated screenshot script (`scripts/take-screenshots.js`)
+- Anonymization for names, emails, locations, VINs
+- Footer credits preserved in screenshots
+
+### Release Management
+- New `scripts/release.php` for version management
+- Supports major/minor/patch versioning
+- Auto-updates version.txt, CHANGELOG.md, CSS cache
+- Creates system announcement for releases
+- Toggle in Admin → Announcements for release notifications
+- Database: added `is_system`, `system_type` columns to announcements
+
+---
+
 ## v1.3.1 (2026-03-01)
 
 ### Security & Infrastructure
