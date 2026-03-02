@@ -39,6 +39,11 @@ if ($reservation && $reservation['asset_id']) {
     }
 }
 
+// Get allowed checkin fields from Snipe-IT field settings
+$modelId = $asset['model']['id'] ?? 0;
+$fieldSettings = get_model_custom_fields_with_settings($modelId);
+$allowedCheckinFields = array_column($fieldSettings['checkin_fields'], 'name');
+
 $pickupLocations = get_pickup_locations();
 $userName = trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''));
 $userEmail = $currentUser['email'] ?? '';
@@ -74,8 +79,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $asset && empty($error)) {
     $inspectionData['needs_maintenance'] = $needsMaintenance ? 'Yes' : 'No';
     $inspectionData['maintenance_notes'] = $maintenanceNotes;
     
-    if (!$returnLocationId) {
+    // === BUSINESS RULES VALIDATION ===
+    
+    // 1. Current Mileage is mandatory
+    $newMileage = (int)($formData['_snipeit_current_mileage_6'] ?? 0);
+    $previousMileage = (int)($customFields['Current Mileage']['value'] ?? 0);
+    
+    if (empty($formData['_snipeit_current_mileage_6']) || $newMileage <= 0) {
+        $error = 'Current Mileage is required. Please enter the odometer reading.';
+    }
+    // Mileage cannot be less than previously recorded (checkout mileage)
+    elseif ($newMileage < $previousMileage) {
+        $error = "Current Mileage ({$newMileage}) cannot be less than the checkout mileage ({$previousMileage}).";
+    }
+    // Mileage plausibility: max 80 mph average over trip duration
+    elseif ($previousMileage > 0 && !empty($reservation['start_datetime'])) {
+        $checkoutTime = strtotime($reservation['start_datetime']);
+        $hoursElapsed = max(1, (time() - $checkoutTime) / 3600); // min 1 hour
+        $maxPlausibleMiles = ceil($hoursElapsed * 80);
+        $mileageDiff = $newMileage - $previousMileage;
+        if ($mileageDiff > $maxPlausibleMiles) {
+            $error = "Mileage increase of {$mileageDiff} miles over " . round($hoursElapsed, 1) . " hours exceeds the plausible maximum ({$maxPlausibleMiles} miles at 80 mph avg). Please verify the odometer reading.";
+        }
+    }
+    
+    // 2. Visual Inspection must be "Yes"
+    $visualInspection = $formData['_snipeit_visual_inspection_complete_11'] ?? '';
+    if (empty($error) && $visualInspection !== 'Yes') {
+        $error = 'Visual Inspection must be marked as "Yes" before proceeding. You must complete the vehicle inspection.';
+    }
+    
+    // 3. Return location required
+    if (empty($error) && !$returnLocationId) {
         $error = 'Please select the return location.';
+    }
+    
+    // === END VALIDATION ===
+    
+    if ($error) {
+        // Validation failed - don't proceed  
     } else {
         if (!empty($formData)) { update_asset_custom_fields($reservation['asset_id'], $formData); }
         
@@ -160,7 +202,7 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
     <title>Vehicle Checkin</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="assets/style.css?v=1.3.2">
+    <link rel="stylesheet" href="assets/style.css?v=1.3.3">
     <link rel="stylesheet" href="/booking/css/mobile.css">
     <?= layout_theme_styles() ?>
 </head>
@@ -210,6 +252,73 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
                 </div>
 
                 <form method="post">
+                    <!-- Vehicle Compliance Status (read-only) -->
+                    <?php
+                    $insExpiry = $customFields['Insurance Expiry']['value'] ?? null;
+                    $regExpiry = $customFields['Registration Expiry']['value'] ?? null;
+                    $curMileage = (int)($customFields['Current Mileage']['value'] ?? 0);
+                    $lastSvcMileage = (int)($customFields['Last Maintenance Mileage']['value'] ?? 0);
+                    $milesSinceSvc = $curMileage - $lastSvcMileage;
+                    
+                    $insDays = $insExpiry ? (int)((strtotime($insExpiry) - time()) / 86400) : null;
+                    $regDays = $regExpiry ? (int)((strtotime($regExpiry) - time()) / 86400) : null;
+                    
+                    $insStatus = $insDays === null ? 'unknown' : ($insDays < 0 ? 'expired' : ($insDays <= 30 ? 'warning' : 'ok'));
+                    $regStatus = $regDays === null ? 'unknown' : ($regDays < 0 ? 'expired' : ($regDays <= 30 ? 'warning' : 'ok'));
+                    $mntStatus = $curMileage <= 0 ? 'unknown' : ($milesSinceSvc >= 7500 ? 'due' : ($milesSinceSvc >= 7000 ? 'warning' : 'ok'));
+                    
+                    $statusIcon = ['ok' => '✅', 'warning' => '⚠️', 'expired' => '❌', 'due' => '❌', 'unknown' => '❓'];
+                    $statusBg = ['ok' => 'success', 'warning' => 'warning', 'expired' => 'danger', 'due' => 'danger', 'unknown' => 'secondary'];
+                    ?>
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="bi bi-shield-check me-2"></i>Vehicle Compliance Status</h6>
+                        </div>
+                        <div class="card-body py-2">
+                            <div class="row text-center g-2">
+                                <div class="col-md-4">
+                                    <div class="p-2 rounded border border-<?= $statusBg[$insStatus] ?>">
+                                        <div class="fs-5"><?= $statusIcon[$insStatus] ?></div>
+                                        <small class="fw-bold d-block">Insurance</small>
+                                        <small class="text-<?= $statusBg[$insStatus] ?>">
+                                            <?php if ($insStatus === 'unknown'): ?>Unknown
+                                            <?php elseif ($insStatus === 'expired'): ?>Expired
+                                            <?php elseif ($insStatus === 'warning'): ?>Expires in <?= $insDays ?> days
+                                            <?php else: ?>Valid until <?= date('M j, Y', strtotime($insExpiry)) ?>
+                                            <?php endif; ?>
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="p-2 rounded border border-<?= $statusBg[$regStatus] ?>">
+                                        <div class="fs-5"><?= $statusIcon[$regStatus] ?></div>
+                                        <small class="fw-bold d-block">Registration</small>
+                                        <small class="text-<?= $statusBg[$regStatus] ?>">
+                                            <?php if ($regStatus === 'unknown'): ?>Unknown
+                                            <?php elseif ($regStatus === 'expired'): ?>Expired
+                                            <?php elseif ($regStatus === 'warning'): ?>Expires in <?= $regDays ?> days
+                                            <?php else: ?>Valid until <?= date('M j, Y', strtotime($regExpiry)) ?>
+                                            <?php endif; ?>
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="p-2 rounded border border-<?= $statusBg[$mntStatus] ?>">
+                                        <div class="fs-5"><?= $statusIcon[$mntStatus] ?></div>
+                                        <small class="fw-bold d-block">Maintenance</small>
+                                        <small class="text-<?= $statusBg[$mntStatus] ?>">
+                                            <?php if ($mntStatus === 'unknown'): ?>No data
+                                            <?php elseif ($mntStatus === 'due'): ?>Service overdue (<?= number_format($milesSinceSvc) ?> mi)
+                                            <?php elseif ($mntStatus === 'warning'): ?><?= number_format(7500 - $milesSinceSvc) ?> mi until service
+                                            <?php else: ?><?= number_format(7500 - $milesSinceSvc) ?> mi until service
+                                            <?php endif; ?>
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Return Location -->
                     <div class="card mb-4">
                         <div class="card-header bg-success text-white">
@@ -235,7 +344,8 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
                             <div class="row">
                                 <?php 
                                 foreach ($customFields as $fieldName => $fieldData):
-                                    if (in_array($fieldName, $vehicleInfoFields) || in_array($fieldName, $autoFields)) continue;
+                                    // Only show fields marked for checkin in Snipe-IT, exclude auto-filled
+                                    if (!in_array($fieldName, $allowedCheckinFields) || in_array($fieldName, $autoFields)) continue;
                                 ?>
                                     <div class="col-md-6"><?= render_field($fieldName, $fieldData, false) ?></div>
                                 <?php endforeach; ?>
@@ -285,6 +395,92 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
 <script>
 document.getElementById('needs_maintenance')?.addEventListener('change', function() {
     document.getElementById('maintenance_details').style.display = this.checked ? 'block' : 'none';
+});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const submitBtn = form?.querySelector('button[type="submit"]');
+    const agreement = document.getElementById('agreement');
+    
+    const mileageInput = form?.querySelector('input[name*="current_mileage"]');
+    const visualSelect = form?.querySelector('select[name*="visual_inspection"]');
+    
+    if (!form || !mileageInput || !visualSelect) return;
+    
+    const previousMileage = parseInt(mileageInput.value) || 0;
+    
+    // Add required indicators
+    const mileageLabel = mileageInput.closest('.mb-3')?.querySelector('.form-label');
+    if (mileageLabel) mileageLabel.innerHTML += ' <span class="text-danger">*</span>';
+    const visualLabel = visualSelect.closest('.mb-3')?.querySelector('.form-label');
+    if (visualLabel) visualLabel.innerHTML += ' <span class="text-danger">*</span>';
+    
+    mileageInput.setAttribute('required', 'required');
+    mileageInput.setAttribute('placeholder', previousMileage > 0 ? 'Checkout: ' + previousMileage.toLocaleString() + ' miles' : 'Enter odometer reading');
+    mileageInput.setAttribute('min', previousMileage || 0);
+    
+    mileageInput.addEventListener('input', function() {
+        const val = parseInt(this.value) || 0;
+        this.classList.remove('is-invalid', 'is-valid');
+        let fb = this.parentNode.querySelector('.invalid-feedback');
+        if (fb) fb.remove();
+        
+        if (val <= 0) {
+            this.classList.add('is-invalid');
+            addFeedback(this, 'Odometer reading is required.');
+        } else if (previousMileage > 0 && val < previousMileage) {
+            this.classList.add('is-invalid');
+            addFeedback(this, 'Cannot be less than checkout reading (' + previousMileage.toLocaleString() + ' mi).');
+        } else {
+            this.classList.add('is-valid');
+        }
+        updateSubmitState();
+    });
+    
+    visualSelect.addEventListener('change', function() {
+        this.classList.remove('is-invalid', 'is-valid');
+        let fb = this.parentNode.querySelector('.invalid-feedback');
+        if (fb) fb.remove();
+        
+        if (this.value !== 'Yes') {
+            this.classList.add('is-invalid');
+            addFeedback(this, 'Visual inspection must be completed and marked "Yes" to proceed.');
+            if (agreement) { agreement.checked = false; agreement.disabled = true; }
+        } else {
+            this.classList.add('is-valid');
+            if (agreement) agreement.disabled = false;
+        }
+        updateSubmitState();
+    });
+    
+    if (agreement) {
+        agreement.addEventListener('change', updateSubmitState);
+        if (visualSelect.value !== 'Yes') agreement.disabled = true;
+    }
+    
+    function updateSubmitState() {
+        if (!submitBtn) return;
+        const mileageOk = mileageInput.classList.contains('is-valid');
+        const visualOk = visualSelect.value === 'Yes';
+        const agreed = agreement?.checked;
+        submitBtn.disabled = !(mileageOk && visualOk && agreed);
+    }
+    
+    function addFeedback(el, msg) {
+        const div = document.createElement('div');
+        div.className = 'invalid-feedback';
+        div.textContent = msg;
+        el.parentNode.appendChild(div);
+    }
+    
+    form.addEventListener('submit', function(e) {
+        const val = parseInt(mileageInput.value) || 0;
+        if (val <= 0) { e.preventDefault(); mileageInput.focus(); return; }
+        if (visualSelect.value !== 'Yes') { e.preventDefault(); visualSelect.focus(); return; }
+    });
+    
+    updateSubmitState();
 });
 </script>
 <?php layout_footer(); ?>

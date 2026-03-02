@@ -1099,13 +1099,13 @@ function get_model_custom_fields_with_settings(int $modelId): array
             'id' => $field['id'] ?? 0,
             'name' => $field['name'] ?? '',
             'db_column' => $field['db_column_name'] ?? $field['db_column'] ?? '',
-            'element' => $field['element'] ?? 'text',
+            'element' => $field['type'] ?? 'text',
             'field_format' => $field['format'] ?? 'ANY',
             'field_values' => $field['field_values'] ?? '',
             'required' => $field['required'] ?? false,
-            'show_in_checkout' => !empty($field['show_in_checkoutform']),
-            'show_in_checkin' => !empty($field['show_in_requestableform']), // Note: checkin might use different property
-            'show_in_audit' => !empty($field['show_in_audit']),
+            'show_in_checkout' => !empty($field['display_checkout']),
+            'show_in_checkin' => !empty($field['display_checkin']), // Note: checkin might use different property
+            'show_in_audit' => !empty($field['display_audit']),
         ];
         
         $result['all_fields'][] = $fieldInfo;

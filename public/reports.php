@@ -20,8 +20,12 @@ if (!$isStaff) {
 }
 
 $report = $_GET['report'] ?? 'summary';
-$dateFrom = $_GET['date_from'] ?? date('Y-m-01'); // First day of current month
-$dateTo = $_GET['date_to'] ?? date('Y-m-d');
+$dateFrom = $_GET['date_from'] ?? ''; // First day of current month
+$dateTo = $_GET['date_to'] ?? '';
+
+// Fallback for queries: empty = All Time
+$queryDateFrom = $dateFrom ?: "2020-01-01";
+$queryDateTo = $dateTo ?: date("Y-m-d");
 $assetFilter = isset($_GET['asset_id']) ? (int)$_GET['asset_id'] : null;
 $userFilter = isset($_GET['user_email']) ? trim($_GET['user_email']) : null;
 
@@ -56,7 +60,7 @@ function exportReportCSV($pdo, $report, $dateFrom, $dateTo, $assetFilter, $userF
                 TIMESTAMPDIFF(HOUR, r.start_datetime, COALESCE(r.end_datetime, NOW())) as duration_hours
                 FROM reservations r 
                 WHERE DATE(r.start_datetime) BETWEEN ? AND ?";
-        $params = [$dateFrom, $dateTo];
+        $params = [$queryDateFrom, $queryDateTo];
         
         if ($assetFilter) {
             $sql .= " AND r.asset_id = ?";
@@ -92,7 +96,7 @@ function exportReportCSV($pdo, $report, $dateFrom, $dateTo, $assetFilter, $userF
             if (!$completionDate) continue;
             
             $mDate = substr($completionDate, 0, 10);
-            if ($mDate < $dateFrom || $mDate > $dateTo) continue;
+            if ($mDate < $queryDateFrom || $mDate > $queryDateTo) continue;
             if ($assetFilter && ($m['asset']['id'] ?? 0) != $assetFilter) continue;
             
             // Extract mileage from notes
@@ -138,7 +142,7 @@ if ($report === 'summary') {
         FROM reservations
         WHERE DATE(created_at) BETWEEN ? AND ?
     ");
-    $stmt->execute([$dateFrom, $dateTo]);
+    $stmt->execute([$queryDateFrom, $queryDateTo]);
     $reportData['reservation_stats'] = $stmt->fetch(PDO::FETCH_ASSOC);
     
     // Reservations by vehicle
@@ -151,7 +155,7 @@ if ($report === 'summary') {
         GROUP BY asset_id, asset_name_cache
         ORDER BY count DESC
     ");
-    $stmt->execute([$dateFrom, $dateTo]);
+    $stmt->execute([$queryDateFrom, $queryDateTo]);
     $reportData['by_vehicle'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     // Reservations by user
@@ -164,7 +168,7 @@ if ($report === 'summary') {
         ORDER BY count DESC
         LIMIT 10
     ");
-    $stmt->execute([$dateFrom, $dateTo]);
+    $stmt->execute([$queryDateFrom, $queryDateTo]);
     $reportData['by_user'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
 // Maintenance costs - from Snipe-IT API
@@ -178,7 +182,7 @@ if ($report === 'summary') {
         if (!$completionDate) continue;
         
         $mDate = substr($completionDate, 0, 10);
-        if ($mDate < $dateFrom || $mDate > $dateTo) continue;
+        if ($mDate < $queryDateFrom || $mDate > $queryDateTo) continue;
         
         $cost = floatval($m['cost'] ?? 0);
         $type = $m['asset_maintenance_type'] ?? 'Maintenance';
@@ -209,18 +213,7 @@ if ($report === 'summary') {
         ];
     }
     // Sort by count descending
-    usort($reportData['maintenance_by_type'], fn($a, $b) => $b['count'] - $a['count']);// Maintenance costs
-    $stmt = $pdo->prepare("
-        SELECT 
-            COUNT(*) as total_services,
-            SUM(cost) as total_cost,
-            AVG(cost) as avg_cost
-        FROM maintenance_log
-        WHERE service_date BETWEEN ? AND ?
-    ");
-    $stmt->execute([$dateFrom, $dateTo]);
-    $reportData['maintenance_costs'] = $stmt->fetch(PDO::FETCH_ASSOC);
-    
+    usort($reportData['maintenance_by_type'], fn($a, $b) => $b['count'] - $a['count']);
 // Maintenance costs - from Snipe-IT API
     $allMaintenances = get_maintenances(500);
     $totalServices = 0;
@@ -232,7 +225,7 @@ if ($report === 'summary') {
         if (!$completionDate) continue;
         
         $mDate = substr($completionDate, 0, 10);
-        if ($mDate < $dateFrom || $mDate > $dateTo) continue;
+        if ($mDate < $queryDateFrom || $mDate > $queryDateTo) continue;
         
         $cost = floatval($m['cost'] ?? 0);
         $type = $m['asset_maintenance_type'] ?? 'Maintenance';
@@ -272,7 +265,7 @@ if ($report === 'summary') {
             TIMESTAMPDIFF(HOUR, r.start_datetime, COALESCE(r.end_datetime, NOW())) as duration_hours
             FROM reservations r 
             WHERE DATE(r.start_datetime) BETWEEN ? AND ?";
-    $params = [$dateFrom, $dateTo];
+    $params = [$queryDateFrom, $queryDateTo];
     
     if ($assetFilter) {
         $sql .= " AND r.asset_id = ?";
@@ -302,7 +295,7 @@ if ($report === 'summary') {
         $mDate = substr($completionDate, 0, 10); // YYYY-MM-DD
         
         // Filter by date range
-        if ($mDate < $dateFrom || $mDate > $dateTo) continue;
+        if ($mDate < $queryDateFrom || $mDate > $queryDateTo) continue;
         
         // Filter by asset if specified
         if ($assetFilter && ($m['asset']['id'] ?? 0) != $assetFilter) continue;
@@ -370,7 +363,7 @@ if ($report === 'summary') {
     // Vehicle utilization report
     $reportData['vehicles'] = [];
     
-    $totalDays = max(1, (strtotime($dateTo) - strtotime($dateFrom)) / 86400);
+    $totalDays = max(1, (strtotime($queryDateTo) - strtotime($queryDateFrom)) / 86400);
     
     foreach ($assetList as $asset) {
         $stmt = $pdo->prepare("
@@ -382,7 +375,7 @@ if ($report === 'summary') {
             WHERE asset_id = ?
             AND DATE(start_datetime) BETWEEN ? AND ?
         ");
-        $stmt->execute([$asset['id'], $dateFrom, $dateTo]);
+        $stmt->execute([$asset['id'], $queryDateFrom, $queryDateTo]);
         $stats = $stmt->fetch(PDO::FETCH_ASSOC);
         
         $totalHours = (int)($stats['total_hours'] ?? 0);
@@ -412,7 +405,7 @@ if ($report === 'summary') {
     <title>Fleet Reports</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="assets/style.css?v=1.3.2">
+    <link rel="stylesheet" href="assets/style.css?v=1.3.3">
     <link rel="stylesheet" href="/booking/css/mobile.css">
     <?= layout_theme_styles() ?>
     <style>
@@ -502,13 +495,36 @@ if ($report === 'summary') {
             <div class="card-body">
                 <form method="get" class="row g-3 align-items-end">
                     <input type="hidden" name="report" value="<?= h($report) ?>">
+                    <div class="col-12 mb-2">
+                        <div class="btn-group btn-group-sm" role="group">
+                            <?php
+                            $presets = [
+                                '' => ['label' => 'All Time', 'from' => '', 'to' => ''],
+                                'this_month' => ['label' => 'This Month', 'from' => date('Y-m-01'), 'to' => date('Y-m-d')],
+                                'last_month' => ['label' => 'Last Month', 'from' => date('Y-m-01', strtotime('-1 month')), 'to' => date('Y-m-t', strtotime('-1 month'))],
+                                'last_90' => ['label' => 'Last 90 Days', 'from' => date('Y-m-d', strtotime('-90 days')), 'to' => date('Y-m-d')],
+                                'ytd' => ['label' => 'YTD', 'from' => date('Y-01-01'), 'to' => date('Y-m-d')],
+                                'last_year' => ['label' => 'Last Year', 'from' => date('Y-01-01', strtotime('-1 year')), 'to' => date('Y-12-31', strtotime('-1 year'))],
+                            ];
+                            $currentPreset = '';
+                            foreach ($presets as $key => $p) {
+                                if ($dateFrom === $p['from'] && $dateTo === $p['to']) $currentPreset = $key;
+                            }
+                            foreach ($presets as $key => $p):
+                                $active = ($currentPreset === $key) ? 'btn-primary' : 'btn-outline-secondary';
+                            ?>
+                            <a href="?report=<?= h($report) ?>&date_from=<?= $p['from'] ?>&date_to=<?= $p['to'] ?><?= $assetFilter ? '&asset_id='.$assetFilter : '' ?><?= $userFilter ? '&user_email='.urlencode($userFilter) : '' ?>"
+                               class="btn <?= $active ?>"><?= $p['label'] ?></a>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
                     <div class="col-md-3">
                         <label class="form-label">From Date</label>
-                        <input type="date" name="date_from" class="form-control" value="<?= h($dateFrom) ?>">
+                        <input type="date" name="date_from" class="form-control" value="<?= h($dateFrom) ?>" placeholder="All time">
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">To Date</label>
-                        <input type="date" name="date_to" class="form-control" value="<?= h($dateTo) ?>">
+                        <input type="date" name="date_to" class="form-control" value="<?= h($dateTo) ?>" placeholder="Today">
                     </div>
                     <?php if (in_array($report, ['usage', 'maintenance'])): ?>
                     <div class="col-md-3">

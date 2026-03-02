@@ -339,7 +339,7 @@ class FleetEmailService
                 foreach ($staffEmails as $email) {
                     $mail->addAddress($email);
                 }
-                $mail->Subject = "🔔 New Reservation Request - {$reservation['user_name']}";
+                $mail->Subject = "New Reservation Request - {$reservation['user_name']}";
                 
                 $content = "
                     <p>A new vehicle reservation requires your approval.</p>
@@ -373,7 +373,7 @@ class FleetEmailService
         try {
             $mail = $this->createMailer();
             $mail->addAddress($reservation['user_email'], $reservation['user_name']);
-            $mail->Subject = "✅ Reservation Auto-Approved - {$assetName}";
+            $mail->Subject = "Reservation Auto-Approved - {$assetName}";
             
             $content = "
                 <p>Hi {$reservation['user_name']},</p>
@@ -408,7 +408,7 @@ class FleetEmailService
         try {
             $mail = $this->createMailer();
             $mail->addAddress($reservation['user_email'], $reservation['user_name']);
-            $mail->Subject = "✅ Reservation Approved - {$assetName}";
+            $mail->Subject = "Reservation Approved - {$assetName}";
             
             $content = "
                 <p>Hi {$reservation['user_name']},</p>
@@ -443,7 +443,7 @@ class FleetEmailService
         try {
             $mail = $this->createMailer();
             $mail->addAddress($reservation['user_email'], $reservation['user_name']);
-            $mail->Subject = "❌ Reservation Rejected - {$assetName}";
+            $mail->Subject = "Reservation Rejected - {$assetName}";
             
             $reasonText = $reason ? "<br><strong>Reason:</strong> {$reason}" : '';
             
@@ -478,7 +478,7 @@ class FleetEmailService
         try {
             $mail = $this->createMailer();
             $mail->addAddress($reservation['user_email'], $reservation['user_name']);
-            $mail->Subject = "🚗 Vehicle Checked Out - {$assetName}";
+            $mail->Subject = "Vehicle Checked Out - {$assetName}";
             
             $content = "
                 <p>Hi {$reservation['user_name']},</p>
@@ -512,7 +512,7 @@ class FleetEmailService
         try {
             $mail = $this->createMailer();
             $mail->addAddress($reservation['user_email'], $reservation['user_name']);
-            $mail->Subject = "✅ Vehicle Returned - {$assetName}";
+            $mail->Subject = "Vehicle Returned - {$assetName}";
             
             $maintenanceNote = $maintenanceFlag ? "<br><strong style='color: #dc3545;'>⚠️ Maintenance Issue Reported</strong>" : '';
             
@@ -553,7 +553,7 @@ class FleetEmailService
                 $mail->addAddress($email);
             }
             
-            $mail->Subject = "🔧 Maintenance Required - {$assetName}";
+            $mail->Subject = "[ACTION REQUIRED] Maintenance Needed - {$assetName}";
             
             $content = "
                 <p>A vehicle has been flagged for maintenance during checkin.</p>
@@ -587,7 +587,7 @@ class FleetEmailService
         try {
             $mail = $this->createMailer();
             $mail->addAddress($reservation['user_email'], $reservation['user_name']);
-            $mail->Subject = "⏰ Reminder: Vehicle Pickup Soon - {$assetName}";
+            $mail->Subject = "Reminder: Vehicle Pickup in 1 Hour - {$assetName}";
             
             $content = "
                 <p>Hi {$reservation['user_name']},</p>
@@ -622,7 +622,7 @@ class FleetEmailService
         try {
             $mail = $this->createMailer();
             $mail->addAddress($reservation['user_email'], $reservation['user_name']);
-            $mail->Subject = "⚠️ OVERDUE: Please Return Vehicle - {$assetName}";
+            $mail->Subject = "[OVERDUE] Please Return Vehicle - {$assetName}";
             
             $content = "
                 <p>Hi {$reservation['user_name']},</p>
@@ -650,7 +650,7 @@ class FleetEmailService
                 foreach ($staffEmails as $email) {
                     $mail->addAddress($email);
                 }
-                $mail->Subject = "⚠️ Overdue Vehicle Alert - {$assetName}";
+                $mail->Subject = "[OVERDUE] Vehicle Return Alert - {$assetName}";
                 
                 $content = "
                     <p>A vehicle return is overdue.</p>

@@ -1,5 +1,62 @@
 # Changelog
 
+## v1.3.3 (2026-03-02)
+
+### Custom Fields - Snipe-IT API Integration
+- Fixed field property mapping: display_checkout, display_checkin, display_audit (was using wrong API property names)
+- Fixed element type mapping: type instead of element
+- Checkout/checkin forms now dynamically filter fields based on Snipe-IT field settings
+- Replaced hardcoded field exclusion lists with API-driven inclusion lists
+- Auto-filled fields (Checkout Time, Return Time, Expected Return Time) properly excluded from forms
+
+### Business Rules & Validation
+- Current Mileage: mandatory field with real-time validation on checkout and checkin
+- Mileage cannot be less than previously recorded value
+- Mileage plausibility check on checkin: max 80 mph average over trip duration
+- Mileage sanity check on checkout: max 5,000 mile increase
+- Visual Inspection: must be marked "Yes" to proceed
+- "I confirm" checkbox disabled until Visual Inspection = Yes
+- Submit button disabled until all validations pass
+- Frontend (JS) and backend (PHP) dual validation for security
+
+### Vehicle Compliance Status
+- New compliance card on checkout and checkin pages
+- Shows Insurance, Registration, and Maintenance status with visual indicators
+- Color-coded: green (ok), yellow (warning), red (expired/overdue), gray (unknown)
+- Read-only display for driver transparency and liability documentation
+
+### My Reservations Redesign
+- Reservations ordered by ID (newest first)
+- Visual pipeline: Booked → Approved → Checked Out → Returned
+- Color-coded stage progression with active stage highlighted
+- Scheduled vs Actual times displayed side-by-side
+- OVERDUE badge and red border for overdue vehicles
+- Delete button hidden for completed/confirmed reservations
+- Status badges with contextual colors
+
+### Reports Improvements
+- Default date filter changed to "All Time" (was current month only)
+- Quick filter presets: All Time, This Month, Last Month, Last 90 Days, YTD, Last Year
+- Fixed duplicate maintenance query that was overwriting API data with local DB results
+- Maintenance by Type and Maintenance Costs now display correctly
+
+### Announcement System Fixes
+- Fixed "Show Release Announcements" toggle (POST handler was missing)
+- Added system_settings integration for toggle persistence
+- Fixed HTML rendering in announcement list (system vs user content)
+- Defined $showReleaseAnnouncements variable before template use
+
+### Email Notifications
+- Removed emojis from all email subjects for professional appearance
+- Added [ACTION REQUIRED] prefix for maintenance alerts
+- Added [OVERDUE] prefix for overdue vehicle alerts
+- Added email queue processor to cron (every 5 minutes)
+
+### Security & Backup
+- Fixed backup directory permissions for security dashboard visibility
+- Backups running daily at 2:00 AM (verified 6 backups present)
+
+
 ## v1.3.2 (2026-03-02)
 
 ### Email System

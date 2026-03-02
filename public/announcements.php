@@ -25,8 +25,22 @@ $success = '';
 $error = '';
 $editAnnouncement = null;
 
+// Load release announcements setting
+$sraStmt = $pdo->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'show_release_announcements'");
+$sraStmt->execute();
+$showReleaseAnnouncements = (int)($sraStmt->fetchColumn() ?: 0);
+
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Handle toggle release announcements
+    if (isset($_POST['toggle_release_announcements'])) {
+        $enabled = isset($_POST['show_release_announcements']) ? 1 : 0;
+        $stmt = $pdo->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES ('show_release_announcements', ?) ON DUPLICATE KEY UPDATE setting_value = ?");
+        $stmt->execute([$enabled, $enabled]);
+        $success = $enabled ? 'Release announcements enabled.' : 'Release announcements disabled.';
+        header('Location: announcements?success=' . urlencode($success));
+        exit;
+    }
     $action = $_POST['action'] ?? '';
     $userName = trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''));
     $userEmail = $currentUser['email'] ?? '';
@@ -113,7 +127,7 @@ $typeOptions = [
     <title>Announcements</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="assets/style.css?v=1.3.2">
+    <link rel="stylesheet" href="assets/style.css?v=1.3.3">
     <link rel="stylesheet" href="/booking/css/mobile.css">
     <?= layout_theme_styles() ?>
 </head>
@@ -368,7 +382,7 @@ $typeOptions = [
                                             </div>
                                         </div>
                                         <div class="card-body py-2">
-                                            <p class="mb-2"><?= nl2br(h($a['content'])) ?></p>
+                                            <p class="mb-2"><?= $a['is_system'] ? $a['content'] : nl2br(h($a['content'])) ?></p>
                                             <div class="d-flex justify-content-between align-items-center">
                                                 <small class="text-muted">
                                                     <i class="bi bi-calendar me-1"></i>
