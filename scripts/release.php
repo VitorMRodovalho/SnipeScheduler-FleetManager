@@ -115,8 +115,8 @@ $showAnnouncements = $stmt->fetchColumn() !== '0';
 
 if ($showAnnouncements) {
     // 5. Create system announcement
-    $title = "🚀 New Release: v{$newVersion}";
-    $content = "<p><strong>Version {$newVersion}</strong> is now available!</p>\n<p>{$releaseNotes}</p>\n<p><em>See the full changelog in the admin area for more details.</em></p>";
+    $title = "New Release: v{$newVersion}";
+    $content = "<p><strong>Version {$newVersion}</strong> is now available!</p>\n<p>{$releaseNotes}</p>\n<p><em>See the full changelog at <a href="https://github.com/VitorMRodovalho/SnipeScheduler-FleetManager/releases/tag/v{$newVersion}" target="_blank">GitHub Release v{$newVersion}</a></em></p>";
     
     $stmt = $pdo->prepare("
         INSERT INTO announcements 

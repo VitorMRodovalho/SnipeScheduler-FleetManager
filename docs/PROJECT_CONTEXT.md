@@ -4,7 +4,7 @@
 
 **Repository:** https://github.com/VitorMRodovalho/SnipeScheduler-FleetManager
 **Production URL:** https://inventory.amtrakfdt.com/booking/
-**Current Version:** v1.3.2
+**Current Version:** v1.3.3
 **Server:** AWS EC2 Ubuntu 24.04
 
 ## Architecture
@@ -173,10 +173,10 @@ sudo chown -R vitor:vitor /var/www/snipescheduler/.git
 
 ## Current Issues / Pending
 
-### 1. Announcement System Bugs (In Progress)
-- Toggle "Show Release Announcements" not activating
-- HTML tags showing in announcement list view
-- Need to update release announcement template with GitHub changelog link
+### 1. Announcement System Bugs (RESOLVED v1.3.3)
+- ~~Toggle "Show Release Announcements" not activating~~ Fixed
+- ~~HTML tags showing in announcement list view~~ Fixed
+- Release announcement template updated
 
 ### 2. Amtrak OAuth
 - Requires IT admin consent
@@ -194,7 +194,7 @@ sudo chown -R vitor:vitor /var/www/snipescheduler/.git
 
 | Version | Date | Key Changes |
 |---------|------|-------------|
-| v1.3.2 | 2026-03-02 | SMTP working, Screenshots, Release script, Security scanner |
+| v1.3.3 | 2026-03-02 | SMTP working, Screenshots, Release script, Security scanner |
 | v1.3.1 | 2026-03-01 | Clean URLs, Security Dashboard, UI improvements |
 | v1.3.0 | 2026-02-28 | Reservation controls, Email admin, Announcements |
 | v1.2.2 | 2026-02-28 | API caching, Mobile optimization, Bug fixes |
