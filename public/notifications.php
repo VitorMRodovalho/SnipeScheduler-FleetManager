@@ -118,6 +118,9 @@ $eventDescriptions = [
     'maintenance_flagged' => 'Sent when a vehicle is flagged for maintenance during check-in.',
     'pickup_reminder' => 'Sent 1 hour before scheduled pickup time.',
     'return_overdue' => 'Sent when a vehicle has not been returned by the expected time.',
+    'reservation_cancelled' => 'Sent when a reservation is cancelled by the user or staff.',
+    'mileage_anomaly' => 'Sent to admin when a mileage entry fails plausibility checks.',
+    'compliance_expiring' => 'Sent when vehicle insurance or registration is expiring within 30 days.',
 ];
 
 // Default subjects for reference
