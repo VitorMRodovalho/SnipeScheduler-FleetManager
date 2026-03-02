@@ -8,6 +8,7 @@ require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/announcements.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_check();
     $announcementId = (int)($_POST['announcement_id'] ?? 0);
     $redirect = $_POST['redirect'] ?? 'dashboard';
     $userEmail = $currentUser['email'] ?? '';

@@ -172,13 +172,14 @@ function render_announcements_modal(string $userEmail, PDO $pdo): string
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
-                        ' . nl2br(htmlspecialchars($a['content'])) . '
+                        ' . ($a['is_system'] ? $a['content'] : nl2br(htmlspecialchars($a['content']))) . '
                     </div>
                     <div class="modal-footer">
                         <small class="text-muted me-auto">
                             Valid until ' . date('M j, Y', strtotime($a['end_datetime'])) . '
                         </small>
-                        <form method="post" action="dismiss_announcement.php" class="d-inline">
+                        <form method="post" action="dismiss_announcement" class="d-inline">
+                            ' . csrf_field() . '
                             <input type="hidden" name="announcement_id" value="' . $a['id'] . '">
                             <input type="hidden" name="redirect" value="' . htmlspecialchars($_SERVER['REQUEST_URI']) . '">
                             <button type="submit" class="btn btn-outline-secondary btn-sm">

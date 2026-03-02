@@ -191,6 +191,7 @@ $typeOptions = [
                 </div>
                 <div class="card-body">
                     <form method="POST" class="d-flex align-items-center gap-3">
+                        <?= csrf_field() ?>
                         <input type="hidden" name="toggle_release_announcements" value="1">
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" role="switch" 
