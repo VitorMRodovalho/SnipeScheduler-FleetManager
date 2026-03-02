@@ -701,10 +701,150 @@ class FleetEmailService
                 $mail->Body = $this->template('Overdue Alert', $content);
                 $this->send($mail);
             } catch (Exception $e) {
-                error_log("Overdue email to staff failed: " . $e->getMessage());
             }
         }
-        
+
+        return true;
+    }
+
+    /**
+     * RESERVATION CANCELLED - Notify based on settings
+     */
+    public function notifyCancellation(array $reservation, string $cancelledBy): bool
+    {
+        $settings = $this->getNotificationSettings('reservation_cancelled');
+        if (!$settings || !$settings['enabled']) return true;
+
+        $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
+        $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
+
+        if ($settings['notify_requester']) {
+            try {
+                $mail = $this->createMailer();
+                $mail->addAddress($reservation['user_email'], $reservation['user_name']);
+                $mail->Subject = "Reservation Cancelled - {$assetName}";
+                $content = "
+                    <p>Hi {$reservation['user_name']},</p>
+                    <p>Your vehicle reservation has been <strong>cancelled</strong>.</p>
+                    <div class='danger-box'>
+                        <strong>Cancelled Reservation:</strong><br>
+                        <strong>Vehicle:</strong> {$assetName}<br>
+                        <strong>Cancelled By:</strong> {$cancelledBy}
+                    </div>
+                ";
+                $mail->Body = $this->template('Reservation Cancelled', $content, "{$baseUrl}/my_bookings", 'View My Reservations');
+                $this->send($mail);
+            } catch (Exception $e) {
+                error_log("Cancellation email to requester failed: " . $e->getMessage());
+            }
+        }
+
+        $notifyEmails = $this->getSettingsBasedRecipients($settings);
+        if (!empty($notifyEmails)) {
+            try {
+                $mail = $this->createMailer();
+                foreach ($notifyEmails as $email) {
+                    $mail->addAddress($email);
+                }
+                $mail->Subject = "Reservation Cancelled - {$assetName}";
+                $content = "
+                    <p>A vehicle reservation has been cancelled.</p>
+                    <div class='danger-box'>
+                        <strong>Cancelled Reservation:</strong><br>
+                        <strong>User:</strong> {$reservation['user_name']} ({$reservation['user_email']})<br>
+                        <strong>Vehicle:</strong> {$assetName}<br>
+                        <strong>Cancelled By:</strong> {$cancelledBy}
+                    </div>
+                ";
+                $mail->Body = $this->template('Reservation Cancelled', $content, "{$baseUrl}/reservations", 'View Reservations');
+                $this->send($mail);
+            } catch (Exception $e) {
+                error_log("Cancellation email to staff/admin failed: " . $e->getMessage());
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * MILEAGE ANOMALY - Admin only alert
+     */
+    public function notifyMileageAnomaly(array $reservation, int $reported, int $previous, string $reason): bool
+    {
+        $settings = $this->getNotificationSettings('mileage_anomaly');
+        if (!$settings || !$settings['enabled']) return true;
+
+        $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
+        $notifyEmails = $this->getSettingsBasedRecipients($settings);
+        if (empty($notifyEmails)) return true;
+
+        try {
+            $mail = $this->createMailer();
+            foreach ($notifyEmails as $email) {
+                $mail->addAddress($email);
+            }
+            $mail->Subject = "[ALERT] Mileage Anomaly - {$assetName}";
+            $content = "
+                <p>A mileage anomaly was detected during vehicle checkout/checkin.</p>
+                <div class='danger-box'>
+                    <strong>Alert Details:</strong><br>
+                    <strong>Vehicle:</strong> {$assetName}<br>
+                    <strong>User:</strong> {$reservation['user_name']} ({$reservation['user_email']})<br>
+                    <strong>Previous Mileage:</strong> " . number_format($previous) . " mi<br>
+                    <strong>Reported Mileage:</strong> " . number_format($reported) . " mi<br>
+                    <strong>Issue:</strong> {$reason}
+                </div>
+                <p>Please review this entry and verify the odometer reading.</p>
+            ";
+            $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
+            $mail->Body = $this->template('Mileage Anomaly Detected', $content, "{$baseUrl}/reports?report=usage", 'View Usage Report');
+            $this->send($mail);
+        } catch (Exception $e) {
+            error_log("Mileage anomaly email failed: " . $e->getMessage());
+        }
+
+        return true;
+    }
+
+    /**
+     * COMPLIANCE EXPIRING - Staff/Admin alert
+     */
+    public function notifyComplianceExpiring(array $asset, string $type, string $expiryDate, int $daysRemaining): bool
+    {
+        $settings = $this->getNotificationSettings('compliance_expiring');
+        if (!$settings || !$settings['enabled']) return true;
+
+        $assetName = ($asset['name'] ?? 'Vehicle') . ' [' . ($asset['asset_tag'] ?? '') . ']';
+        $notifyEmails = $this->getSettingsBasedRecipients($settings);
+        if (empty($notifyEmails)) return true;
+
+        $urgency = $daysRemaining <= 7 ? 'danger-box' : 'warning-box';
+        $prefix = $daysRemaining <= 7 ? '[URGENT] ' : '';
+
+        try {
+            $mail = $this->createMailer();
+            foreach ($notifyEmails as $email) {
+                $mail->addAddress($email);
+            }
+            $mail->Subject = "{$prefix}{$type} Expiring - {$assetName}";
+            $content = "
+                <p>A vehicle compliance item is expiring soon.</p>
+                <div class='{$urgency}'>
+                    <strong>Compliance Alert:</strong><br>
+                    <strong>Vehicle:</strong> {$assetName}<br>
+                    <strong>Type:</strong> {$type}<br>
+                    <strong>Expiry Date:</strong> {$expiryDate}<br>
+                    <strong>Days Remaining:</strong> {$daysRemaining}
+                </div>
+                <p>Please arrange renewal before the expiry date.</p>
+            ";
+            $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
+            $mail->Body = $this->template('Compliance Alert', $content, "{$baseUrl}/reports?report=compliance", 'View Compliance Report');
+            $this->send($mail);
+        } catch (Exception $e) {
+            error_log("Compliance expiring email failed: " . $e->getMessage());
+        }
+
         return true;
     }
 }
@@ -715,288 +855,4 @@ class FleetEmailService
 function get_email_service($pdo): FleetEmailService
 {
     return new FleetEmailService($pdo);
-
-    /**
-     * RESERVATION CANCELLED - Notify based on settings
-     */
-    public function notifyCancellation(array $reservation, string $cancelledBy): bool
-    {
-        $settings = $this->getNotificationSettings('reservation_cancelled');
-        if (!$settings || !$settings['enabled']) return true;
-
-        $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
-        $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
-
-        if ($settings['notify_requester']) {
-            try {
-                $mail = $this->createMailer();
-                $mail->addAddress($reservation['user_email'], $reservation['user_name']);
-                $mail->Subject = "Reservation Cancelled - {$assetName}";
-                $content = "
-                    <p>Hi {$reservation['user_name']},</p>
-                    <p>Your vehicle reservation has been <strong>cancelled</strong>.</p>
-                    <div class='danger-box'>
-                        <strong>Cancelled Reservation:</strong><br>
-                        <strong>Vehicle:</strong> {$assetName}<br>
-                        <strong>Cancelled By:</strong> {$cancelledBy}
-                    </div>
-                ";
-                $mail->Body = $this->template('Reservation Cancelled', $content, "{$baseUrl}/my_bookings", 'View My Reservations');
-                $this->send($mail);
-            } catch (Exception $e) {
-                error_log("Cancellation email to requester failed: " . $e->getMessage());
-            }
-        }
-
-        $notifyEmails = $this->getSettingsBasedRecipients($settings);
-        if (!empty($notifyEmails)) {
-            try {
-                $mail = $this->createMailer();
-                foreach ($notifyEmails as $email) {
-                    $mail->addAddress($email);
-                }
-                $mail->Subject = "Reservation Cancelled - {$assetName}";
-                $content = "
-                    <p>A vehicle reservation has been cancelled.</p>
-                    <div class='danger-box'>
-                        <strong>Cancelled Reservation:</strong><br>
-                        <strong>User:</strong> {$reservation['user_name']} ({$reservation['user_email']})<br>
-                        <strong>Vehicle:</strong> {$assetName}<br>
-                        <strong>Cancelled By:</strong> {$cancelledBy}
-                    </div>
-                ";
-                $mail->Body = $this->template('Reservation Cancelled', $content, "{$baseUrl}/reservations", 'View Reservations');
-                $this->send($mail);
-            } catch (Exception $e) {
-                error_log("Cancellation email to staff/admin failed: " . $e->getMessage());
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * MILEAGE ANOMALY - Admin only alert
-     */
-    public function notifyMileageAnomaly(array $reservation, int $reported, int $previous, string $reason): bool
-    {
-        $settings = $this->getNotificationSettings('mileage_anomaly');
-        if (!$settings || !$settings['enabled']) return true;
-
-        $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
-        $notifyEmails = $this->getSettingsBasedRecipients($settings);
-        if (empty($notifyEmails)) return true;
-
-        try {
-            $mail = $this->createMailer();
-            foreach ($notifyEmails as $email) {
-                $mail->addAddress($email);
-            }
-            $mail->Subject = "[ALERT] Mileage Anomaly - {$assetName}";
-            $content = "
-                <p>A mileage anomaly was detected during vehicle checkout/checkin.</p>
-                <div class='danger-box'>
-                    <strong>Alert Details:</strong><br>
-                    <strong>Vehicle:</strong> {$assetName}<br>
-                    <strong>User:</strong> {$reservation['user_name']} ({$reservation['user_email']})<br>
-                    <strong>Previous Mileage:</strong> " . number_format($previous) . " mi<br>
-                    <strong>Reported Mileage:</strong> " . number_format($reported) . " mi<br>
-                    <strong>Issue:</strong> {$reason}
-                </div>
-                <p>Please review this entry and verify the odometer reading.</p>
-            ";
-            $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
-            $mail->Body = $this->template('Mileage Anomaly Detected', $content, "{$baseUrl}/reports?report=usage", 'View Usage Report');
-            $this->send($mail);
-        } catch (Exception $e) {
-            error_log("Mileage anomaly email failed: " . $e->getMessage());
-        }
-
-        return true;
-    }
-
-    /**
-     * COMPLIANCE EXPIRING - Staff/Admin alert
-     */
-    public function notifyComplianceExpiring(array $asset, string $type, string $expiryDate, int $daysRemaining): bool
-    {
-        $settings = $this->getNotificationSettings('compliance_expiring');
-        if (!$settings || !$settings['enabled']) return true;
-
-        $assetName = ($asset['name'] ?? 'Vehicle') . ' [' . ($asset['asset_tag'] ?? '') . ']';
-        $notifyEmails = $this->getSettingsBasedRecipients($settings);
-        if (empty($notifyEmails)) return true;
-
-        $urgency = $daysRemaining <= 7 ? 'danger-box' : 'warning-box';
-        $prefix = $daysRemaining <= 7 ? '[URGENT] ' : '';
-
-        try {
-            $mail = $this->createMailer();
-            foreach ($notifyEmails as $email) {
-                $mail->addAddress($email);
-            }
-            $mail->Subject = "{$prefix}{$type} Expiring - {$assetName}";
-            $content = "
-                <p>A vehicle compliance item is expiring soon.</p>
-                <div class='{$urgency}'>
-                    <strong>Compliance Alert:</strong><br>
-                    <strong>Vehicle:</strong> {$assetName}<br>
-                    <strong>Type:</strong> {$type}<br>
-                    <strong>Expiry Date:</strong> {$expiryDate}<br>
-                    <strong>Days Remaining:</strong> {$daysRemaining}
-                </div>
-                <p>Please arrange renewal before the expiry date.</p>
-            ";
-            $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
-            $mail->Body = $this->template('Compliance Alert', $content, "{$baseUrl}/reports?report=compliance", 'View Compliance Report');
-            $this->send($mail);
-        } catch (Exception $e) {
-            error_log("Compliance expiring email failed: " . $e->getMessage());
-        }
-
-        return true;
-    }
-
-
-    /**
-     * RESERVATION CANCELLED - Notify based on settings
-     */
-    public function notifyCancellation(array $reservation, string $cancelledBy): bool
-    {
-        $settings = $this->getNotificationSettings('reservation_cancelled');
-        if (!$settings || !$settings['enabled']) return true;
-
-        $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
-        $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
-
-        if ($settings['notify_requester']) {
-            try {
-                $mail = $this->createMailer();
-                $mail->addAddress($reservation['user_email'], $reservation['user_name']);
-                $mail->Subject = "Reservation Cancelled - {$assetName}";
-                $content = "
-                    <p>Hi {$reservation['user_name']},</p>
-                    <p>Your vehicle reservation has been <strong>cancelled</strong>.</p>
-                    <div class='danger-box'>
-                        <strong>Cancelled Reservation:</strong><br>
-                        <strong>Vehicle:</strong> {$assetName}<br>
-                        <strong>Cancelled By:</strong> {$cancelledBy}
-                    </div>
-                ";
-                $mail->Body = $this->template('Reservation Cancelled', $content, "{$baseUrl}/my_bookings", 'View My Reservations');
-                $this->send($mail);
-            } catch (Exception $e) {
-                error_log("Cancellation email to requester failed: " . $e->getMessage());
-            }
-        }
-
-        $notifyEmails = $this->getSettingsBasedRecipients($settings);
-        if (!empty($notifyEmails)) {
-            try {
-                $mail = $this->createMailer();
-                foreach ($notifyEmails as $email) {
-                    $mail->addAddress($email);
-                }
-                $mail->Subject = "Reservation Cancelled - {$assetName}";
-                $content = "
-                    <p>A vehicle reservation has been cancelled.</p>
-                    <div class='danger-box'>
-                        <strong>Cancelled Reservation:</strong><br>
-                        <strong>User:</strong> {$reservation['user_name']} ({$reservation['user_email']})<br>
-                        <strong>Vehicle:</strong> {$assetName}<br>
-                        <strong>Cancelled By:</strong> {$cancelledBy}
-                    </div>
-                ";
-                $mail->Body = $this->template('Reservation Cancelled', $content, "{$baseUrl}/reservations", 'View Reservations');
-                $this->send($mail);
-            } catch (Exception $e) {
-                error_log("Cancellation email to staff/admin failed: " . $e->getMessage());
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * MILEAGE ANOMALY - Admin only alert
-     */
-    public function notifyMileageAnomaly(array $reservation, int $reported, int $previous, string $reason): bool
-    {
-        $settings = $this->getNotificationSettings('mileage_anomaly');
-        if (!$settings || !$settings['enabled']) return true;
-
-        $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
-        $notifyEmails = $this->getSettingsBasedRecipients($settings);
-        if (empty($notifyEmails)) return true;
-
-        try {
-            $mail = $this->createMailer();
-            foreach ($notifyEmails as $email) {
-                $mail->addAddress($email);
-            }
-            $mail->Subject = "[ALERT] Mileage Anomaly - {$assetName}";
-            $content = "
-                <p>A mileage anomaly was detected during vehicle checkout/checkin.</p>
-                <div class='danger-box'>
-                    <strong>Alert Details:</strong><br>
-                    <strong>Vehicle:</strong> {$assetName}<br>
-                    <strong>User:</strong> {$reservation['user_name']} ({$reservation['user_email']})<br>
-                    <strong>Previous Mileage:</strong> " . number_format($previous) . " mi<br>
-                    <strong>Reported Mileage:</strong> " . number_format($reported) . " mi<br>
-                    <strong>Issue:</strong> {$reason}
-                </div>
-                <p>Please review this entry and verify the odometer reading.</p>
-            ";
-            $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
-            $mail->Body = $this->template('Mileage Anomaly Detected', $content, "{$baseUrl}/reports?report=usage", 'View Usage Report');
-            $this->send($mail);
-        } catch (Exception $e) {
-            error_log("Mileage anomaly email failed: " . $e->getMessage());
-        }
-
-        return true;
-    }
-
-    /**
-     * COMPLIANCE EXPIRING - Staff/Admin alert
-     */
-    public function notifyComplianceExpiring(array $asset, string $type, string $expiryDate, int $daysRemaining): bool
-    {
-        $settings = $this->getNotificationSettings('compliance_expiring');
-        if (!$settings || !$settings['enabled']) return true;
-
-        $assetName = ($asset['name'] ?? 'Vehicle') . ' [' . ($asset['asset_tag'] ?? '') . ']';
-        $notifyEmails = $this->getSettingsBasedRecipients($settings);
-        if (empty($notifyEmails)) return true;
-
-        $urgency = $daysRemaining <= 7 ? 'danger-box' : 'warning-box';
-        $prefix = $daysRemaining <= 7 ? '[URGENT] ' : '';
-
-        try {
-            $mail = $this->createMailer();
-            foreach ($notifyEmails as $email) {
-                $mail->addAddress($email);
-            }
-            $mail->Subject = "{$prefix}{$type} Expiring - {$assetName}";
-            $content = "
-                <p>A vehicle compliance item is expiring soon.</p>
-                <div class='{$urgency}'>
-                    <strong>Compliance Alert:</strong><br>
-                    <strong>Vehicle:</strong> {$assetName}<br>
-                    <strong>Type:</strong> {$type}<br>
-                    <strong>Expiry Date:</strong> {$expiryDate}<br>
-                    <strong>Days Remaining:</strong> {$daysRemaining}
-                </div>
-                <p>Please arrange renewal before the expiry date.</p>
-            ";
-            $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
-            $mail->Body = $this->template('Compliance Alert', $content, "{$baseUrl}/reports?report=compliance", 'View Compliance Report');
-            $this->send($mail);
-        } catch (Exception $e) {
-            error_log("Compliance expiring email failed: " . $e->getMessage());
-        }
-
-        return true;
-    }
-
 }
