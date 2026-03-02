@@ -24,3 +24,6 @@ Thumbs.db
 
 # Archived legacy files
 archive/
+
+# Node modules
+node_modules/
