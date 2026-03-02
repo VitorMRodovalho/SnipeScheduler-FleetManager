@@ -57,29 +57,16 @@ class FleetEmailService
     {
         $emails = [];
         $auth = $this->config['auth'] ?? [];
-        
-        // Get admin emails from config
-        if (!empty($auth['microsoft_admin_emails'])) {
-            $emails = array_merge($emails, $auth['microsoft_admin_emails']);
-        }
-        
-        // Get staff/checkout emails from config
+
+        // Staff/checkout emails ONLY - NOT admin emails
         if (!empty($auth['microsoft_checkout_emails'])) {
             $emails = array_merge($emails, $auth['microsoft_checkout_emails']);
-        }
-        
-        // Also check Google if configured
-        if (!empty($auth['google_admin_emails'])) {
-            $emails = array_merge($emails, $auth['google_admin_emails']);
         }
         if (!empty($auth['google_checkout_emails'])) {
             $emails = array_merge($emails, $auth['google_checkout_emails']);
         }
-        
-        // Remove duplicates and empty values
-        $emails = array_unique(array_filter($emails));
-        
-        return $emails;
+
+        return array_unique(array_filter($emails));
     }
     
     /**
@@ -92,6 +79,27 @@ class FleetEmailService
             $auth['microsoft_admin_emails'] ?? [],
             $auth['google_admin_emails'] ?? []
         );
+        return array_unique(array_filter($emails));
+    }
+
+    /**
+     * Get staff/admin recipients based on notification settings (excludes requester)
+     */
+    public function getSettingsBasedRecipients(array $settings): array
+    {
+        $emails = [];
+        if (!empty($settings['notify_staff'])) {
+            $emails = array_merge($emails, $this->getStaffEmails());
+        }
+        if (!empty($settings['notify_admin'])) {
+            $emails = array_merge($emails, $this->getAdminEmails());
+        }
+        if (!empty($settings['custom_emails'])) {
+            $custom = array_map('trim', explode(',', $settings['custom_emails']));
+            foreach ($custom as $e) {
+                if (filter_var($e, FILTER_VALIDATE_EMAIL)) $emails[] = $e;
+            }
+        }
         return array_unique(array_filter($emails));
     }
 
@@ -303,70 +311,77 @@ class FleetEmailService
      */
     public function notifyNewReservation(array $reservation): bool
     {
+        $settings = $this->getNotificationSettings('reservation_submitted');
+        if (!$settings || !$settings['enabled']) return true;
+
         $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
         $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
-        
+        $pickup = date('M j, Y g:i A', strtotime($reservation['start_datetime']));
+        $return = date('M j, Y g:i A', strtotime($reservation['end_datetime']));
+
         // Email to requester
-        try {
-            $mail = $this->createMailer();
-            $mail->addAddress($reservation['user_email'], $reservation['user_name']);
-            $mail->Subject = "Reservation Submitted - {$assetName}";
-            
-            $content = "
-                <p>Hi {$reservation['user_name']},</p>
-                <p>Your vehicle reservation has been submitted and is pending approval.</p>
-                <div class='info-box'>
-                    <strong>Reservation Details:</strong><br>
-                    <strong>Vehicle:</strong> {$assetName}<br>
-                    <strong>Pickup:</strong> " . date('M j, Y g:i A', strtotime($reservation['start_datetime'])) . "<br>
-                    <strong>Return:</strong> " . date('M j, Y g:i A', strtotime($reservation['end_datetime'])) . "<br>
-                    <strong>Status:</strong> Pending Approval
-                </div>
-                <p>You will receive another email once your reservation is approved or rejected.</p>
-            ";
-            
-            $mail->Body = $this->template('Reservation Submitted', $content, "{$baseUrl}/my_bookings.php", 'View My Reservations');
-            $this->send($mail);
-        } catch (Exception $e) {
-            error_log("Email to requester failed: " . $e->getMessage());
-        }
-        
-        // Email to staff
-        $staffEmails = $this->getStaffEmails();
-        if (!empty($staffEmails)) {
+        if ($settings['notify_requester']) {
             try {
                 $mail = $this->createMailer();
-                foreach ($staffEmails as $email) {
+                $mail->addAddress($reservation['user_email'], $reservation['user_name']);
+                $mail->Subject = "Reservation Submitted - {$assetName}";
+                $content = "
+                    <p>Hi {$reservation['user_name']},</p>
+                    <p>Your vehicle reservation has been submitted and is pending approval.</p>
+                    <div class='info-box'>
+                        <strong>Reservation Details:</strong><br>
+                        <strong>Vehicle:</strong> {$assetName}<br>
+                        <strong>Pickup:</strong> {$pickup}<br>
+                        <strong>Return:</strong> {$return}<br>
+                        <strong>Status:</strong> Pending Approval
+                    </div>
+                    <p>You will receive another email once your reservation is approved or rejected.</p>
+                ";
+                $mail->Body = $this->template('Reservation Submitted', $content, "{$baseUrl}/my_bookings", 'View My Reservations');
+                $this->send($mail);
+            } catch (Exception $e) {
+                error_log("Email to requester failed: " . $e->getMessage());
+            }
+        }
+
+        // Email to staff/admin based on DB settings
+        $notifyEmails = $this->getSettingsBasedRecipients($settings);
+        if (!empty($notifyEmails)) {
+            try {
+                $mail = $this->createMailer();
+                foreach ($notifyEmails as $email) {
                     $mail->addAddress($email);
                 }
                 $mail->Subject = "New Reservation Request - {$reservation['user_name']}";
-                
                 $content = "
                     <p>A new vehicle reservation requires your approval.</p>
                     <div class='warning-box'>
                         <strong>Request Details:</strong><br>
                         <strong>Requested By:</strong> {$reservation['user_name']} ({$reservation['user_email']})<br>
                         <strong>Vehicle:</strong> {$assetName}<br>
-                        <strong>Pickup:</strong> " . date('M j, Y g:i A', strtotime($reservation['start_datetime'])) . "<br>
-                        <strong>Return:</strong> " . date('M j, Y g:i A', strtotime($reservation['end_datetime'])) . "
+                        <strong>Pickup:</strong> {$pickup}<br>
+                        <strong>Return:</strong> {$return}
                     </div>
                 ";
-                
-                $mail->Body = $this->template('Approval Required', $content, "{$baseUrl}/approval.php", 'Review & Approve');
+                $mail->Body = $this->template('Approval Required', $content, "{$baseUrl}/approval", 'Review & Approve');
                 $this->send($mail);
             } catch (Exception $e) {
-                error_log("Email to staff failed: " . $e->getMessage());
+                error_log("Email to staff/admin failed: " . $e->getMessage());
             }
         }
-        
+
         return true;
     }
+
     
     /**
      * VIP AUTO-APPROVED - Notify requester only
      */
     public function notifyAutoApproved(array $reservation): bool
     {
+        $settings = $this->getNotificationSettings('reservation_approved');
+        if (!$settings || !$settings['enabled']) return true;
+
         $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
         $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
         
@@ -402,6 +417,9 @@ class FleetEmailService
      */
     public function notifyApproved(array $reservation, string $approverName): bool
     {
+        $settings = $this->getNotificationSettings('reservation_approved');
+        if (!$settings || !$settings['enabled']) return true;
+
         $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
         $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
         
@@ -437,6 +455,9 @@ class FleetEmailService
      */
     public function notifyRejected(array $reservation, string $approverName, string $reason = ''): bool
     {
+        $settings = $this->getNotificationSettings('reservation_rejected');
+        if (!$settings || !$settings['enabled']) return true;
+
         $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
         $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
         
@@ -473,6 +494,9 @@ class FleetEmailService
      */
     public function notifyCheckout(array $reservation, string $mileage): bool
     {
+        $settings = $this->getNotificationSettings('vehicle_checked_out');
+        if (!$settings || !$settings['enabled']) return true;
+
         $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
         
         try {
@@ -507,6 +531,9 @@ class FleetEmailService
      */
     public function notifyCheckin(array $reservation, string $mileage, bool $maintenanceFlag = false): bool
     {
+        $settings = $this->getNotificationSettings('vehicle_checked_in');
+        if (!$settings || !$settings['enabled']) return true;
+
         $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
         
         try {
@@ -541,9 +568,12 @@ class FleetEmailService
      */
     public function notifyMaintenanceFlag(array $reservation, string $notes): bool
     {
+        $settings = $this->getNotificationSettings('maintenance_flagged');
+        if (!$settings || !$settings['enabled']) return true;
+
         $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
         $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
-        $staffEmails = $this->getStaffEmails();
+        $staffEmails = $this->getSettingsBasedRecipients($settings);
         
         if (empty($staffEmails)) return true;
         
@@ -581,6 +611,9 @@ class FleetEmailService
      */
     public function notifyPickupReminder(array $reservation): bool
     {
+        $settings = $this->getNotificationSettings('pickup_reminder');
+        if (!$settings || !$settings['enabled']) return true;
+
         $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
         $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
         
@@ -615,6 +648,9 @@ class FleetEmailService
      */
     public function notifyOverdue(array $reservation): bool
     {
+        $settings = $this->getNotificationSettings('return_overdue');
+        if (!$settings || !$settings['enabled']) return true;
+
         $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
         $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
         
@@ -643,7 +679,7 @@ class FleetEmailService
         }
         
         // Email to staff
-        $staffEmails = $this->getStaffEmails();
+        $staffEmails = $this->getSettingsBasedRecipients($settings);
         if (!empty($staffEmails)) {
             try {
                 $mail = $this->createMailer();
