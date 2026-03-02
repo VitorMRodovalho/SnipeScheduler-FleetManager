@@ -27,3 +27,6 @@ archive/
 
 # Node modules
 node_modules/
+
+# Project context (contains sensitive internal data)
+docs/PROJECT_CONTEXT.md
