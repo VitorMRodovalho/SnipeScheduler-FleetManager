@@ -336,7 +336,7 @@ if ($provider === 'microsoft') {
             'response_mode' => 'query',
             'scope'         => 'openid profile email User.Read User.Read.All',
             'state'         => $state,
-            'prompt'        => 'none',
+            'prompt'        => 'select_account',
         ];
 
         if ($forcePrompt) {

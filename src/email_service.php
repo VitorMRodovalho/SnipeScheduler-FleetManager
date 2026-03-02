@@ -39,7 +39,7 @@ class FleetEmailService
         $mail->Password = $smtp['password'];
         
         $fromEmail = $smtp['from_email'] ?: $smtp['username'];
-        $fromName = $smtp['from_name'] ?: 'FDT Fleet Management';
+        $fromName = $smtp['from_name'] ?: 'Fleet Management';
         $mail->setFrom($fromEmail, $fromName);
         $mail->isHTML(true);
         $mail->Timeout = 3;
@@ -282,7 +282,7 @@ class FleetEmailService
         <body>
             <div class='container'>
                 <div class='header'>
-                    <h1 style='margin: 0; font-size: 24px;'>🚗 FDT Fleet Management</h1>
+                    <h1 style='margin: 0; font-size: 24px;'>🚗 Fleet Management</h1>
                     <p style='margin: 5px 0 0 0; opacity: 0.9;'>{$title}</p>
                 </div>
                 <div class='content'>
@@ -290,7 +290,7 @@ class FleetEmailService
                     {$button}
                 </div>
                 <div class='footer'>
-                    <p>Frederick Douglass Tunnel Project - Fleet Vehicle Management System</p>
+                    <p>Fleet Vehicle Management System</p>
                     <p>This is an automated notification. Please do not reply to this email.</p>
                 </div>
             </div>
@@ -303,7 +303,7 @@ class FleetEmailService
      */
     public function notifyNewReservation(array $reservation): bool
     {
-        $baseUrl = 'https://inventory.amtrakfdt.com/booking';
+        $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
         $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
         
         // Email to requester
@@ -367,7 +367,7 @@ class FleetEmailService
      */
     public function notifyAutoApproved(array $reservation): bool
     {
-        $baseUrl = 'https://inventory.amtrakfdt.com/booking';
+        $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
         $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
         
         try {
@@ -402,7 +402,7 @@ class FleetEmailService
      */
     public function notifyApproved(array $reservation, string $approverName): bool
     {
-        $baseUrl = 'https://inventory.amtrakfdt.com/booking';
+        $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
         $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
         
         try {
@@ -437,7 +437,7 @@ class FleetEmailService
      */
     public function notifyRejected(array $reservation, string $approverName, string $reason = ''): bool
     {
-        $baseUrl = 'https://inventory.amtrakfdt.com/booking';
+        $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
         $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
         
         try {
@@ -541,7 +541,7 @@ class FleetEmailService
      */
     public function notifyMaintenanceFlag(array $reservation, string $notes): bool
     {
-        $baseUrl = 'https://inventory.amtrakfdt.com';
+        $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
         $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
         $staffEmails = $this->getStaffEmails();
         
@@ -581,7 +581,7 @@ class FleetEmailService
      */
     public function notifyPickupReminder(array $reservation): bool
     {
-        $baseUrl = 'https://inventory.amtrakfdt.com/booking';
+        $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
         $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
         
         try {
@@ -615,7 +615,7 @@ class FleetEmailService
      */
     public function notifyOverdue(array $reservation): bool
     {
-        $baseUrl = 'https://inventory.amtrakfdt.com/booking';
+        $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
         $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
         
         // Email to requester

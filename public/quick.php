@@ -160,7 +160,7 @@ if ($asset && !$error) {
                                 <div class="col-12">
                                     <label class="form-label"><strong>Asset Tag</strong></label>
                                     <input type="text" name="tag" class="form-control form-control-lg" 
-                                           placeholder="e.g., BPTR-VEH-001" autofocus>
+                                           placeholder="e.g., VEH-001" autofocus>
                                 </div>
                                 <div class="col-12">
                                     <button type="submit" class="btn btn-primary btn-lg w-100">

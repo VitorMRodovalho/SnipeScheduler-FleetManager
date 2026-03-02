@@ -99,7 +99,7 @@ $isStaff = !empty($currentUser['is_staff']) || $isAdmin;
                     <div class="card-body">
                         <form action="quick" method="get" class="row g-2">
                             <div class="col-8">
-                                <input type="text" name="tag" class="form-control" placeholder="Asset Tag (e.g., BPTR-VEH-001)">
+                                <input type="text" name="tag" class="form-control" placeholder="Asset Tag (e.g., VEH-001)">
                             </div>
                             <div class="col-4">
                                 <button type="submit" class="btn btn-primary w-100">Go</button>
@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Stop scanning
         html5QrCode.stop().then(() => {
             // Extract asset ID from Snipe-IT URL
-            // Expected format: https://inventory.amtrakfdt.com/hardware/300
+            // Expected format: https://yoursite.com/hardware/300
             const match = decodedText.match(/\/hardware\/(\d+)/);
             
             if (match) {

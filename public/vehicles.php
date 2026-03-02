@@ -456,7 +456,7 @@ $vehicles = get_fleet_vehicles(200);
                                             <option value="">Select location...</option>
                                             <?php foreach ($locations as $loc): ?>
                                                 <option value="<?= $loc['id'] ?>" 
-                                                    <?= stripos($loc['name'], 'B&P') !== false ? 'selected' : '' ?>>
+                                                    <?= false /* Default location filter */ ? 'selected' : '' ?>>
                                                     <?= h($loc['name']) ?>
                                                 </option>
                                             <?php endforeach; ?>
@@ -469,7 +469,7 @@ $vehicles = get_fleet_vehicles(200);
                                             <option value="">Select company...</option>
                                             <?php foreach ($companies as $co): ?>
                                                 <option value="<?= $co['id'] ?>"
-                                                    <?= stripos($co['name'], 'Amtrak') !== false ? 'selected' : '' ?>>
+                                                    <?= false /* Default company filter */ ? 'selected' : '' ?>>
                                                     <?= h($co['name']) ?>
                                                 </option>
                                             <?php endforeach; ?>

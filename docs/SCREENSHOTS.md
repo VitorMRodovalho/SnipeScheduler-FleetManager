@@ -52,10 +52,10 @@ Before capturing screenshots, ensure sensitive data is masked:
 **Automated (CLI):**
 ```bash
 # Using puppeteer (requires Node.js)
-npx puppeteer screenshot https://inventory.amtrakfdt.com/booking/dashboard --output dashboard.png
+npx puppeteer screenshot https://your-domain.com/booking/dashboard --output dashboard.png
 
 # Using wkhtmltoimage
-wkhtmltoimage https://inventory.amtrakfdt.com/booking/dashboard dashboard.png
+wkhtmltoimage https://your-domain.com/booking/dashboard dashboard.png
 ```
 
 ### 4. Image Specifications

@@ -488,7 +488,7 @@ foreach ($allUsers as $user) {
                             <div class="col-md-6">
                                 <label class="form-label">Email <span class="text-danger">*</span></label>
                                 <input type="email" name="email" class="form-control" required
-                                       placeholder="user@aecom.com">
+                                       placeholder="user@example.com">
                                 <small class="text-muted">Email will also be used as username</small>
                             </div>
                             
