@@ -21,6 +21,7 @@ const PAGES = [
     { name: 'maintenance', path: '/maintenance', auth: true },
     { name: 'reports', path: '/reports', auth: true },
     { name: 'vehicles', path: '/vehicles', auth: true },
+    { name: 'vehicles_create', path: '/vehicles?tab=create', auth: true },
     { name: 'users', path: '/users', auth: true },
     { name: 'notifications', path: '/notifications', auth: true },
     { name: 'announcements', path: '/announcements', auth: true },

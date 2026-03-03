@@ -2,7 +2,7 @@
 
 A comprehensive fleet vehicle management system built on top of [Snipe-IT](https://snipeitapp.com/), designed for enterprise fleet operations with reservation scheduling, maintenance tracking, and compliance management.
 
-> **Current Version:** v1.3.3 · [Changelog](CHANGELOG.md) · [Releases](https://github.com/VitorMRodovalho/SnipeScheduler-FleetManager/releases)
+> **Current Version:** v1.3.4 · [Changelog](CHANGELOG.md) · [Releases](https://github.com/VitorMRodovalho/SnipeScheduler-FleetManager/releases)
 
 ## Why This Project?
 
@@ -193,6 +193,17 @@ Permissions are managed through **Snipe-IT Groups**:
 *Administrative vehicle management with guided vehicle creation. Vehicle Name and Asset Tag (BPTR-VEH-###) are auto-generated for consistency. The system enforces duplicate checks on VIN and License Plate, requires compliance fields (insurance, registration), and presents a confirmation summary before creating. All vehicles sync to Snipe-IT as requestable assets.*
 
 **Access:** Fleet Admin
+
+---
+
+### Add Vehicle
+
+![Add Vehicle](docs/screenshots/vehicles_create.png)
+
+*Guided vehicle creation form with governance controls. Vehicle Name is auto-generated from Year, Manufacturer, Model, and License Plate. Asset Tags follow the BPTR-VEH-### format and are never reused. The system validates VIN (17-character) and License Plate for duplicates in real-time, enforces required compliance fields, and presents a confirmation summary modal before submitting to Snipe-IT.*
+
+**Access:** Fleet Admin
+
 
 ---
 

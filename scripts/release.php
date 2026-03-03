@@ -116,8 +116,7 @@ $showAnnouncements = $stmt->fetchColumn() !== '0';
 if ($showAnnouncements) {
     // 5. Create system announcement
     $title = "New Release: v{$newVersion}";
-    $content = "<p><strong>Version {$newVersion}</strong> is now available!</p>\n<p>{$releaseNotes}</p>\n<p><em>See the full changelog at <a href="https://github.com/VitorMRodovalho/SnipeScheduler-FleetManager/releases/tag/v{$newVersion}" target="_blank">GitHub Release v{$newVersion}</a></em></p>";
-    
+    $content = '<p><strong>Version ' . $newVersion . '</strong> is now available!</p>' . "\n" . '<p>' . htmlspecialchars($releaseNotes) . '</p>' . "\n" . '<p><em>See the full changelog at <a href="https://github.com/VitorMRodovalho/SnipeScheduler-FleetManager/releases/tag/v' . $newVersion . '" target="_blank">GitHub Release v' . $newVersion . '</a></em></p>'; 
     $stmt = $pdo->prepare("
         INSERT INTO announcements 
         (title, content, type, start_datetime, end_datetime, is_active, show_once, is_system, system_type, created_by_name, created_by_email)
