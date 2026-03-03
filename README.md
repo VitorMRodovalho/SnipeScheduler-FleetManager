@@ -190,7 +190,7 @@ Permissions are managed through **Snipe-IT Groups**:
 
 ![Vehicle Management](docs/screenshots/vehicles.png)
 
-*Administrative vehicle management. View all fleet assets, their current status, and quick links to Snipe-IT for detailed editing.*
+*Administrative vehicle management with guided vehicle creation. Vehicle Name and Asset Tag (BPTR-VEH-###) are auto-generated for consistency. The system enforces duplicate checks on VIN and License Plate, requires compliance fields (insurance, registration), and presents a confirmation summary before creating. All vehicles sync to Snipe-IT as requestable assets.*
 
 **Access:** Fleet Admin
 
