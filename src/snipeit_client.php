@@ -2326,3 +2326,191 @@ function get_fleet_vehicles(int $limit = 100, ?int $statusId = null): array
     $response = snipeit_request('GET', $url);
     return $response['rows'] ?? [];
 }
+
+// ============================================================
+// VEHICLE CREATION HELPERS - Asset Tag Generation & Duplicate Checks
+// ============================================================
+
+/**
+ * Get the next sequential vehicle asset tag (BPTR-VEH-###).
+ * 
+ * Uses a high-water mark approach:
+ * 1. Queries Snipe-IT for the highest existing BPTR-VEH- tag number
+ * 2. Checks system_settings for stored high-water mark (covers deleted assets)
+ * 3. Uses whichever is higher + 1
+ * 
+ * This ensures deleted tags are NEVER reused.
+ *
+ * @return string e.g. "BPTR-VEH-004"
+ */
+function get_next_vehicle_asset_tag(): string
+{
+    $prefix = 'BPTR-VEH-';
+    $highestFromApi = 0;
+    $highestFromDb = 0;
+
+    // 1. Query Snipe-IT for all assets with BPTR-VEH prefix
+    try {
+        $response = snipeit_request('GET', '/hardware', [
+            'search' => $prefix,
+            'limit'  => 500,
+            'sort'   => 'asset_tag',
+            'order'  => 'desc',
+        ]);
+
+        $rows = $response['rows'] ?? [];
+        foreach ($rows as $row) {
+            $tag = $row['asset_tag'] ?? '';
+            if (preg_match('/^BPTR-VEH-(\d+)$/i', $tag, $matches)) {
+                $num = (int)$matches[1];
+                if ($num > $highestFromApi) {
+                    $highestFromApi = $num;
+                }
+            }
+        }
+    } catch (Exception $e) {
+        error_log('get_next_vehicle_asset_tag: API query failed: ' . $e->getMessage());
+    }
+
+    // 2. Check high-water mark from system_settings
+    try {
+        global $pdo;
+        require_once SRC_PATH . '/db.php';
+
+        $stmt = $pdo->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'vehicle_tag_high_water_mark'");
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($row) {
+            $highestFromDb = (int)$row['setting_value'];
+        }
+    } catch (Exception $e) {
+        error_log('get_next_vehicle_asset_tag: DB query failed: ' . $e->getMessage());
+    }
+
+    // 3. Next number = max of both + 1
+    $nextNumber = max($highestFromApi, $highestFromDb) + 1;
+
+    // 4. Format with zero-padding (3 digits minimum, grows if needed)
+    $formatted = str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+
+    return $prefix . $formatted;
+}
+
+/**
+ * Store the high-water mark after successful vehicle creation.
+ * Call this AFTER the vehicle is confirmed created in Snipe-IT.
+ *
+ * @param string $assetTag e.g. "BPTR-VEH-004"
+ * @return void
+ */
+function update_vehicle_tag_high_water_mark(string $assetTag): void
+{
+    if (!preg_match('/^BPTR-VEH-(\d+)$/i', $assetTag, $matches)) {
+        return;
+    }
+
+    $number = (int)$matches[1];
+
+    try {
+        global $pdo;
+        require_once SRC_PATH . '/db.php';
+
+        // Upsert: only update if the new number is higher
+        $stmt = $pdo->prepare("
+            INSERT INTO system_settings (setting_key, setting_value, updated_at)
+            VALUES ('vehicle_tag_high_water_mark', :val, NOW())
+            ON DUPLICATE KEY UPDATE 
+                setting_value = GREATEST(CAST(setting_value AS UNSIGNED), :val2),
+                updated_at = NOW()
+        ");
+        $stmt->execute([
+            ':val'  => $number,
+            ':val2' => $number,
+        ]);
+    } catch (Exception $e) {
+        error_log('update_vehicle_tag_high_water_mark failed: ' . $e->getMessage());
+    }
+}
+
+/**
+ * Check if a VIN already exists in Snipe-IT.
+ *
+ * @param string $vin 17-character VIN
+ * @return bool true if duplicate found
+ */
+function check_vin_exists(string $vin): bool
+{
+    $vin = strtoupper(trim($vin));
+    if (empty($vin)) {
+        return false;
+    }
+
+    try {
+        $response = snipeit_request('GET', '/hardware', [
+            'search' => $vin,
+            'limit'  => 10,
+        ]);
+
+        $rows = $response['rows'] ?? [];
+        foreach ($rows as $row) {
+            if (!empty($row['custom_fields'])) {
+                foreach ($row['custom_fields'] as $fieldName => $fieldData) {
+                    $fieldNameLower = strtolower($fieldName);
+                    if (strpos($fieldNameLower, 'vin') !== false && strlen($fieldNameLower) < 15) {
+                        $value = $fieldData['value'] ?? '';
+                        if (strtoupper(trim($value)) === $vin) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            if (isset($row['serial']) && strtoupper(trim($row['serial'])) === $vin) {
+                return true;
+            }
+        }
+    } catch (Exception $e) {
+        error_log('check_vin_exists error: ' . $e->getMessage());
+    }
+
+    return false;
+}
+
+/**
+ * Check if a License Plate already exists in Snipe-IT.
+ *
+ * @param string $plate License plate number
+ * @return bool true if duplicate found
+ */
+function check_license_plate_exists(string $plate): bool
+{
+    $plate = strtoupper(trim($plate));
+    if (empty($plate)) {
+        return false;
+    }
+
+    try {
+        $response = snipeit_request('GET', '/hardware', [
+            'search' => $plate,
+            'limit'  => 10,
+        ]);
+
+        $rows = $response['rows'] ?? [];
+        foreach ($rows as $row) {
+            if (!empty($row['custom_fields'])) {
+                foreach ($row['custom_fields'] as $fieldName => $fieldData) {
+                    $fieldNameLower = strtolower($fieldName);
+                    if (strpos($fieldNameLower, 'plate') !== false || strpos($fieldNameLower, 'license') !== false) {
+                        $value = $fieldData['value'] ?? '';
+                        if (strtoupper(trim($value)) === $plate) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+    } catch (Exception $e) {
+        error_log('check_license_plate_exists error: ' . $e->getMessage());
+    }
+
+    return false;
+}
