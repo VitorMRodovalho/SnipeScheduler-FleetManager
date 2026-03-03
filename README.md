@@ -2,18 +2,23 @@
 
 A comprehensive fleet vehicle management system built on top of [Snipe-IT](https://snipeitapp.com/), designed for enterprise fleet operations with reservation scheduling, maintenance tracking, and compliance management.
 
+> **Current Version:** v1.3.3 · [Changelog](CHANGELOG.md) · [Releases](https://github.com/VitorMRodovalho/SnipeScheduler-FleetManager/releases)
+
 ## Why This Project?
 
 This project was born from a real need in **large-scale infrastructure programs**. The challenge was managing diverse assets on a single platform: not just IT equipment, but **fleet vehicles** used by construction management, PMO staff, and field personnel across multiple project areas.
 
 ### The Problem
+
 - Snipe-IT excels at IT asset management but lacks reservation/scheduling capabilities
 - Fleet vehicles require advance booking, check-out/check-in workflows, and inspection tracking
 - Paper-based vehicle check-out processes were inefficient and lacked governance
 - No single platform to manage both IT assets and fleet vehicles
 
 ### The Solution
+
 **SnipeScheduler FleetManager** extends Snipe-IT with a user-friendly frontend specifically designed for fleet operations:
+
 - Uses Snipe-IT's API as the **single source of truth** for all asset data
 - Adds reservation scheduling with approval workflows
 - Implements digital vehicle inspection checklists
@@ -23,25 +28,31 @@ This project was born from a real need in **large-scale infrastructure programs*
 ## Features
 
 ### For Drivers
-- 📅 **Book Vehicles** - Reserve vehicles in advance with pickup/return times
-- 📱 **Mobile-Friendly** - Responsive design with QR code scanning
-- ✅ **Digital Inspections** - Complete checkout/checkin forms on any device
-- 📧 **Email Notifications** - Confirmation, reminders, and approvals
+
+- 📅 **Book Vehicles** — Reserve vehicles in advance with pickup/return times
+- 📱 **Mobile-Friendly** — Responsive design with QR code scanning
+- ✅ **Digital Inspections** — Complete checkout/checkin forms on any device
+- 📧 **Email Notifications** — Confirmation, reminders, and approvals
 
 ### For Fleet Staff
-- 👥 **Approval Workflow** - Review and approve/reject reservations
-- 🚗 **Vehicle Management** - Track all fleet vehicles and their status
-- 🔧 **Maintenance Tracking** - Flag issues, track maintenance history
-- 📊 **Reports** - Utilization, compliance, and usage reports
+
+- 👥 **Approval Workflow** — Review and approve/reject reservations
+- 🚗 **Vehicle Management** — Track all fleet vehicles and their status
+- 🔧 **Maintenance Tracking** — Flag issues, track maintenance history
+- 📊 **Reports** — Utilization, compliance, and usage reports
 
 ### For Administrators
-- ⚙️ **Full Configuration** - LDAP/OAuth authentication, SMTP, custom fields
-- 🔔 **Notification Controls** - Configure who receives which emails
-- 📢 **Announcements** - Display system-wide notices to users
-- 🔒 **Security Dashboard** - Monitor backup status and security checks
-- 📋 **Reservation Controls** - Set booking rules (min notice, max duration, blackouts)
+
+- ⚙️ **Full Configuration** — LDAP/OAuth authentication, SMTP, custom fields
+- 🔔 **Notification Controls** — Configure who receives which emails
+- 📢 **Announcements** — Display system-wide notices with scheduling and urgency levels
+- 🔒 **Security Dashboard** — Monitor backup status, config permissions, and security headers
+- 📋 **Reservation Controls** — Set booking rules (min notice, max duration, blackouts)
+- 🔗 **Clean URLs** — Professional URL structure without .php extensions
+- 📦 **Release Management** — Built-in version management with semantic versioning
 
 ## Architecture
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    SnipeScheduler FleetManager               │
@@ -65,7 +76,7 @@ This project was born from a real need in **large-scale infrastructure programs*
 ┌──────────────────────────▼───────────────────────────────────┐
 │                      Snipe-IT                                │
 │   - Asset Database (Source of Truth)                         │
-│   - User Management & Groups                                 │
+│   - User Management & Groups                                │
 │   - Custom Fields (Mileage, VIN, Maintenance)               │
 │   - Status Labels (Available, Reserved, In Service)          │
 │   - Locations (Pickup Points, Destinations)                  │
@@ -85,14 +96,18 @@ Permissions are managed through **Snipe-IT Groups**:
 
 ## Screenshots
 
-### Login
-![Login](docs/screenshots/login.png)
+### Home & Login
 
-*Secure authentication via Microsoft OAuth or Google Sign-In. Users are automatically assigned permissions based on their Snipe-IT group membership.*
+![Home & Login](docs/screenshots/login.png)
+
+*The landing page provides an overview of the Fleet Management System, including key features and a quick-access login section. Users authenticate via Microsoft OAuth (multi-tenant) or Google Sign-In. Upon successful login, users are automatically assigned permissions based on their Snipe-IT group membership.*
+
+**Access:** Public (unauthenticated)
 
 ---
 
 ### Dashboard
+
 ![Dashboard](docs/screenshots/dashboard.png)
 
 *The main dashboard displays today's schedule, quick statistics, and overdue vehicle alerts. Users see their upcoming reservations at a glance.*
@@ -102,6 +117,7 @@ Permissions are managed through **Snipe-IT Groups**:
 ---
 
 ### Vehicle Catalogue
+
 ![Vehicle Catalogue](docs/screenshots/vehicle_catalogue.png)
 
 *Browse all available fleet vehicles with real-time availability pulled from Snipe-IT. Filter by type, status, or availability window.*
@@ -111,15 +127,17 @@ Permissions are managed through **Snipe-IT Groups**:
 ---
 
 ### Book Vehicle
+
 ![Book Vehicle](docs/screenshots/vehicle_reserve.png)
 
-*Reserve a vehicle by selecting pickup/return dates, times, and location. Include purpose notes for approval workflow.*
+*Reserve a vehicle by selecting pickup/return dates, times, and location. Include purpose notes for the approval workflow.*
 
 **Access:** All authenticated users
 
 ---
 
 ### My Reservations
+
 ![My Reservations](docs/screenshots/my_bookings.png)
 
 *View and manage your own reservations. Cancel pending bookings, see approval status, and access checkout forms when ready.*
@@ -129,6 +147,7 @@ Permissions are managed through **Snipe-IT Groups**:
 ---
 
 ### Approval Queue
+
 ![Approval Queue](docs/screenshots/approval.png)
 
 *Fleet Staff review pending reservation requests. Approve or reject with notes, view requester history and vehicle availability.*
@@ -138,7 +157,8 @@ Permissions are managed through **Snipe-IT Groups**:
 ---
 
 ### All Reservations
-![Reservations](docs/screenshots/reservations.png)
+
+![All Reservations](docs/screenshots/reservations.png)
 
 *Administrative view of all reservations across the fleet. Filter by status, date range, or vehicle.*
 
@@ -147,7 +167,8 @@ Permissions are managed through **Snipe-IT Groups**:
 ---
 
 ### Maintenance Log
-![Maintenance](docs/screenshots/maintenance.png)
+
+![Maintenance Log](docs/screenshots/maintenance.png)
 
 *Track maintenance issues flagged during check-in. Log repairs, schedule service, and sync maintenance data back to Snipe-IT custom fields.*
 
@@ -156,6 +177,7 @@ Permissions are managed through **Snipe-IT Groups**:
 ---
 
 ### Reports
+
 ![Reports](docs/screenshots/reports.png)
 
 *Comprehensive reporting including utilization rates, compliance status, and usage history. Export to CSV for further analysis.*
@@ -165,7 +187,8 @@ Permissions are managed through **Snipe-IT Groups**:
 ---
 
 ### Vehicle Management
-![Vehicles Admin](docs/screenshots/vehicles.png)
+
+![Vehicle Management](docs/screenshots/vehicles.png)
 
 *Administrative vehicle management. View all fleet assets, their current status, and quick links to Snipe-IT for detailed editing.*
 
@@ -174,7 +197,8 @@ Permissions are managed through **Snipe-IT Groups**:
 ---
 
 ### User Management
-![Users Admin](docs/screenshots/users.png)
+
+![User Management](docs/screenshots/users.png)
 
 *View users and their Snipe-IT group assignments. Track VIP status for auto-approval workflows.*
 
@@ -183,36 +207,40 @@ Permissions are managed through **Snipe-IT Groups**:
 ---
 
 ### Email Notifications
-![Notifications](docs/screenshots/notifications.png)
 
-*Configure email notifications per event type. Set recipients, customize templates, toggle SMTP, and view default templates.*
+![Email Notifications](docs/screenshots/notifications.png)
+
+*Configure email notifications per event type. Set recipients, customize templates, toggle SMTP settings, and view default templates.*
 
 **Access:** Fleet Admin
 
 ---
 
 ### Announcements
+
 ![Announcements](docs/screenshots/announcements.png)
 
-*Create and manage system-wide announcements. Schedule display windows, set urgency levels, and make notices dismissible.*
+*Create and manage system-wide announcements. Schedule display windows, set urgency levels, and make notices dismissible. Includes release announcement templates for system updates.*
 
 **Access:** Fleet Admin
 
 ---
 
 ### Security Dashboard
-![Security](docs/screenshots/security.png)
 
-*Monitor system security status, view backup logs, and reference maintenance commands. Real-time checks for config permissions, security headers, and backup recency.*
+![Security Dashboard](docs/screenshots/security.png)
+
+*Monitor system security status including config file permissions, security headers, and backup recency. View backup logs and access maintenance commands. Available exclusively to super administrators.*
 
 **Access:** Super Admin only
 
 ---
 
 ### Settings
+
 ![Settings](docs/screenshots/settings.png)
 
-*Full system configuration including authentication providers, SMTP settings, reservation controls, and blackout period management.*
+*Full system configuration including authentication providers (Microsoft OAuth, Google OAuth), SMTP settings, reservation controls, blackout period management, and system preferences.*
 
 **Access:** Super Admin only
 
@@ -235,6 +263,7 @@ See [docs/INSTALLATION.md](docs/INSTALLATION.md) for detailed installation instr
 ### Required Snipe-IT Setup
 
 #### 1. User Groups
+
 Create these groups in Snipe-IT → Settings → Groups:
 
 | Group Name | Group ID | Purpose |
@@ -244,6 +273,7 @@ Create these groups in Snipe-IT → Settings → Groups:
 | Fleet Admin | 4 | Full fleet administration |
 
 #### 2. Status Labels
+
 Create these status labels in Snipe-IT → Settings → Status Labels:
 
 | Status Name | Type | Notes |
@@ -254,6 +284,7 @@ Create these status labels in Snipe-IT → Settings → Status Labels:
 | VEH-Out of Service | Undeployable | Under maintenance |
 
 #### 3. Custom Fields
+
 Create a **Fleet Vehicle Fields** fieldset with these custom fields:
 
 | Field Name | Element | Format | Unique | Used In |
@@ -282,20 +313,24 @@ Create a **Fleet Vehicle Fields** fieldset with these custom fields:
 | Tire Issues Description | Textarea | ANY | Free text for tire problems |
 | Undercarriage Issues | Textarea | ANY | Free text for undercarriage |
 | Interior Issues Description | Textarea | ANY | Free text for interior condition |
-| Checkout Time | Text | `regex:/^(0[0-9]\|1[0-9]\|2[0-3]):[0-5][0-9]$/` | HH:MM format |
-| Return Time | Text | `regex:/^(0[0-9]\|1[0-9]\|2[0-3]):[0-5][0-9]$/` | HH:MM format |
-| Expected Return Time | Text | `regex:/^(0[0-9]\|1[0-9]\|2[0-3]):[0-5][0-9]$/` | HH:MM format |
+| Checkout Time | Text | `regex:/^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/` | HH:MM format |
+| Return Time | Text | `regex:/^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/` | HH:MM format |
+| Expected Return Time | Text | `regex:/^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/` | HH:MM format |
 
 #### 4. Categories
+
 Create a **Vehicles** category (or similar) for fleet assets.
 
 #### 5. Manufacturers & Models
+
 Create manufacturers (Ford, Chevrolet, etc.) and models (F-150, Silverado, etc.) for your fleet.
 
 #### 6. Locations
+
 Create locations for:
-- **Pickup Points** - Where vehicles are collected
-- **Destinations** - Where vehicles will be used (field offices, job sites)
+
+- **Pickup Points** — Where vehicles are collected
+- **Destinations** — Where vehicles will be used (field offices, job sites)
 
 ### Asset Creation Template
 
@@ -311,20 +346,22 @@ When creating a new fleet vehicle in Snipe-IT:
 
 ## API Integration
 
-SnipeScheduler uses the Snipe-IT API exclusively - no direct database access to Snipe-IT.
+SnipeScheduler uses the Snipe-IT API exclusively — no direct database access to Snipe-IT.
 
 Key API operations:
-- `GET /hardware` - List available vehicles
-- `PATCH /hardware/{id}` - Update status, location, custom fields
-- `GET /users` - Validate users and group membership
-- `GET /statuslabels` - Get status options
-- `GET /locations` - Get pickup/destination options
+
+- `GET /hardware` — List available vehicles
+- `PATCH /hardware/{id}` — Update status, location, custom fields
+- `GET /users` — Validate users and group membership
+- `GET /statuslabels` — Get status options
+- `GET /locations` — Get pickup/destination options
 
 ## Database Schema
 
 See [docs/DATABASE_SCHEMA.md](docs/DATABASE_SCHEMA.md) for complete schema documentation.
 
 SnipeScheduler maintains its own database for:
+
 - Reservations and approval history
 - Inspection responses
 - Email queue and notifications
@@ -335,41 +372,51 @@ SnipeScheduler maintains its own database for:
 See [SECURITY.md](SECURITY.md) for security documentation.
 
 Key security features:
+
 - CSRF protection on all forms
 - XSS prevention with output encoding
 - SQL injection prevention with PDO
 - Security headers (X-Frame-Options, CSP, etc.)
 - Config file permissions (640)
 - Automated daily backups
+- Built-in security scanner and remediation tools
 
 ## Credits
 
 This project is a derivative work based on [SnipeScheduler](https://github.com/JSY-Ben/SnipeScheduler) by **Ben Pirozzolo**.
 
 ### Original Project
+
 - **Author**: Ben Pirozzolo (JSY-Ben)
 - **Repository**: https://github.com/JSY-Ben/SnipeScheduler
 - **License**: MIT
 
 ### This Fork
+
 - **Author**: Vitor Rodovalho
 - **Repository**: https://github.com/VitorMRodovalho/SnipeScheduler-FleetManager
 - **Purpose**: Extended for enterprise fleet management with additional features
 
 ### Key Additions in FleetManager
-- Fleet-specific inspection forms
-- Maintenance tracking with Snipe-IT integration
+
+- Fleet-specific inspection forms (checkout/checkin)
+- Maintenance tracking with Snipe-IT custom field sync
 - VIP auto-approval workflow
-- Reservation controls (blackouts, limits)
-- Email notification configuration
-- Announcements system
-- Security dashboard
-- Mobile-optimized interface
+- Reservation controls (blackouts, min notice, max duration)
+- Email notification engine with configurable SMTP
+- Announcements system with scheduling and urgency levels
+- Security dashboard with real-time checks
 - Clean URLs (no .php extensions)
+- Built-in release management with semantic versioning
+- Automated screenshot generation with anonymization
+- Security scanner and remediation tools
+- Mobile-optimized responsive interface
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the GPL-3.0 License — see the [LICENSE](LICENSE) file for details.
+
+The original [SnipeScheduler](https://github.com/JSY-Ben/SnipeScheduler) code by Ben Pirozzolo is licensed under the MIT License. All modifications and additions in this fork are licensed under GPL-3.0.
 
 ## Changelog
 
