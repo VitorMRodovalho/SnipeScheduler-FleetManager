@@ -753,7 +753,7 @@ $pickupLocations = get_pickup_locations();
                                 <button type="submit" class="btn btn-primary">
                                     <i class="bi bi-check-circle me-2"></i>Log Maintenance Record
                                 </button>
-                                <a href="https://inventory.amtrakfdt.com/maintenances/create" target="_blank" class="btn btn-outline-secondary ms-2">
+                                <a href="<?= htmlspecialchars($config['snipeit']['base_url']) ?>/maintenances/create" target="_blank" class="btn btn-outline-secondary ms-2">
                                     <i class="bi bi-box-arrow-up-right me-2"></i>Open in Snipe-IT
                                 </a>
                             </div>
@@ -770,7 +770,7 @@ $pickupLocations = get_pickup_locations();
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Maintenance History</h5>
-                    <a href="https://inventory.amtrakfdt.com/maintenances" target="_blank" class="btn btn-sm btn-outline-primary">
+                    <a href="<?= htmlspecialchars($config['snipeit']['base_url']) ?>/maintenances" target="_blank" class="btn btn-sm btn-outline-primary">
                         <i class="bi bi-box-arrow-up-right me-1"></i>View in Snipe-IT
                     </a>
                 </div>

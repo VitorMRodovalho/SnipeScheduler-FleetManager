@@ -2343,13 +2343,36 @@ function get_fleet_vehicles(int $limit = 100, ?int $statusId = null): array
  *
  * @return string e.g. "FLEET-VEH-004"
  */
+
+
+/**
+ * Get the configurable asset tag prefix from system_settings.
+ * Falls back to 'FLEET-VEH-' if not set.
+ */
+function get_asset_tag_prefix(): string
+{
+    static $prefix = null;
+    if ($prefix !== null) return $prefix;
+    try {
+        global $pdo;
+        if (!$pdo) require_once SRC_PATH . '/db.php';
+        $stmt = $pdo->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'asset_tag_prefix'");
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $prefix = $row ? $row['setting_value'] : 'FLEET-VEH-';
+    } catch (Exception $e) {
+        $prefix = 'FLEET-VEH-';
+    }
+    return $prefix;
+}
+
 function get_next_vehicle_asset_tag(): string
 {
-    $prefix = 'BPTR-VEH-';
+    $prefix = get_asset_tag_prefix();
     $highestFromApi = 0;
     $highestFromDb = 0;
 
-    // 1. Query Snipe-IT for all assets with BPTR-VEH prefix
+    // 1. Query Snipe-IT for all assets matching configured prefix
     try {
         $response = snipeit_request('GET', '/hardware', [
             'search' => $prefix,
@@ -2361,7 +2384,7 @@ function get_next_vehicle_asset_tag(): string
         $rows = $response['rows'] ?? [];
         foreach ($rows as $row) {
             $tag = $row['asset_tag'] ?? '';
-            if (preg_match('/^BPTR-VEH-(\d+)$/i', $tag, $matches)) {
+            if (preg_match('/^' . preg_quote(get_asset_tag_prefix(), '/') . '(\d+)$/i', $tag, $matches)) {
                 $num = (int)$matches[1];
                 if ($num > $highestFromApi) {
                     $highestFromApi = $num;
@@ -2405,7 +2428,7 @@ function get_next_vehicle_asset_tag(): string
  */
 function update_vehicle_tag_high_water_mark(string $assetTag): void
 {
-    if (!preg_match('/^BPTR-VEH-(\d+)$/i', $assetTag, $matches)) {
+    if (!preg_match('/^' . preg_quote(get_asset_tag_prefix(), '/') . '(\d+)$/i', $assetTag, $matches)) {
         return;
     }
 

@@ -14,12 +14,12 @@ REMEDIATIONS = {
     # Email Service - Make baseUrl configurable
     "src/email_service.php": [
         (
-            r"\$baseUrl = 'https://inventory\.amtrakfdt\.com/booking';",
+            r"\$baseUrl = 'https://your-snipeit-domain.com/booking';",
             "$baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');",
             "Make baseUrl configurable"
         ),
         (
-            r"\$baseUrl = 'https://inventory\.amtrakfdt\.com';",
+            r"\$baseUrl = 'https://your-snipeit-domain.com';",
             "$baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');",
             "Make baseUrl configurable"
         ),
@@ -38,7 +38,7 @@ REMEDIATIONS = {
     # Snipe-IT Client - Remove comments
     "src/snipeit_client.php": [
         (
-            r"Amtrak B&P",
+            r"Organization Name",
             "the program",
             "Remove company/project from comments"
         ),
@@ -47,26 +47,26 @@ REMEDIATIONS = {
     # Vehicles - Remove hardcoded filters
     "public/vehicles.php": [
         (
-            r"stripos\(\$co\['name'\], 'Amtrak'\) !== false",
+            r"stripos\(\$co\['name'\], 'OrgName'\) !== false",
             "false /* Default company filter */",
-            "Remove Amtrak filter"
+            "Remove organization filter"
         ),
         (
-            r"stripos\(\$loc\['name'\], 'B&P'\) !== false",
+            r"stripos\(\$loc\['name'\], 'OrgLocation'\) !== false",
             "false /* Default location filter */",
-            "Remove B&P location filter"
+            "Remove location filter"
         ),
     ],
     
     # Scan - Replace placeholder
     "public/scan.php": [
         (
-            r'placeholder="Asset Tag \(e\.g\., BPTR-VEH-001\)"',
+            r'placeholder="Asset Tag \(e\.g\., FLEET-VEH-001\)"',
             'placeholder="Asset Tag (e.g., VEH-001)"',
             "Generic asset tag placeholder"
         ),
         (
-            r"// Expected format: https://inventory\.amtrakfdt\.com/hardware/300",
+            r"// Expected format: https://your-snipeit-domain.com/hardware/300",
             "// Expected format: https://yoursite.com/hardware/300",
             "Generic URL in comment"
         ),
@@ -75,7 +75,7 @@ REMEDIATIONS = {
     # Quick - Replace placeholder
     "public/quick.php": [
         (
-            r'placeholder="e\.g\., BPTR-VEH-001"',
+            r'placeholder="e\.g\., FLEET-VEH-001"',
             'placeholder="e.g., VEH-001"',
             "Generic asset tag placeholder"
         ),
@@ -93,7 +93,7 @@ REMEDIATIONS = {
     # Screenshots doc - Replace example URLs
     "docs/SCREENSHOTS.md": [
         (
-            r"https://inventory\.amtrakfdt\.com",
+            r"https://your-snipeit-domain.com",
             "https://your-domain.com",
             "Generic URL in documentation"
         ),
@@ -159,7 +159,7 @@ def add_base_url_to_config():
     
     # Find the 'app' => [ section and add base_url
     pattern = r"('app'\s*=>\s*\[)"
-    replacement = r"\1\n        'base_url' => 'https://inventory.amtrakfdt.com/booking',"
+    replacement = r"\1\n        'base_url' => 'https://your-snipeit-domain.com/booking',"
     
     new_content = re.sub(pattern, replacement, content)
     
@@ -188,12 +188,12 @@ provide direct links to manage assets in Snipe-IT:
 
 RECOMMENDATION: 
 These URLs are OK to keep hardcoded as they're admin shortcuts
-to the Snipe-IT instance. The domain (inventory.amtrakfdt.com)
+to the Snipe-IT instance. The domain (your-snipeit-domain.com)
 is the actual Snipe-IT server and won't change.
 
 If you want to make them configurable, add to config.php:
   'snipeit' => [
-      'url' => 'https://inventory.amtrakfdt.com',
+      'url' => 'https://your-snipeit-domain.com',
       ...
   ]
 
@@ -229,7 +229,7 @@ def main():
     print("=" * 60)
     print("""
 1. config/config.php:
-   - Line 129: 'from_name' => 'BPTR Asset Management...'
+   - Line 129: 'from_name' => 'Fleet Asset Management...'
    - CHANGE TO: 'from_name' => 'Fleet Management System'
    - NOTE: Email addresses are OK (they're real contacts)
 

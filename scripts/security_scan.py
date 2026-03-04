@@ -42,8 +42,8 @@ SENSITIVE_TERMS = {
     "maiarodovalho": {"severity": "high", "category": "personal", "action": "Remove email username"},
     
     # Infrastructure
-    "inventory.amtrakfdt.com": {"severity": "medium", "category": "infrastructure", "action": "OK in config, remove from docs"},
-    "amtrakfdt.com": {"severity": "medium", "category": "infrastructure", "action": "Review context"},
+    "your-snipeit-domain.com": {"severity": "medium", "category": "infrastructure", "action": "OK in config, remove from docs"},
+    "your-domain.com": {"severity": "medium", "category": "infrastructure", "action": "Review context"},
     
     # Credentials patterns
     "password": {"severity": "low", "category": "security", "action": "Ensure not hardcoded"},
@@ -77,7 +77,7 @@ SKIP_FILES = {
 # Context patterns for smarter detection
 ALLOWED_CONTEXTS = {
     # These are OK in specific files
-    "config.php": ["amtrakfdt.com", "amtrak"],  # OK in config
+    "config.php": ["your-domain.com"],  # OK in config
     "footer": ["rodovalho"],  # OK in credits
     "layout.php": ["rodovalho"],  # OK in footer credits
     "CREDITS": ["rodovalho", "aecom"],

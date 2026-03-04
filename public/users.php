@@ -341,7 +341,7 @@ foreach ($allUsers as $user) {
                                                     <i class="bi bi-pause-circle"></i>
                                                 </button>
                                             </form>
-                                            <a href="https://inventory.amtrakfdt.com/users/<?= $user['id'] ?>" target="_blank" 
+                                            <a href="<?= htmlspecialchars($config['snipeit']['base_url']) ?>/users/<?= $user['id'] ?>" target="_blank" 
                                                class="btn btn-sm btn-outline-secondary" title="View in Snipe-IT">
                                                 <i class="bi bi-box-arrow-up-right"></i>
                                             </a>
@@ -394,7 +394,7 @@ foreach ($allUsers as $user) {
                                             </form>
                                         </td>
                                         <td>
-                                            <a href="https://inventory.amtrakfdt.com/users/<?= $user['id'] ?>" target="_blank" 
+                                            <a href="<?= htmlspecialchars($config['snipeit']['base_url']) ?>/users/<?= $user['id'] ?>" target="_blank" 
                                                class="btn btn-sm btn-outline-secondary" title="View in Snipe-IT">
                                                 <i class="bi bi-box-arrow-up-right"></i>
                                             </a>
@@ -447,7 +447,7 @@ foreach ($allUsers as $user) {
                                             </form>
                                         </td>
                                         <td>
-                                            <a href="https://inventory.amtrakfdt.com/users/<?= $user['id'] ?>" target="_blank" 
+                                            <a href="<?= htmlspecialchars($config['snipeit']['base_url']) ?>/users/<?= $user['id'] ?>" target="_blank" 
                                                class="btn btn-sm btn-outline-secondary" title="View in Snipe-IT">
                                                 <i class="bi bi-box-arrow-up-right"></i>
                                             </a>
@@ -600,7 +600,7 @@ foreach ($allUsers as $user) {
 
         <!-- Link to Snipe-IT -->
         <div class="text-center mt-4">
-            <a href="https://inventory.amtrakfdt.com/users" target="_blank" class="btn btn-outline-secondary">
+            <a href="<?= htmlspecialchars($config['snipeit']['base_url']) ?>/users" target="_blank" class="btn btn-outline-secondary">
                 <i class="bi bi-box-arrow-up-right me-2"></i>Open Snipe-IT User Management
             </a>
         </div>

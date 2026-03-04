@@ -306,7 +306,7 @@ $vehicles = get_fleet_vehicles(200);
                                 <td><span class="badge bg-<?= $statusClass ?>"><?= h($statusName) ?></span></td>
                                 <td><?= $isCheckedOut ? h($v['assigned_to']['name'] ?? '-') : '<span class="text-muted">-</span>' ?></td>
                                 <td>
-                                    <a href="https://inventory.amtrakfdt.com/hardware/<?= $v['id'] ?>" target="_blank"
+                                    <a href="<?= htmlspecialchars($config['snipeit']['base_url']) ?>/hardware/<?= $v['id'] ?>" target="_blank"
                                        class="btn btn-sm btn-outline-secondary" title="View in Snipe-IT">
                                         <i class="bi bi-box-arrow-up-right"></i></a>
                                 </td>
@@ -374,7 +374,7 @@ $vehicles = get_fleet_vehicles(200);
                                 <label class="form-label">Asset Tag <i class="bi bi-lock-fill text-muted small" title="Auto-generated"></i></label>
                                 <input type="text" name="asset_tag" id="assetTag" class="form-control bg-light"
                                        readonly placeholder="Loading...">
-                                <small class="text-muted">Sequential (BPTR-VEH-###) — never reused</small>
+                                <small class="text-muted">Sequential (auto-generated) — never reused — never reused</small>
                             </div>
 
                             <!-- VIN + Plate + Year -->
@@ -505,7 +505,7 @@ $vehicles = get_fleet_vehicles(200);
                         Example: <em>2024 Ford Escape ABC-1234</em></p>
                     <hr>
                     <p class="small text-muted mb-2"><strong>Asset Tag Format:</strong></p>
-                    <p class="small">Tags follow: <code>BPTR-VEH-###</code><br>
+                    <p class="small">Tags follow: <code><?= htmlspecialchars(get_asset_tag_prefix()) ?>###</code><br>
                         Sequential and never reused, even if a vehicle is deleted.</p>
                 </div>
             </div>
@@ -539,7 +539,7 @@ $vehicles = get_fleet_vehicles(200);
                                         <td><code><?= h($m['model_number'] ?? '-') ?></code></td>
                                         <td><?= $m['assets_count'] ?? 0 ?></td>
                                         <td>
-                                            <a href="https://inventory.amtrakfdt.com/models/<?= $m['id'] ?>" target="_blank"
+                                            <a href="<?= htmlspecialchars($config['snipeit']['base_url']) ?>/models/<?= $m['id'] ?>" target="_blank"
                                                class="btn btn-sm btn-outline-secondary"><i class="bi bi-box-arrow-up-right"></i></a>
                                         </td>
                                     </tr>
@@ -574,7 +574,7 @@ $vehicles = get_fleet_vehicles(200);
 <?php endif; ?>
 
         <div class="text-center mt-4">
-            <a href="https://inventory.amtrakfdt.com/hardware" target="_blank" class="btn btn-outline-secondary">
+            <a href="<?= htmlspecialchars($config['snipeit']['base_url']) ?>/hardware" target="_blank" class="btn btn-outline-secondary">
                 <i class="bi bi-box-arrow-up-right me-2"></i>Open Snipe-IT Asset Management</a>
         </div>
     </div>
@@ -716,8 +716,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // 1. Fetch next asset tag
     fetch('api/vehicle_check?action=next_tag')
         .then(r => r.json())
-        .then(data => { assetTag.value = (data.success && data.tag) ? data.tag : 'BPTR-VEH-???'; })
-        .catch(() => { assetTag.value = 'BPTR-VEH-???'; });
+        .then(data => { assetTag.value = (data.success && data.tag) ? data.tag : '<?= htmlspecialchars(get_asset_tag_prefix()) ?>???'; })
+        .catch(() => { assetTag.value = '<?= htmlspecialchars(get_asset_tag_prefix()) ?>???'; });
 
     // 2. Auto-generate Vehicle Name
     function updateVehicleName() {
