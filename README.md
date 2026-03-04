@@ -194,7 +194,7 @@ Permissions are managed through **Snipe-IT Groups**:
 
 ![Vehicle Management](docs/screenshots/vehicles.png)
 
-*Administrative vehicle management with guided vehicle creation. Vehicle Name and Asset Tag (BPTR-VEH-###) are auto-generated for consistency. The system enforces duplicate checks on VIN and License Plate, requires compliance fields (insurance, registration), and presents a confirmation summary before creating. All vehicles sync to Snipe-IT as requestable assets.*
+*Administrative vehicle management with guided vehicle creation. Vehicle Name and Asset Tag (FLEET-VEH-###) are auto-generated for consistency. The system enforces duplicate checks on VIN and License Plate, requires compliance fields (insurance, registration), and presents a confirmation summary before creating. All vehicles sync to Snipe-IT as requestable assets.*
 
 **Access:** Fleet Admin
 
@@ -204,7 +204,7 @@ Permissions are managed through **Snipe-IT Groups**:
 
 ![Add Vehicle](docs/screenshots/vehicles_create.png)
 
-*Guided vehicle creation form with governance controls. Vehicle Name is auto-generated from Year, Manufacturer, Model, and License Plate. Asset Tags follow the BPTR-VEH-### format and are never reused. The system validates VIN (17-character) and License Plate for duplicates in real-time, enforces required compliance fields, and presents a confirmation summary modal before submitting to Snipe-IT.*
+*Guided vehicle creation form with governance controls. Vehicle Name is auto-generated from Year, Manufacturer, Model, and License Plate. Asset Tags follow the FLEET-VEH-### format and are never reused. The system validates VIN (17-character) and License Plate for duplicates in real-time, enforces required compliance fields, and presents a confirmation summary modal before submitting to Snipe-IT.*
 
 **Access:** Fleet Admin
 

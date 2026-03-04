@@ -6,7 +6,7 @@ Future Availability, Business Day Engine & Booking Rules
 
 ## v1.3.4 (2026-03-03)
 
-Vehicle creation governance: auto-generated Vehicle Name and Asset Tag (BPTR-VEH-###), VIN/plate duplicate checks, confirmation modal, required field enforcement
+Vehicle creation governance: auto-generated Vehicle Name and Asset Tag (FLEET-VEH-###), VIN/plate duplicate checks, confirmation modal, required field enforcement
 
 ## v1.3.3 (2026-03-02)
 
