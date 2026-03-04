@@ -25,7 +25,7 @@ try {
     switch ($action) {
 
         case 'next_tag':
-            // Get next available BPTR-VEH-### tag
+            // Get next available sequential asset tag
             $nextTag = get_next_vehicle_asset_tag();
             echo json_encode(['success' => true, 'tag' => $nextTag]);
             break;

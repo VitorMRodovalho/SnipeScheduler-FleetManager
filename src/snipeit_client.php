@@ -1716,7 +1716,7 @@ function sync_user_name_to_snipeit(int $snipeitId, string $firstName, string $la
     return $result !== null;
 }
 /**
- * Set VI"smart API" in a few critical areas—specifically through the use of hardcoded custom database columns (e.g., _snipeit_vin_5) and hardcoded environment-specific strings (e.g., "Amtrak", "B&P").
+ * Set VI"smart API" in a few critical areas—specifically through the use of hardcoded custom database columns (e.g., _snipeit_vin_5) and hardcoded environment-specific strings (e.g., organization-specific strings).
 
 If you deploy this code to a different Snipe-IT instance, the custom field IDs will change (e.g., _snipeit_vin_5 might become _snipeit_vin_12), and the API calls will fail. Additionally, fetching all records (like limit=100) and filtering them in PHP is inefficient; it is much better to let Snipe-IT's API do the filtering.P status for a user in Snipe-IT
  */
@@ -2332,16 +2332,16 @@ function get_fleet_vehicles(int $limit = 100, ?int $statusId = null): array
 // ============================================================
 
 /**
- * Get the next sequential vehicle asset tag (BPTR-VEH-###).
+ * Get the next sequential vehicle asset tag.
  * 
  * Uses a high-water mark approach:
- * 1. Queries Snipe-IT for the highest existing BPTR-VEH- tag number
+ * 1. Queries Snipe-IT for the highest existing tag number
  * 2. Checks system_settings for stored high-water mark (covers deleted assets)
  * 3. Uses whichever is higher + 1
  * 
  * This ensures deleted tags are NEVER reused.
  *
- * @return string e.g. "BPTR-VEH-004"
+ * @return string e.g. "FLEET-VEH-004"
  */
 function get_next_vehicle_asset_tag(): string
 {
@@ -2400,7 +2400,7 @@ function get_next_vehicle_asset_tag(): string
  * Store the high-water mark after successful vehicle creation.
  * Call this AFTER the vehicle is confirmed created in Snipe-IT.
  *
- * @param string $assetTag e.g. "BPTR-VEH-004"
+ * @param string $assetTag e.g. "FLEET-VEH-004"
  * @return void
  */
 function update_vehicle_tag_high_water_mark(string $assetTag): void
