@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.3.6 (2026-03-04)
+
+Configurable asset tag prefix, URL cleanup & security hardening
+
 ## v1.3.5 (2026-03-04)
 
 Future Availability, Business Day Engine & Booking Rules
