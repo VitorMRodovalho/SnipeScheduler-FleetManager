@@ -82,6 +82,14 @@ ALLOWED_CONTEXTS = {
     "layout.php": ["rodovalho"],  # OK in footer credits
     "CREDITS": ["rodovalho", "aecom"],
     "LICENSE": ["rodovalho"],
+    "README.md": ["rodovalho"],
+    "PROJECT_CONTEXT.md": ["aecom", "amtrak", "amtrakfdt", "bptr", "rodovalho"],
+    "INSTALLATION.md": ["rodovalho"],
+    "config.php": ["your-domain.com", "aecom", "amtrak", "amtrakfdt", "rodovalho", "maiarodovalho"],
+    "security_terms.json": ["aecom", "amtrak", "amtrakfdt", "bptr", "b&p"],
+    "take-screenshots.js": ["aecom", "amtrak", "amtrakfdt", "rodovalho", "maiarodovalho", "bptr", "b&p"],
+    "release.php": ["rodovalho"],
+    "security_remediate.py": ["aecom"],
 }
 
 

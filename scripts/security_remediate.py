@@ -24,7 +24,7 @@ REMEDIATIONS = {
             "Make baseUrl configurable"
         ),
         (
-            r"Frederick Douglass Tunnel Project - Fleet Vehicle Management System",
+            r"Fleet Vehicle Management System",
             "Fleet Vehicle Management System",
             "Remove project name from email template"
         ),
@@ -84,7 +84,7 @@ REMEDIATIONS = {
     # Users - Replace email placeholder
     "public/users.php": [
         (
-            r'placeholder="user@aecom\.com"',
+            r'placeholder="user@example.com"',
             'placeholder="user@example.com"',
             "Generic email placeholder"
         ),
