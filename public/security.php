@@ -140,7 +140,8 @@ $totalChecks = count($checkResults);
                     <a class="nav-link" href="announcements">Announcements</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link active" href="security">Security</a>
+                    <a class="nav-link" href="booking_rules">Booking Rules</a></li>
+            <li class="nav-item"><a class="nav-link active" href="security">Security</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="settings">Settings</a>

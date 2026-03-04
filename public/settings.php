@@ -404,6 +404,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $smtp['from_email'] = $post('smtp_from_email', $smtp['from_email'] ?? '');
     $smtp['from_name']  = $post('smtp_from_name', $smtp['from_name'] ?? 'SnipeScheduler');
 
+    $resControls = [
+        'min_notice_hours' => (int)$post('res_min_notice_hours', 0),
+        'max_duration_hours' => (int)$post('res_max_duration_hours', 0),
+        'max_concurrent_per_user' => (int)$post('res_max_concurrent', 0),
+        'staff_bypass' => isset($_POST['res_staff_bypass']),
+    ];
+
+
     $newConfig = $config;
     $newConfig['db_booking'] = $db;
     $newConfig['ldap']       = $ldap;
@@ -651,7 +659,8 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
                 <a class="nav-link" href="announcements">Announcements</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="security">Security</a>
+                <a class="nav-link" href="booking_rules">Booking Rules</a></li>
+            <li class="nav-item"><a class="nav-link" href="security">Security</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link active" href="settings">Settings</a>

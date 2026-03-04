@@ -290,7 +290,7 @@ class FleetEmailService
         <body>
             <div class='container'>
                 <div class='header'>
-                    <h1 style='margin: 0; font-size: 24px;'>🚗 Fleet Management</h1>
+                    <h1 style='margin: 0; font-size: 24px;'>Fleet Management</h1>
                     <p style='margin: 5px 0 0 0; opacity: 0.9;'>{$title}</p>
                 </div>
                 <div class='content'>
@@ -324,7 +324,7 @@ class FleetEmailService
             try {
                 $mail = $this->createMailer();
                 $mail->addAddress($reservation['user_email'], $reservation['user_name']);
-                $mail->Subject = "Reservation Submitted - {$assetName}";
+                $mail->Subject = "New Reservation Request - {$assetName}";
                 $content = "
                     <p>Hi {$reservation['user_name']},</p>
                     <p>Your vehicle reservation has been submitted and is pending approval.</p>
@@ -541,7 +541,7 @@ class FleetEmailService
             $mail->addAddress($reservation['user_email'], $reservation['user_name']);
             $mail->Subject = "Vehicle Returned - {$assetName}";
             
-            $maintenanceNote = $maintenanceFlag ? "<br><strong style='color: #dc3545;'>⚠️ Maintenance Issue Reported</strong>" : '';
+            $maintenanceNote = $maintenanceFlag ? "<br><strong style='color: #dc3545;'>Maintenance Issue Reported</strong>" : '';
             
             $content = "
                 <p>Hi {$reservation['user_name']},</p>
@@ -583,7 +583,7 @@ class FleetEmailService
                 $mail->addAddress($email);
             }
             
-            $mail->Subject = "[ACTION REQUIRED] Maintenance Needed - {$assetName}";
+            $mail->Subject = "Maintenance Required - {$assetName}";
             
             $content = "
                 <p>A vehicle has been flagged for maintenance during checkin.</p>
@@ -620,7 +620,7 @@ class FleetEmailService
         try {
             $mail = $this->createMailer();
             $mail->addAddress($reservation['user_email'], $reservation['user_name']);
-            $mail->Subject = "Reminder: Vehicle Pickup in 1 Hour - {$assetName}";
+            $mail->Subject = "Pickup Reminder - {$assetName}";
             
             $content = "
                 <p>Hi {$reservation['user_name']},</p>
@@ -658,7 +658,7 @@ class FleetEmailService
         try {
             $mail = $this->createMailer();
             $mail->addAddress($reservation['user_email'], $reservation['user_name']);
-            $mail->Subject = "[OVERDUE] Please Return Vehicle - {$assetName}";
+            $mail->Subject = "Overdue Return - {$assetName}";
             
             $content = "
                 <p>Hi {$reservation['user_name']},</p>
@@ -686,7 +686,7 @@ class FleetEmailService
                 foreach ($staffEmails as $email) {
                     $mail->addAddress($email);
                 }
-                $mail->Subject = "[OVERDUE] Vehicle Return Alert - {$assetName}";
+                $mail->Subject = "Overdue Return Alert - {$assetName}";
                 
                 $content = "
                     <p>A vehicle return is overdue.</p>
@@ -783,7 +783,7 @@ class FleetEmailService
             foreach ($notifyEmails as $email) {
                 $mail->addAddress($email);
             }
-            $mail->Subject = "[ALERT] Mileage Anomaly - {$assetName}";
+            $mail->Subject = "Mileage Anomaly Detected - {$assetName}";
             $content = "
                 <p>A mileage anomaly was detected during vehicle checkout/checkin.</p>
                 <div class='danger-box'>
@@ -846,6 +846,148 @@ class FleetEmailService
         }
 
         return true;
+    }
+/**
+     * RESERVATION REDIRECTED - Vehicle swap notification
+     * Sent to requester and staff when a reservation is redirected to an alternate vehicle
+     * @since v1.3.5
+     */
+    public function notifyReservationRedirected(array $reservation, array $newVehicle, string $reason = ''): bool
+    {
+        if (!$this->isNotificationEnabled('reservation_redirected')) return true;
+
+        $assetName = $reservation['asset_name_cache'] ?? 'Unknown Vehicle';
+        $newAssetName = $newVehicle['name'] ?? 'Unknown Vehicle';
+        $userName = $reservation['user_name'] ?? 'User';
+        $start = date('M j, Y g:i A', strtotime($reservation['start_datetime']));
+        $end = date('M j, Y g:i A', strtotime($reservation['end_datetime']));
+        $reasonNote = $reason ? "<p><strong>Reason:</strong> {$reason}</p>" : '';
+
+        try {
+            $content = "
+                <p>Hi {$userName},</p>
+                <p>Your upcoming reservation has been <strong>redirected to a different vehicle</strong> because the originally assigned vehicle is unavailable.</p>
+                <div class='warning-box'>
+                    <p><strong>Original Vehicle:</strong> {$assetName}<br>
+                    <strong>New Vehicle:</strong> {$newAssetName}<br>
+                    <strong>Pickup:</strong> {$start}<br>
+                    <strong>Return:</strong> {$end}</p>
+                    {$reasonNote}
+                </div>
+                <p>Your reservation times remain the same. Please proceed to pick up the new vehicle at the scheduled time.</p>
+            ";
+
+            $settings = $this->getNotificationSettings('reservation_redirected');
+            $recipients = $this->getEventRecipients(
+                'reservation_redirected',
+                $reservation['user_email'] ?? null,
+                $userName
+            );
+
+            $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
+            foreach ($recipients as $r) {
+                $mail = $this->createMailer();
+                $mail->addAddress($r['email'], $r['name']);
+                $mail->Subject = "Reservation Redirected - {$newAssetName}";
+                $mail->Body = $this->template('Vehicle Redirect', $content, "{$baseUrl}/my_bookings", 'View My Reservations');
+                $this->send($mail);
+            }
+        } catch (Exception $e) {
+            error_log("Reservation redirected email failed: " . $e->getMessage());
+        }
+        return true;
+    }
+
+    /**
+     * REDIRECT FAILED - No alternate vehicle available, reservation cancelled
+     * Sent to requester and staff
+     * @since v1.3.5
+     */
+    public function notifyRedirectFailed(array $reservation, string $reason = ''): bool
+    {
+        if (!$this->isNotificationEnabled('reservation_redirect_failed')) return true;
+
+        $assetName = $reservation['asset_name_cache'] ?? 'Unknown Vehicle';
+        $userName = $reservation['user_name'] ?? 'User';
+        $start = date('M j, Y g:i A', strtotime($reservation['start_datetime']));
+        $end = date('M j, Y g:i A', strtotime($reservation['end_datetime']));
+        $reasonNote = $reason ? "<p><strong>Reason:</strong> {$reason}</p>" : '';
+
+        try {
+            $content = "
+                <p>Hi {$userName},</p>
+                <p>Unfortunately, your upcoming reservation has been <strong>cancelled</strong> because the assigned vehicle is unavailable and no alternate vehicle could be found at your location.</p>
+                <div class='danger-box'>
+                    <p><strong>Vehicle:</strong> {$assetName}<br>
+                    <strong>Pickup:</strong> {$start}<br>
+                    <strong>Return:</strong> {$end}</p>
+                    {$reasonNote}
+                </div>
+                <p>Please submit a new reservation request at your earliest convenience. We apologize for the inconvenience.</p>
+            ";
+
+            $recipients = $this->getEventRecipients(
+                'reservation_redirect_failed',
+                $reservation['user_email'] ?? null,
+                $userName
+            );
+
+            $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
+            foreach ($recipients as $r) {
+                $mail = $this->createMailer();
+                $mail->addAddress($r['email'], $r['name']);
+                $mail->Subject = "Reservation Cancelled - {$assetName}";
+                $mail->Body = $this->template('Reservation Cancelled', $content, "{$baseUrl}/vehicle_reserve", 'Book Another Vehicle');
+                $this->send($mail);
+            }
+        } catch (Exception $e) {
+            error_log("Redirect failed email failed: " . $e->getMessage());
+        }
+        return true;
+    }
+
+    /**
+     * OVERDUE REDIRECT STAFF ALERT - Notify staff/admin about overdue vehicle triggering redirect
+     * @since v1.3.5
+     */
+    public function notifyOverdueRedirectStaff(array $reservation, string $action = 'redirected'): bool
+    {
+        if (!$this->isNotificationEnabled('overdue_redirect_staff')) return true;
+
+        $assetName = $reservation['asset_name_cache'] ?? 'Unknown Vehicle';
+        $userName = $reservation['user_name'] ?? 'User';
+        $expected = date('M j, Y g:i A', strtotime($reservation['end_datetime']));
+        $actionDesc = $action === 'redirected'
+            ? 'The next reservation has been automatically redirected to an alternate vehicle.'
+            : 'The next reservation has been cancelled because no alternate vehicle was available.';
+
+        try {
+            $content = "
+                <p>An overdue vehicle has triggered an automatic reservation action.</p>
+                <div class='warning-box'>
+                    <p><strong>Vehicle:</strong> {$assetName}<br>
+                    <strong>Assigned to:</strong> {$userName} ({$reservation['user_email']})<br>
+                    <strong>Expected Return:</strong> {$expected}<br>
+                    <strong>Action Taken:</strong> {$actionDesc}</p>
+                </div>
+                <p>Please follow up with {$userName} to ensure the vehicle is returned promptly.</p>
+            ";
+
+            $recipients = $this->getEventRecipients('overdue_redirect_staff');
+
+            $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
+            foreach ($recipients as $r) {
+                $mail = $this->createMailer();
+                $mail->addAddress($r['email'], $r['name']);
+                $mail->Subject = "Overdue Vehicle Redirect Alert - {$assetName}";
+                $mail->Body = $this->template('Overdue Vehicle Alert', $content, "{$baseUrl}/reservations", 'View Reservations');
+                $this->send($mail);
+            }
+        } catch (Exception $e) {
+            error_log("Overdue redirect staff email failed: " . $e->getMessage());
+        }
+        return true;
+
     }
 }
 

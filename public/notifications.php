@@ -121,18 +121,27 @@ $eventDescriptions = [
     'reservation_cancelled' => 'Sent when a reservation is cancelled by the user or staff.',
     'mileage_anomaly' => 'Sent to admin when a mileage entry fails plausibility checks.',
     'compliance_expiring' => 'Sent when vehicle insurance or registration is expiring within 30 days.',
+    'reservation_redirected' => 'Sent when a reservation is redirected to an alternate vehicle due to the original being overdue.',
+    'reservation_redirect_failed' => 'Sent when a reservation is cancelled because no alternate vehicle is available.',
+    'overdue_redirect_staff' => 'Sent to staff/admin when an overdue vehicle triggers a reservation redirect.',
 ];
 
 // Default subjects for reference
 $defaultSubjects = [
-    'reservation_submitted' => '🚗 New Reservation Request - {vehicle}',
-    'reservation_approved' => '✅ Reservation Approved - {vehicle}',
-    'reservation_rejected' => '❌ Reservation Rejected - {vehicle}',
-    'vehicle_checked_out' => '🔑 Vehicle Checked Out - {vehicle}',
-    'vehicle_checked_in' => '✅ Vehicle Returned - {vehicle}',
-    'maintenance_flagged' => '⚠️ Maintenance Required - {vehicle}',
-    'pickup_reminder' => '⏰ Pickup Reminder - {vehicle}',
-    'return_overdue' => '🚨 Overdue Return - {vehicle}',
+    'reservation_submitted' => 'New Reservation Request - {vehicle}',
+    'reservation_approved' => 'Reservation Approved - {vehicle}',
+    'reservation_rejected' => 'Reservation Rejected - {vehicle}',
+    'vehicle_checked_out' => 'Vehicle Checked Out - {vehicle}',
+    'vehicle_checked_in' => 'Vehicle Returned - {vehicle}',
+    'maintenance_flagged' => 'Maintenance Required - {vehicle}',
+    'pickup_reminder' => 'Pickup Reminder - {vehicle}',
+    'return_overdue' => 'Overdue Return - {vehicle}',
+    'reservation_cancelled' => 'Reservation Cancelled - {vehicle}',
+    'mileage_anomaly' => 'Mileage Anomaly Detected - {vehicle}',
+    'compliance_expiring' => 'Compliance Expiring - {vehicle}',
+    'reservation_redirected' => 'Reservation Redirected - {vehicle}',
+    'reservation_redirect_failed' => 'Reservation Cancelled (No Alternate) - {vehicle}',
+    'overdue_redirect_staff' => 'Overdue Vehicle Redirect Alert - {vehicle}',
 ];
 
 $defaultBodies = [
@@ -239,6 +248,44 @@ If you need to extend your reservation, please contact Fleet Management immediat
 
 Thank you,
 Fleet Management Team',
+
+'reservation_cancelled' => 'Hi {user},
+Your reservation has been cancelled.
+Vehicle: {vehicle}
+Pickup: {date} at {time}
+If this was unexpected, please contact the Fleet Administrator.
+Thank you,
+Fleet Management Team',
+    'mileage_anomaly' => 'Mileage anomaly detected on a vehicle.
+Vehicle: {vehicle}
+Reported by: {user}
+Please review the mileage entry in the Usage Report.
+Fleet Management System',
+    'compliance_expiring' => 'A vehicle compliance document is expiring soon.
+Vehicle: {vehicle}
+Please ensure the document is renewed before it expires.
+Fleet Management System',
+    'reservation_redirected' => 'Hi {user},
+Your upcoming reservation has been redirected to a different vehicle because the originally assigned vehicle is unavailable.
+New Vehicle: {vehicle}
+Pickup: {date} at {time}
+Return: {return_date} at {return_time}
+Your reservation times remain the same. Please proceed to pick up the new vehicle at the scheduled time.
+Thank you,
+Fleet Management Team',
+    'reservation_redirect_failed' => 'Hi {user},
+Unfortunately, your reservation has been cancelled because the assigned vehicle is unavailable and no alternate vehicle could be found.
+Vehicle: {vehicle}
+Pickup: {date} at {time}
+Please submit a new reservation request at your earliest convenience. We apologize for the inconvenience.
+Thank you,
+Fleet Management Team',
+    'overdue_redirect_staff' => 'An overdue vehicle has triggered an automatic reservation action.
+Vehicle: {vehicle}
+Assigned to: {user}
+Please follow up to ensure the vehicle is returned promptly.
+Fleet Management System',
+
 ];
 ?>
 <!DOCTYPE html>
@@ -289,7 +336,8 @@ Fleet Management Team',
                 </li>
                 <?php if (!empty($currentUser['is_super_admin'])): ?>
                 <li class="nav-item">
-                    <a class="nav-link" href="security">Security</a>
+                    <a class="nav-link" href="booking_rules">Booking Rules</a></li>
+            <li class="nav-item"><a class="nav-link" href="security">Security</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="settings">Settings</a>
@@ -628,3 +676,4 @@ Fleet Management Team',
     <?php layout_footer(); ?>
 </body>
 </html>
+
