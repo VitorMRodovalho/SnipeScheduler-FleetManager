@@ -305,7 +305,67 @@ class FleetEmailService
         </body>
         </html>";
     }
+
+/**
+     * Resolve email subject from DB custom template or use default.
+     * Replaces {placeholders} in both DB and default subjects.
+     */
+    private function resolveSubject(string $eventKey, string $defaultSubject, array $vars = []): string
+    {
+        $settings = $this->getNotificationSettings($eventKey);
+        $subject = (!empty($settings['subject_template']))
+            ? $settings['subject_template']
+            : $defaultSubject;
+
+        foreach ($vars as $key => $value) {
+            $subject = str_replace('{' . $key . '}', $value, $subject);
+        }
+        return $subject;
+    }
+
+    /**
+     * Resolve email body from DB custom template or return null (use hardcoded).
+     * When DB template exists, converts plain text to styled HTML.
+     */
+    private function resolveBody(string $eventKey, array $vars = []): ?string
+    {
+        $settings = $this->getNotificationSettings($eventKey);
+        if (empty($settings['body_template'])) {
+            return null; // Caller uses hardcoded HTML body
+        }
+
+        $body = $settings['body_template'];
+        foreach ($vars as $key => $value) {
+            $body = str_replace('{' . $key . '}', htmlspecialchars($value), $body);
+        }
+
+        // Convert plain text line breaks to HTML
+        return nl2br(htmlspecialchars_decode($body));
+    }
     
+/**
+     * Build standard template variables from reservation data.
+     */
+    private function buildTemplateVars(array $data, array $extra = []): array
+    {
+        $vars = [
+            'user' => $data['user_name'] ?? '',
+            'vehicle' => $data['asset_name_cache'] ?? '',
+        ];
+        if (!empty($data['start_datetime'])) {
+            $vars['date'] = date('M j, Y', strtotime($data['start_datetime']));
+            $vars['time'] = date('g:i A', strtotime($data['start_datetime']));
+        }
+        if (!empty($data['end_datetime'])) {
+            $vars['return_date'] = date('M j, Y', strtotime($data['end_datetime']));
+            $vars['return_time'] = date('g:i A', strtotime($data['end_datetime']));
+        }
+        $vars['purpose'] = $data['notes'] ?? '';
+        $vars['location'] = $data['location'] ?? '';
+        return array_merge($vars, $extra);
+    }
+
+
     /**
      * NEW RESERVATION - Notify requester + staff
      */
@@ -324,7 +384,7 @@ class FleetEmailService
             try {
                 $mail = $this->createMailer();
                 $mail->addAddress($reservation['user_email'], $reservation['user_name']);
-                $mail->Subject = "New Reservation Request - {$assetName}";
+                $mail->Subject = $this->resolveSubject('reservation_submitted', 'New Reservation Request - {vehicle}', ['vehicle' => $assetName]);
                 $content = "
                     <p>Hi {$reservation['user_name']},</p>
                     <p>Your vehicle reservation has been submitted and is pending approval.</p>
@@ -337,6 +397,9 @@ class FleetEmailService
                     </div>
                     <p>You will receive another email once your reservation is approved or rejected.</p>
                 ";
+                $templateVars = $this->buildTemplateVars($reservation);
+                $dbBody = $this->resolveBody('reservation_submitted', $templateVars ?? []);
+                if ($dbBody !== null) $content = $dbBody;
                 $mail->Body = $this->template('Reservation Submitted', $content, "{$baseUrl}/my_bookings", 'View My Reservations');
                 $this->send($mail);
             } catch (Exception $e) {
@@ -352,7 +415,7 @@ class FleetEmailService
                 foreach ($notifyEmails as $email) {
                     $mail->addAddress($email);
                 }
-                $mail->Subject = "New Reservation Request - {$reservation['user_name']}";
+                $mail->Subject = $this->resolveSubject('reservation_submitted', 'New Reservation Request - {user}', ['vehicle' => $assetName, 'user' => $reservation['user_name']]);
                 $content = "
                     <p>A new vehicle reservation requires your approval.</p>
                     <div class='warning-box'>
@@ -388,7 +451,7 @@ class FleetEmailService
         try {
             $mail = $this->createMailer();
             $mail->addAddress($reservation['user_email'], $reservation['user_name']);
-            $mail->Subject = "Reservation Auto-Approved - {$assetName}";
+            $mail->Subject = $this->resolveSubject('reservation_approved', 'Reservation Auto-Approved - {vehicle}', ['vehicle' => $assetName]);
             
             $content = "
                 <p>Hi {$reservation['user_name']},</p>
@@ -403,6 +466,9 @@ class FleetEmailService
                 <p>You can proceed with vehicle checkout when ready.</p>
             ";
             
+            $templateVars = $this->buildTemplateVars($reservation);
+            $dbBody = $this->resolveBody('reservation_approved', $templateVars ?? []);
+            if ($dbBody !== null) $content = $dbBody;
             $mail->Body = $this->template('Reservation Approved', $content, "{$baseUrl}/my_bookings.php", 'View & Checkout');
             $this->send($mail);
         } catch (Exception $e) {
@@ -426,7 +492,7 @@ class FleetEmailService
         try {
             $mail = $this->createMailer();
             $mail->addAddress($reservation['user_email'], $reservation['user_name']);
-            $mail->Subject = "Reservation Approved - {$assetName}";
+            $mail->Subject = $this->resolveSubject('reservation_approved', 'Reservation Approved - {vehicle}', ['vehicle' => $assetName]);
             
             $content = "
                 <p>Hi {$reservation['user_name']},</p>
@@ -441,6 +507,9 @@ class FleetEmailService
                 <p>Please complete the checkout process when you pick up the vehicle.</p>
             ";
             
+            $templateVars = $this->buildTemplateVars($reservation, ['approver' => $approverName]);
+            $dbBody = $this->resolveBody('reservation_approved', $templateVars ?? []);
+            if ($dbBody !== null) $content = $dbBody;
             $mail->Body = $this->template('Reservation Approved', $content, "{$baseUrl}/my_bookings.php", 'View & Checkout');
             $this->send($mail);
         } catch (Exception $e) {
@@ -464,7 +533,7 @@ class FleetEmailService
         try {
             $mail = $this->createMailer();
             $mail->addAddress($reservation['user_email'], $reservation['user_name']);
-            $mail->Subject = "Reservation Rejected - {$assetName}";
+            $mail->Subject = $this->resolveSubject('reservation_rejected', 'Reservation Rejected - {vehicle}', ['vehicle' => $assetName]);
             
             $reasonText = $reason ? "<br><strong>Reason:</strong> {$reason}" : '';
             
@@ -480,6 +549,9 @@ class FleetEmailService
                 <p>Please submit a new reservation if you still need a vehicle.</p>
             ";
             
+            $templateVars = $this->buildTemplateVars($reservation, ['reason' => $reason, 'approver' => $approverName]);
+            $dbBody = $this->resolveBody('reservation_rejected', $templateVars ?? []);
+            if ($dbBody !== null) $content = $dbBody;
             $mail->Body = $this->template('Reservation Rejected', $content, "{$baseUrl}/vehicle_reserve.php", 'Book Another Vehicle');
             $this->send($mail);
         } catch (Exception $e) {
@@ -502,7 +574,7 @@ class FleetEmailService
         try {
             $mail = $this->createMailer();
             $mail->addAddress($reservation['user_email'], $reservation['user_name']);
-            $mail->Subject = "Vehicle Checked Out - {$assetName}";
+            $mail->Subject = $this->resolveSubject('vehicle_checked_out', 'Vehicle Checked Out - {vehicle}', ['vehicle' => $assetName]);
             
             $content = "
                 <p>Hi {$reservation['user_name']},</p>
@@ -517,6 +589,9 @@ class FleetEmailService
                 <p>Please remember to complete the checkin process when you return the vehicle.</p>
             ";
             
+            $templateVars = $this->buildTemplateVars($reservation, ['mileage' => $mileage]);
+            $dbBody = $this->resolveBody('vehicle_checked_out', $templateVars ?? []);
+            if ($dbBody !== null) $content = $dbBody;
             $mail->Body = $this->template('Vehicle Checked Out', $content);
             $this->send($mail);
         } catch (Exception $e) {
@@ -539,7 +614,7 @@ class FleetEmailService
         try {
             $mail = $this->createMailer();
             $mail->addAddress($reservation['user_email'], $reservation['user_name']);
-            $mail->Subject = "Vehicle Returned - {$assetName}";
+            $mail->Subject = $this->resolveSubject('vehicle_checked_in', 'Vehicle Returned - {vehicle}', ['vehicle' => $assetName]);
             
             $maintenanceNote = $maintenanceFlag ? "<br><strong style='color: #dc3545;'>Maintenance Issue Reported</strong>" : '';
             
@@ -554,6 +629,9 @@ class FleetEmailService
                 </div>
             ";
             
+            $templateVars = $this->buildTemplateVars($reservation, ['mileage' => $mileage]);
+            $dbBody = $this->resolveBody('vehicle_checked_in', $templateVars ?? []);
+            if ($dbBody !== null) $content = $dbBody;
             $mail->Body = $this->template('Vehicle Returned', $content);
             $this->send($mail);
         } catch (Exception $e) {
@@ -583,7 +661,7 @@ class FleetEmailService
                 $mail->addAddress($email);
             }
             
-            $mail->Subject = "Maintenance Required - {$assetName}";
+            $mail->Subject = $this->resolveSubject('maintenance_flagged', 'Maintenance Required - {vehicle}', ['vehicle' => $assetName]);
             
             $content = "
                 <p>A vehicle has been flagged for maintenance during checkin.</p>
@@ -597,6 +675,9 @@ class FleetEmailService
                 <p>Please review and schedule maintenance as needed.</p>
             ";
             
+            $templateVars = $this->buildTemplateVars($reservation, ['notes' => $notes]);
+            $dbBody = $this->resolveBody('maintenance_flagged', $templateVars ?? []);
+            if ($dbBody !== null) $content = $dbBody;
             $mail->Body = $this->template('Maintenance Required', $content, "{$baseUrl}/hardware", 'View in Snipe-IT');
             $this->send($mail);
         } catch (Exception $e) {
@@ -620,7 +701,7 @@ class FleetEmailService
         try {
             $mail = $this->createMailer();
             $mail->addAddress($reservation['user_email'], $reservation['user_name']);
-            $mail->Subject = "Pickup Reminder - {$assetName}";
+            $mail->Subject = $this->resolveSubject('pickup_reminder', 'Pickup Reminder - {vehicle}', ['vehicle' => $assetName]);
             
             $content = "
                 <p>Hi {$reservation['user_name']},</p>
@@ -634,6 +715,9 @@ class FleetEmailService
                 <p>Don't forget to complete the checkout inspection when picking up the vehicle.</p>
             ";
             
+            $templateVars = $this->buildTemplateVars($reservation);
+            $dbBody = $this->resolveBody('pickup_reminder', $templateVars ?? []);
+            if ($dbBody !== null) $content = $dbBody;
             $mail->Body = $this->template('Pickup Reminder', $content, "{$baseUrl}/my_bookings.php", 'View Reservation');
             $this->send($mail);
         } catch (Exception $e) {
@@ -658,7 +742,7 @@ class FleetEmailService
         try {
             $mail = $this->createMailer();
             $mail->addAddress($reservation['user_email'], $reservation['user_name']);
-            $mail->Subject = "Overdue Return - {$assetName}";
+            $mail->Subject = $this->resolveSubject('return_overdue', 'Overdue Return - {vehicle}', ['vehicle' => $assetName]);
             
             $content = "
                 <p>Hi {$reservation['user_name']},</p>
@@ -672,6 +756,9 @@ class FleetEmailService
                 <p>Please return the vehicle and complete the checkin process immediately.</p>
             ";
             
+            $templateVars = $this->buildTemplateVars($reservation);
+            $dbBody = $this->resolveBody('return_overdue', $templateVars ?? []);
+            if ($dbBody !== null) $content = $dbBody;
             $mail->Body = $this->template('Vehicle Overdue', $content, "{$baseUrl}/my_bookings.php", 'Complete Checkin');
             $this->send($mail);
         } catch (Exception $e) {
@@ -686,7 +773,7 @@ class FleetEmailService
                 foreach ($staffEmails as $email) {
                     $mail->addAddress($email);
                 }
-                $mail->Subject = "Overdue Return Alert - {$assetName}";
+                $mail->Subject = $this->resolveSubject('return_overdue', 'Overdue Return Alert - {vehicle}', ['vehicle' => $assetName]);
                 
                 $content = "
                     <p>A vehicle return is overdue.</p>
@@ -722,7 +809,7 @@ class FleetEmailService
             try {
                 $mail = $this->createMailer();
                 $mail->addAddress($reservation['user_email'], $reservation['user_name']);
-                $mail->Subject = "Reservation Cancelled - {$assetName}";
+                $mail->Subject = $this->resolveSubject('reservation_cancelled', 'Reservation Cancelled - {vehicle}', ['vehicle' => $assetName]);
                 $content = "
                     <p>Hi {$reservation['user_name']},</p>
                     <p>Your vehicle reservation has been <strong>cancelled</strong>.</p>
@@ -732,6 +819,9 @@ class FleetEmailService
                         <strong>Cancelled By:</strong> {$cancelledBy}
                     </div>
                 ";
+                $templateVars = $this->buildTemplateVars($reservation, ['cancelled_by' => $cancelledBy]);
+                $dbBody = $this->resolveBody('reservation_cancelled', $templateVars ?? []);
+                if ($dbBody !== null) $content = $dbBody;
                 $mail->Body = $this->template('Reservation Cancelled', $content, "{$baseUrl}/my_bookings", 'View My Reservations');
                 $this->send($mail);
             } catch (Exception $e) {
@@ -746,7 +836,7 @@ class FleetEmailService
                 foreach ($notifyEmails as $email) {
                     $mail->addAddress($email);
                 }
-                $mail->Subject = "Reservation Cancelled - {$assetName}";
+                $mail->Subject = $this->resolveSubject('reservation_cancelled', 'Reservation Cancelled - {vehicle}', ['vehicle' => $assetName]);
                 $content = "
                     <p>A vehicle reservation has been cancelled.</p>
                     <div class='danger-box'>
@@ -783,7 +873,7 @@ class FleetEmailService
             foreach ($notifyEmails as $email) {
                 $mail->addAddress($email);
             }
-            $mail->Subject = "Mileage Anomaly Detected - {$assetName}";
+            $mail->Subject = $this->resolveSubject('mileage_anomaly', 'Mileage Anomaly Detected - {vehicle}', ['vehicle' => $assetName]);
             $content = "
                 <p>A mileage anomaly was detected during vehicle checkout/checkin.</p>
                 <div class='danger-box'>
@@ -797,6 +887,9 @@ class FleetEmailService
                 <p>Please review this entry and verify the odometer reading.</p>
             ";
             $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
+            $templateVars = $this->buildTemplateVars($reservation, ['mileage_reported' => (string)$reported, 'mileage_previous' => (string)$previous, 'reason' => $reason]);
+            $dbBody = $this->resolveBody('mileage_anomaly', $templateVars ?? []);
+            if ($dbBody !== null) $content = $dbBody;
             $mail->Body = $this->template('Mileage Anomaly Detected', $content, "{$baseUrl}/reports?report=usage", 'View Usage Report');
             $this->send($mail);
         } catch (Exception $e) {
@@ -826,7 +919,7 @@ class FleetEmailService
             foreach ($notifyEmails as $email) {
                 $mail->addAddress($email);
             }
-            $mail->Subject = "{$prefix}{$type} Expiring - {$assetName}";
+            $mail->Subject = $this->resolveSubject('compliance_expiring', '{type} Expiring - {vehicle}', ['vehicle' => $assetName, 'type' => $prefix . $type]);
             $content = "
                 <p>A vehicle compliance item is expiring soon.</p>
                 <div class='{$urgency}'>
@@ -839,6 +932,9 @@ class FleetEmailService
                 <p>Please arrange renewal before the expiry date.</p>
             ";
             $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
+            $templateVars = ['vehicle' => $asset['name'] ?? '', 'type' => $type, 'expiry_date' => $expiryDate, 'days_remaining' => (string)$daysRemaining];
+            $dbBody = $this->resolveBody('compliance_expiring', $templateVars ?? []);
+            if ($dbBody !== null) $content = $dbBody;
             $mail->Body = $this->template('Compliance Alert', $content, "{$baseUrl}/reports?report=compliance", 'View Compliance Report');
             $this->send($mail);
         } catch (Exception $e) {
@@ -888,7 +984,10 @@ class FleetEmailService
             foreach ($recipients as $r) {
                 $mail = $this->createMailer();
                 $mail->addAddress($r['email'], $r['name']);
-                $mail->Subject = "Reservation Redirected - {$newAssetName}";
+                $mail->Subject = $this->resolveSubject('reservation_redirected', 'Reservation Redirected - {vehicle}', ['vehicle' => $newAssetName]);
+                $templateVars = $this->buildTemplateVars($reservation, ['new_vehicle' => $newVehicle['name'] ?? '', 'reason' => $reason]);
+                $dbBody = $this->resolveBody('reservation_redirected', $templateVars ?? []);
+                if ($dbBody !== null) $content = $dbBody;
                 $mail->Body = $this->template('Vehicle Redirect', $content, "{$baseUrl}/my_bookings", 'View My Reservations');
                 $this->send($mail);
             }
@@ -936,7 +1035,10 @@ class FleetEmailService
             foreach ($recipients as $r) {
                 $mail = $this->createMailer();
                 $mail->addAddress($r['email'], $r['name']);
-                $mail->Subject = "Reservation Cancelled - {$assetName}";
+                $mail->Subject = $this->resolveSubject('reservation_redirect_failed', 'Reservation Cancelled - {vehicle}', ['vehicle' => $assetName]);
+                $templateVars = $this->buildTemplateVars($reservation, ['reason' => $reason]);
+                $dbBody = $this->resolveBody('reservation_redirect_failed', $templateVars ?? []);
+                if ($dbBody !== null) $content = $dbBody;
                 $mail->Body = $this->template('Reservation Cancelled', $content, "{$baseUrl}/vehicle_reserve", 'Book Another Vehicle');
                 $this->send($mail);
             }
@@ -979,7 +1081,10 @@ class FleetEmailService
             foreach ($recipients as $r) {
                 $mail = $this->createMailer();
                 $mail->addAddress($r['email'], $r['name']);
-                $mail->Subject = "Overdue Vehicle Redirect Alert - {$assetName}";
+                $mail->Subject = $this->resolveSubject('overdue_redirect_staff', 'Overdue Vehicle Redirect Alert - {vehicle}', ['vehicle' => $assetName]);
+                $templateVars = $this->buildTemplateVars($reservation, ['action' => $action]);
+                $dbBody = $this->resolveBody('overdue_redirect_staff', $templateVars ?? []);
+                if ($dbBody !== null) $content = $dbBody;
                 $mail->Body = $this->template('Overdue Vehicle Alert', $content, "{$baseUrl}/reservations", 'View Reservations');
                 $this->send($mail);
             }

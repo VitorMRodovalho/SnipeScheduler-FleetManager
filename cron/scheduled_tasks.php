@@ -296,4 +296,178 @@ try {
 
 echo PHP_EOL;
 
+/**
+ * Task 7: Overdue Reservation Redirect
+ * When a vehicle is overdue past threshold, check if the next reservation
+ * on that vehicle is within the lookahead window. If so, attempt to
+ * redirect it to an alternate available vehicle, or cancel if none found.
+ */
+echo "--- Task 7: Overdue Redirect ---" . PHP_EOL;
+
+require_once SRC_PATH . '/business_days.php';
+
+try {
+    // Load settings
+    $redirectOverdueMin = (int)($pdo->query("SELECT setting_value FROM system_settings WHERE setting_key = 'redirect_overdue_minutes'")->fetchColumn() ?: 30);
+    $redirectLookaheadHrs = (int)($pdo->query("SELECT setting_value FROM system_settings WHERE setting_key = 'redirect_lookahead_hours'")->fetchColumn() ?: 24);
+
+    echo "Config: overdue trigger={$redirectOverdueMin}min, lookahead={$redirectLookaheadHrs}hrs" . PHP_EOL;
+
+    // Step 1: Find overdue checked-out reservations
+    $stmt = $pdo->prepare("
+        SELECT r.*, TIMESTAMPDIFF(MINUTE, r.end_datetime, NOW()) as minutes_overdue
+        FROM reservations r
+        WHERE r.status = 'confirmed'
+        AND r.end_datetime < DATE_SUB(NOW(), INTERVAL ? MINUTE)
+    ");
+    $stmt->execute([$redirectOverdueMin]);
+    $overdueReservations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    echo "Found " . count($overdueReservations) . " overdue vehicles past {$redirectOverdueMin}min threshold" . PHP_EOL;
+
+    foreach ($overdueReservations as $overdue) {
+        $assetId = $overdue['asset_id'];
+        echo "  Checking asset #{$assetId} ({$overdue['asset_name_cache']}) - {$overdue['minutes_overdue']}min overdue" . PHP_EOL;
+
+        // Step 2: Find next reservation on this vehicle within lookahead window
+        $stmt = $pdo->prepare("
+            SELECT r.*
+            FROM reservations r
+            WHERE r.asset_id = ?
+            AND r.status = 'pending'
+            AND r.approval_status IN ('approved', 'auto_approved')
+            AND r.start_datetime BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL ? HOUR)
+            AND r.id != ?
+            ORDER BY r.start_datetime ASC
+            LIMIT 1
+        ");
+        $stmt->execute([$assetId, $redirectLookaheadHrs, $overdue['id']]);
+        $nextReservation = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$nextReservation) {
+            echo "    No upcoming reservation in lookahead window. Skipping." . PHP_EOL;
+            continue;
+        }
+
+        // Check if already processed
+        $alreadyProcessed = $pdo->prepare("
+            SELECT 1 FROM notification_log
+            WHERE reservation_id = ? AND notification_type = 'overdue_redirect'
+        ");
+        $alreadyProcessed->execute([$nextReservation['id']]);
+        if ($alreadyProcessed->fetch()) {
+            echo "    Reservation #{$nextReservation['id']} already processed. Skipping." . PHP_EOL;
+            continue;
+        }
+
+        echo "    Next reservation #{$nextReservation['id']} for {$nextReservation['user_name']} ";
+        echo "(starts " . date('M j g:i A', strtotime($nextReservation['start_datetime'])) . ")" . PHP_EOL;
+
+        // Step 3: Find alternate vehicle at the same location
+        $pickupLocationId = $nextReservation['pickup_location_id'] ?? 0;
+        $startDate = date('Y-m-d', strtotime($nextReservation['start_datetime']));
+        $endDate = date('Y-m-d', strtotime($nextReservation['end_datetime']));
+
+        $allVehicles = get_fleet_vehicles(500);
+        $alternateVehicle = null;
+
+        foreach ($allVehicles as $vehicle) {
+            // Skip the overdue vehicle
+            if ($vehicle['id'] == $assetId) continue;
+
+            // Check location match
+            $vehLocationId = $vehicle['rtd_location']['id'] ?? ($vehicle['location']['id'] ?? 0);
+            if ($vehLocationId != $pickupLocationId) continue;
+
+            // Check availability
+            $statusId = $vehicle['status_label']['id'] ?? 0;
+            $avail = check_vehicle_availability($vehicle['id'], $statusId, $startDate, $endDate, $pdo);
+
+            if ($avail['available']) {
+                $alternateVehicle = $vehicle;
+                break;
+            }
+        }
+
+        if ($alternateVehicle) {
+            // Step 4A: Redirect to alternate vehicle
+            echo "    REDIRECT: #{$nextReservation['id']} -> {$alternateVehicle['name']} (id={$alternateVehicle['id']})" . PHP_EOL;
+
+            $newAssetName = $alternateVehicle['name'] . ' [' . $alternateVehicle['asset_tag'] . ']';
+
+            // Update the reservation to the new vehicle
+            $updateStmt = $pdo->prepare("
+                UPDATE reservations
+                SET asset_id = ?, asset_name_cache = ?, redirected_from_id = ?
+                WHERE id = ?
+            ");
+            $updateStmt->execute([
+                $alternateVehicle['id'],
+                $newAssetName,
+                $nextReservation['id'],
+                $nextReservation['id']
+            ]);
+
+            // Update Snipe-IT status for the alternate vehicle
+            update_asset_status($alternateVehicle['id'], STATUS_VEH_RESERVED);
+
+            // Log in approval history
+            $historyStmt = $pdo->prepare("
+                INSERT INTO approval_history (reservation_id, action, actor_name, actor_email, notes)
+                VALUES (?, 'redirected', 'System', '', ?)
+            ");
+            $historyStmt->execute([
+                $nextReservation['id'],
+                "Auto-redirected from {$overdue['asset_name_cache']} (overdue) to {$newAssetName}"
+            ]);
+
+            // Notify requester about redirect
+            $emailService->notifyReservationRedirected($nextReservation, $alternateVehicle,
+                "The originally assigned vehicle ({$overdue['asset_name_cache']}) has not been returned on time.");
+
+            // Notify staff about the overdue situation
+            $emailService->notifyOverdueRedirectStaff($overdue, 'redirected');
+
+        } else {
+            // Step 4B: No alternate — cancel the next reservation
+            echo "    CANCEL: No alternate vehicle available for #{$nextReservation['id']}" . PHP_EOL;
+
+            $updateStmt = $pdo->prepare("
+                UPDATE reservations
+                SET status = 'cancelled', approval_status = 'rejected'
+                WHERE id = ?
+            ");
+            $updateStmt->execute([$nextReservation['id']]);
+
+            // Log in approval history
+            $historyStmt = $pdo->prepare("
+                INSERT INTO approval_history (reservation_id, action, actor_name, actor_email, notes)
+                VALUES (?, 'auto_cancelled', 'System', '', ?)
+            ");
+            $historyStmt->execute([
+                $nextReservation['id'],
+                "Cancelled: original vehicle ({$overdue['asset_name_cache']}) overdue, no alternate available"
+            ]);
+
+            // Notify requester about cancellation
+            $emailService->notifyRedirectFailed($nextReservation,
+                "The assigned vehicle ({$overdue['asset_name_cache']}) has not been returned and no alternate vehicle is available at your location.");
+
+            // Notify staff
+            $emailService->notifyOverdueRedirectStaff($overdue, 'cancelled');
+        }
+
+        // Log that we processed this
+        $logStmt = $pdo->prepare("
+            INSERT INTO notification_log (reservation_id, notification_type, sent_at)
+            VALUES (?, 'overdue_redirect', NOW())
+        ");
+        $logStmt->execute([$nextReservation['id']]);
+    }
+} catch (Exception $e) {
+    echo "ERROR: " . $e->getMessage() . PHP_EOL;
+}
+
+echo PHP_EOL;
+
 echo "=== Completed: " . date('Y-m-d H:i:s') . " ===" . PHP_EOL;
