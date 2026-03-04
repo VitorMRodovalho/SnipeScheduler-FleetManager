@@ -2,7 +2,7 @@
 
 A comprehensive fleet vehicle management system built on top of [Snipe-IT](https://snipeitapp.com/), designed for enterprise fleet operations with reservation scheduling, maintenance tracking, and compliance management.
 
-> **Current Version:** v1.3.4 · [Changelog](CHANGELOG.md) · [Releases](https://github.com/VitorMRodovalho/SnipeScheduler-FleetManager/releases)
+> **Current Version:** v1.3.5 · [Changelog](CHANGELOG.md) · [Releases](https://github.com/VitorMRodovalho/SnipeScheduler-FleetManager/releases)
 
 ## Why This Project?
 
@@ -33,6 +33,7 @@ This project was born from a real need in **large-scale infrastructure programs*
 - 📱 **Mobile-Friendly** — Responsive design with QR code scanning
 - ✅ **Digital Inspections** — Complete checkout/checkin forms on any device
 - 📧 **Email Notifications** — Confirmation, reminders, and approvals
+- 📆 **Smart Booking Calendar** — Business day enforcement with holiday awareness; weekends, holidays, and blackouts grayed out
 
 ### For Fleet Staff
 
@@ -50,6 +51,9 @@ This project was born from a real need in **large-scale infrastructure programs*
 - 📋 **Reservation Controls** — Set booking rules (min notice, max duration, blackouts)
 - 🔗 **Clean URLs** — Professional URL structure without .php extensions
 - 📦 **Release Management** — Built-in version management with semantic versioning
+- 📆 **Booking Rules** — Configure business day buffer, working days, federal/custom holiday calendar
+- 🔄 **Overdue Auto-Redirect** — Automatically reassigns next reservation when a vehicle is overdue
+- ✉️ **Customizable Email Templates** — Override email subjects and bodies per notification event
 
 ## Architecture
 
@@ -130,7 +134,7 @@ Permissions are managed through **Snipe-IT Groups**:
 
 ![Book Vehicle](docs/screenshots/vehicle_reserve.png)
 
-*Reserve a vehicle by selecting pickup/return dates, times, and location. Include purpose notes for the approval workflow.*
+*Three-step booking flow: select location, choose dates (with business day calendar — weekends, holidays, and blackouts are grayed out), then pick from vehicles available for your date window. The vehicle list updates dynamically via AJAX, enforcing turnaround buffers and preventing double-booking.*
 
 **Access:** All authenticated users
 
@@ -232,6 +236,16 @@ Permissions are managed through **Snipe-IT Groups**:
 ![Announcements](docs/screenshots/announcements.png)
 
 *Create and manage system-wide announcements. Schedule display windows, set urgency levels, and make notices dismissible. Includes release announcement templates for system updates.*
+
+**Access:** Fleet Admin
+
+---
+
+### Booking Rules
+
+![Booking Rules](docs/screenshots/booking_rules.png)
+
+*Configure fleet scheduling rules: vehicle turnaround buffer (business days between consecutive reservations), overdue redirect triggers, working day schedule, and a complete holiday calendar with pre-seeded US federal holidays (2025-2030). Admins can toggle individual holidays and add custom dates.*
 
 **Access:** Fleet Admin
 
@@ -422,6 +436,11 @@ This project is a derivative work based on [SnipeScheduler](https://github.com/J
 - Automated screenshot generation with anonymization
 - Security scanner and remediation tools
 - Mobile-optimized responsive interface
+- Business day engine with federal holiday calendar
+- Booking rules administration (turnaround buffer, working days, holidays)
+- Date-aware vehicle availability with AJAX filtering
+- Overdue vehicle auto-redirect with alternate vehicle assignment
+- Customizable email templates via admin notifications page
 
 ## License
 

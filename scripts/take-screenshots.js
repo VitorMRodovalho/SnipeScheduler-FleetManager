@@ -26,6 +26,7 @@ const PAGES = [
     { name: 'notifications', path: '/notifications', auth: true },
     { name: 'announcements', path: '/announcements', auth: true },
     { name: 'security', path: '/security', auth: true },
+    { name: 'booking_rules', path: '/booking_rules', auth: true },
     { name: 'settings', path: '/settings', auth: true },
 ];
 
