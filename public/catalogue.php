@@ -1184,22 +1184,7 @@ if (!empty($allowedCategoryMap) && !empty($categories)) {
         <?php endif; ?>
 
         <!-- Top bar -->
-        <div class="top-bar mb-3">
-            <div class="top-bar-user">
-                Logged in as:
-                <strong><?= htmlspecialchars(trim($currentUser['first_name'] . ' ' . $currentUser['last_name'])) ?></strong>
-                (<?= htmlspecialchars($currentUser['email']) ?>)
-            </div>
-            <div class="top-bar-actions d-flex gap-2">
-                <a href="basket"
-                   class="btn btn-lg btn-primary fw-semibold shadow-sm px-4"
-                   style="font-size:16px;"
-                   id="view-basket-btn">
-                    View basket<?= $basketCount > 0 ? ' (' . $basketCount . ')' : '' ?>
-                </a>
-                <a href="logout" class="btn btn-link btn-sm">Log out</a>
-            </div>
-        </div>
+        <?= render_top_bar($currentUser, $isStaff, $isAdmin, '<a href="basket" class="btn btn-primary btn-sm" id="view-basket-btn">View basket' . ($basketCount > 0 ? ' (' . $basketCount . ')' : '') . '</a>') ?>
 
         <?php if ($isStaff): ?>
             <div class="alert alert-info d-flex flex-column flex-md-row align-items-md-center justify-content-md-between booking-for-alert">

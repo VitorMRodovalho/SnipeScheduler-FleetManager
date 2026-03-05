@@ -820,16 +820,7 @@ $active  = basename($_SERVER['PHP_SELF']);
 
         <!-- Top bar -->
         <?php if (!$embedded): ?>
-            <div class="top-bar mb-3">
-                <div class="top-bar-user">
-                    Logged in as:
-                    <strong><?= h(trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''))) ?></strong>
-                    (<?= h($currentUser['email'] ?? '') ?>)
-                </div>
-                <div class="top-bar-actions">
-                    <a href="logout" class="btn btn-link btn-sm">Log out</a>
-                </div>
-            </div>
+        <?= render_top_bar($currentUser, $isStaff, $isAdmin) ?>
         <?php endif; ?>
 
         <!-- Reservation selector (today only) -->

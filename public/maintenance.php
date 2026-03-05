@@ -320,17 +320,7 @@ $pickupLocations = get_pickup_locations();
         <!-- App navigation -->
         <?= layout_render_nav($active, $isStaff, $isAdmin) ?>
 
-        <!-- Top bar -->
-        <div class="top-bar mb-3">
-            <div class="top-bar-user">
-                Logged in as:
-                <strong><?= h($userName) ?></strong>
-                (<?= h($currentUser['email'] ?? '') ?>)
-            </div>
-            <div class="top-bar-actions">
-                <a href="logout" class="btn btn-link btn-sm">Log out</a>
-            </div>
-        </div>
+        <?= render_top_bar($currentUser, $isStaff, $isAdmin) ?>
 
 
 

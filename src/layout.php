@@ -258,7 +258,7 @@ if (!function_exists('layout_logo_tag')) {
 /**
  * Render standardized top-bar with user info and logout
  */
-function render_top_bar(array $currentUser, bool $isStaff = false, bool $isAdmin = false): string
+function render_top_bar(array $currentUser, bool $isStaff = false, bool $isAdmin = false, string $extraActions = ''): string
 {
     $userName = trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''));
     if (empty($userName)) {
@@ -282,6 +282,7 @@ function render_top_bar(array $currentUser, bool $isStaff = false, bool $isAdmin
                 ' . $badges . '
             </div>
             <div class="top-bar-actions">
+                ' . $extraActions . '
                 <a href="logout" class="btn btn-outline-secondary btn-sm">Log out</a>
             </div>
         </div>';

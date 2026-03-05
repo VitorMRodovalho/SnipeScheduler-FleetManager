@@ -64,21 +64,7 @@ $userEmail = $currentUser['email'] ?? '';
         </div>
         <?= layout_render_nav($active, $isStaff, $isAdmin) ?>
 
-        <!-- User Info -->
-        <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-light rounded">
-            <div>
-                <span class="text-muted">Logged in as:</span> 
-                <strong><?= h($userName) ?></strong> 
-                <span class="text-muted">(<?= h($userEmail) ?>)</span>
-                <?php if ($isStaff): ?>
-                    <span class="badge bg-primary ms-2">Staff</span>
-                <?php endif; ?>
-                <?php if ($isAdmin): ?>
-                    <span class="badge bg-danger ms-2">Admin</span>
-                <?php endif; ?>
-            </div>
-            <a href="logout" class="btn btn-outline-secondary btn-sm">Log out</a>
-        </div>
+        <?= render_top_bar($currentUser, $isStaff, $isAdmin) ?>
 
         <!-- Main Actions for All Users -->
         <div class="row g-4 mb-4">

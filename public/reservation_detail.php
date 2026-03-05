@@ -81,17 +81,7 @@ $active  = 'staff_reservations.php'; // Treat detail view as part of booking his
         <!-- App navigation -->
         <?= layout_render_nav($active, $isStaff, $isAdmin) ?>
 
-        <div class="top-bar mb-3">
-            <div class="top-bar-user">
-                Logged in as:
-                <strong><?= h(trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''))) ?></strong>
-                (<?= h($currentUser['email'] ?? '') ?>)
-            </div>
-            <div class="top-bar-actions">
-                <a href="staff_reservations" class="btn btn-outline-secondary btn-sm">Back to all bookings</a>
-                <a href="logout" class="btn btn-link btn-sm">Log out</a>
-            </div>
-        </div>
+        <?= render_top_bar($currentUser, $isStaff, $isAdmin, '<a href="staff_reservations" class="btn btn-outline-secondary btn-sm">Back to all bookings</a>') ?>
 
         <div class="card mb-3">
             <div class="card-body">

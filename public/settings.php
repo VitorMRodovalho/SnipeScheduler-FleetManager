@@ -654,16 +654,7 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
 
         <?= layout_render_nav($active, $isStaff, $isAdmin) ?>
 
-        <div class="top-bar mb-3">
-            <div class="top-bar-user">
-                Logged in as:
-                <strong><?= h(trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''))) ?></strong>
-                (<?= h($currentUser['email'] ?? '') ?>)
-            </div>
-            <div class="top-bar-actions">
-                <a href="logout" class="btn btn-link btn-sm">Log out</a>
-            </div>
-        </div>
+        <?= render_top_bar($currentUser, $isStaff, $isAdmin) ?>
 
         <?php if ($messages): ?>
             <div class="alert alert-success">

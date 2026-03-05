@@ -96,21 +96,7 @@ $userName = trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_
             
             <?= layout_render_nav($active, $isStaff, $isAdmin) ?>
             
-            <div class="top-bar mb-3">
-                <div class="top-bar-user">
-                    <span class="text-muted">Logged in as:</span>
-                    <strong><?= h($userName) ?></strong>
-                    <span class="text-muted">(<?= h($currentUser['email'] ?? '') ?>)</span>
-                    <?php if ($isAdmin): ?>
-                        <span class="badge bg-danger ms-2">Admin</span>
-                    <?php endif; ?>
-                </div>
-                <div class="top-bar-actions">
-                    <a href="settings" class="btn btn-outline-secondary btn-sm me-2">
-                        <i class="bi bi-arrow-left me-1"></i>Back to Settings
-                    </a>
-                    <a href="logout" class="btn btn-outline-secondary btn-sm">Log out</a>
-                </div>
+        <?= render_top_bar($currentUser, $isStaff, $isAdmin, '<a href="settings" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Back to Settings</a>') ?>
             </div>
             
             <?php if ($error): ?>

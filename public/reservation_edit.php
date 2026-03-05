@@ -437,18 +437,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <?= layout_render_nav($active, $isStaff, $isAdmin) ?>
 
-        <div class="top-bar mb-3">
-            <div class="top-bar-user">
-                Logged in as:
-                <strong><?= h(trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''))) ?></strong>
-                (<?= h($currentUser['email'] ?? '') ?>)
-            </div>
-            <div class="top-bar-actions">
-                <?php $backLabel = $fromMy ? 'Back to My Reservations' : 'Back to reservations'; ?>
-                <a href="<?= h($actionUrl) ?>" class="btn btn-outline-secondary btn-sm"><?= h($backLabel) ?></a>
-                <a href="logout" class="btn btn-link btn-sm">Log out</a>
-            </div>
-        </div>
+        <?php $backLabel = $fromMy ? 'Back to My Reservations' : 'Back to reservations'; ?>
+        <?= render_top_bar($currentUser, $isStaff, $isAdmin, '<a href="' . h($actionUrl) . '" class="btn btn-outline-secondary btn-sm">' . h($backLabel) . '</a>') ?>
 
         <?php if (!empty($errors)): ?>
             <div class="alert alert-danger">

@@ -161,15 +161,7 @@ foreach ($allUsers as $user) {
         </div>
         <?= layout_render_nav($active, $isStaff, $isAdmin) ?>
 
-        <!-- User Info -->
-        <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-light rounded">
-            <div>
-                <span class="text-muted">Logged in as:</span> 
-                <strong><?= h($userName) ?></strong> 
-                <span class="text-muted">(<?= h($userEmail) ?>)</span>
-            </div>
-            <a href="logout" class="text-decoration-none">Log out</a>
-        </div>
+        <?= render_top_bar($currentUser, $isStaff, $isAdmin) ?>
 
 	<!-- Admin Tabs -->
         <ul class="nav nav-tabs reservations-subtabs mb-3">

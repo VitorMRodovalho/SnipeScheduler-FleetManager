@@ -185,19 +185,7 @@ if (!empty($basket)) {
 
         <?= layout_render_nav($active, $isStaff, $isAdmin) ?>
 
-        <div class="top-bar mb-3">
-            <div class="top-bar-user">
-                Logged in as:
-                <strong><?= h(trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''))) ?></strong>
-                (<?= h($currentUser['email'] ?? '') ?>)
-            </div>
-            <div class="top-bar-actions">
-                <a href="<?= h($catalogueBackUrl) ?>" class="btn btn-outline-primary">
-                    Back to catalogue
-                </a>
-                <a href="logout" class="btn btn-link btn-sm">Log out</a>
-            </div>
-        </div>
+        <?= render_top_bar($currentUser, $isStaff, $isAdmin, '<a href="' . h($catalogueBackUrl) . '" class="btn btn-outline-secondary btn-sm">Back to catalogue</a>') ?>
 
         <?php if ($errorMsg): ?>
             <div class="alert alert-danger">

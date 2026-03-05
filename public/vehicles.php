@@ -199,14 +199,7 @@ $vehicles = get_fleet_vehicles(200);
         </div>
         <?= layout_render_nav($active, $isStaff, $isAdmin) ?>
 
-        <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-light rounded">
-            <div>
-                <span class="text-muted">Logged in as:</span>
-                <strong><?= h($userName) ?></strong>
-                <span class="text-muted">(<?= h($userEmail) ?>)</span>
-            </div>
-            <a href="logout" class="text-decoration-none">Log out</a>
-        </div>
+        <?= render_top_bar($currentUser, $isStaff, $isAdmin) ?>
 
         <ul class="nav nav-tabs reservations-subtabs mb-3">
             <li class="nav-item"><a class="nav-link active" href="vehicles">Vehicles</a></li>

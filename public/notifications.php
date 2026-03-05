@@ -376,21 +376,7 @@ Fleet Management System',
                 <?php endif; ?>
             </ul>
 
-            <div class="top-bar mb-3">
-                <div class="top-bar-user">
-                    <span class="text-muted">Logged in as:</span>
-                    <strong><?= h($userName) ?></strong>
-                    <span class="text-muted">(<?= h($currentUser['email'] ?? '') ?>)</span>
-                    <?php if ($isAdmin): ?>
-                        <span class="badge bg-danger ms-2">Admin</span>
-                    <?php elseif ($isStaff): ?>
-                        <span class="badge bg-primary ms-2">Staff</span>
-                    <?php endif; ?>
-                </div>
-                <div class="top-bar-actions">
-                    <a href="logout" class="btn btn-outline-secondary btn-sm">Log out</a>
-                </div>
-            </div>
+        <?= render_top_bar($currentUser, $isStaff, $isAdmin) ?>
 
             <?php if ($error): ?>
                 <div class="alert alert-danger alert-dismissible fade show">
