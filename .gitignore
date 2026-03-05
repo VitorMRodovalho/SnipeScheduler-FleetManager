@@ -30,5 +30,8 @@ node_modules/
 
 # Project context (contains sensitive internal data)
 docs/PROJECT_CONTEXT.md
-public/vehicle_reserve.php.bak*
 config/security_terms.json
+
+# Backup files
+*.bak
+*.bak.*

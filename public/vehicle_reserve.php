@@ -12,6 +12,7 @@ require_once SRC_PATH . '/snipeit_client.php';
 require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/layout.php';
 require_once SRC_PATH . '/email_service.php';
+require_once SRC_PATH . '/notification_service.php';
 require_once SRC_PATH . '/reservation_validator.php';
 require_once SRC_PATH . '/business_days.php';
 
@@ -242,8 +243,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_reservation'])
 
                     $successMsg = $isVip ? 'Reservation created and auto-approved!' : 'Reservation submitted for approval.';
 
-                    // Send email notifications
-                    $emailService = get_email_service($pdo);
+                    // Send notifications (email and/or Teams per event channel settings)
                     $reservationData = [
                         'user_name' => $userName,
                         'user_email' => $userEmail,
@@ -254,9 +254,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_reservation'])
                     ];
 
                     if ($isVip) {
-                        $emailService->notifyAutoApproved($reservationData);
+                        NotificationService::fire('reservation_approved', array_merge($reservationData, ['approver' => 'System (Auto-Approved)']), $pdo);
                     } else {
-                        $emailService->notifyNewReservation($reservationData);
+                        NotificationService::fire('reservation_submitted', $reservationData, $pdo);
                     }
 
                     header('Location: my_bookings?success=' . urlencode($successMsg));

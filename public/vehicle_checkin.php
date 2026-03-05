@@ -134,13 +134,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $asset && empty($error)) {
             
             $newStatus = $needsMaintenance ? 'maintenance_required' : 'completed';
             $stmt = $pdo->prepare("UPDATE reservations SET status = ?, checkin_form_data = ?, maintenance_flag = ?, maintenance_notes = ? WHERE id = ?");
-// Send checkin receipt email
-            $emailService = get_email_service($pdo);
-            $emailService->notifyCheckin($reservation, $mileage, $needsMaintenance);
-            
+// Send checkin notifications (email and/or Teams per event channel settings)
+            NotificationService::fire('vehicle_checked_in', array_merge($reservation, ['mileage' => $mileage, 'maintenance_flag' => $needsMaintenance]), $pdo);
+
             // If maintenance flagged, also notify staff
             if ($needsMaintenance) {
-                $emailService->notifyMaintenanceFlag($reservation, $maintenanceNotes);
+                NotificationService::fire('maintenance_flagged', array_merge($reservation, ['notes' => $maintenanceNotes]), $pdo);
             }            
 
 $stmt->execute([$newStatus, json_encode($inspectionData), $needsMaintenance ? 1 : 0, $maintenanceNotes, $reservationId]);

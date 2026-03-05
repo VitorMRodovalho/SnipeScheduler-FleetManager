@@ -216,45 +216,64 @@ class NotificationService
         array  $event_meta,
         $db
     ): void {
-        // The existing email_service functions expect specific parameters.
-        // We pass $context through; each function picks what it needs.
-        // This dispatch table maps event keys to existing email_service calls.
-        // Update this map if email_service method names differ in your codebase.
+        require_once SRC_PATH . '/email_service.php';
+        $svc = get_email_service($db);
 
-        $method_map = [
-            'reservation_submitted'       => 'sendReservationSubmitted',
-            'reservation_approved'        => 'sendReservationApproved',
-            'reservation_rejected'        => 'sendReservationRejected',
-            'vehicle_checked_out'         => 'sendVehicleCheckedOut',
-            'vehicle_checked_in'          => 'sendVehicleCheckedIn',
-            'maintenance_flagged'         => 'sendMaintenanceFlagged',
-            'pickup_reminder'             => 'sendPickupReminder',
-            'return_overdue'              => 'sendReturnOverdue',
-            'reservation_cancelled'       => 'sendReservationCancelled',
-            'mileage_anomaly'             => 'sendMileageAnomaly',
-            'compliance_expiring'         => 'sendComplianceExpiring',
-            'reservation_redirected'      => 'sendReservationRedirected',
-            'reservation_redirect_failed' => 'sendReservationRedirectFailed',
-            'overdue_redirect_staff'      => 'sendOverdueRedirectStaff',
-        ];
-
-        if (!isset($method_map[$event_key])) {
-            error_log("[NotificationService] No email method mapped for '{$event_key}'");
-            return;
-        }
-
-        $method = $method_map[$event_key];
-
-        if (!function_exists($method) && !method_exists('EmailService', $method)) {
-            error_log("[NotificationService] Email method '{$method}' not found.");
-            return;
-        }
-
-        // Call via global function or static class method depending on email_service structure
-        if (function_exists($method)) {
-            $method($context, $db);
-        } else {
-            EmailService::$method($context, $db);
+        switch ($event_key) {
+            case 'reservation_submitted':
+                $svc->notifyNewReservation($context);
+                break;
+            case 'reservation_approved':
+                $svc->notifyApproved($context, $context['approver'] ?? '');
+                break;
+            case 'reservation_rejected':
+                $svc->notifyRejected($context, $context['approver'] ?? '', $context['reason'] ?? '');
+                break;
+            case 'vehicle_checked_out':
+                $svc->notifyCheckout($context, $context['mileage'] ?? 'N/A');
+                break;
+            case 'vehicle_checked_in':
+                $svc->notifyCheckin($context, $context['mileage'] ?? 'N/A', !empty($context['maintenance_flag']));
+                break;
+            case 'maintenance_flagged':
+                $svc->notifyMaintenanceFlag($context, $context['notes'] ?? '');
+                break;
+            case 'pickup_reminder':
+                $svc->notifyPickupReminder($context);
+                break;
+            case 'return_overdue':
+                $svc->notifyOverdue($context);
+                break;
+            case 'reservation_cancelled':
+                $svc->notifyCancellation($context, $context['cancelled_by'] ?? 'System');
+                break;
+            case 'reservation_redirected':
+                $svc->notifyReservationRedirected($context, $context['new_vehicle'] ?? [], $context['reason'] ?? '');
+                break;
+            case 'reservation_redirect_failed':
+                $svc->notifyRedirectFailed($context, $context['reason'] ?? '');
+                break;
+            case 'overdue_redirect_staff':
+                $svc->notifyOverdueRedirectStaff($context, $context['action'] ?? 'redirected');
+                break;
+            case 'mileage_anomaly':
+                $svc->notifyMileageAnomaly(
+                    $context,
+                    (int)($context['reported_mileage'] ?? 0),
+                    (int)($context['previous_mileage'] ?? 0),
+                    $context['reason'] ?? ''
+                );
+                break;
+            case 'compliance_expiring':
+                $svc->notifyComplianceExpiring(
+                    $context,
+                    $context['compliance_type'] ?? '',
+                    $context['expiry_date'] ?? '',
+                    (int)($context['days_remaining'] ?? 0)
+                );
+                break;
+            default:
+                error_log("[NotificationService] No email dispatch for '{$event_key}'");
         }
     }
 

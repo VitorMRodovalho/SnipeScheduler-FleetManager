@@ -11,6 +11,7 @@ require_once SRC_PATH . '/snipeit_client.php';
 require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/layout.php';
 require_once SRC_PATH . '/email_service.php';
+require_once SRC_PATH . '/notification_service.php';
 
 $active = basename($_SERVER['PHP_SELF']);
 $isAdmin = !empty($currentUser['is_admin']);
@@ -61,8 +62,7 @@ if ($action === 'approve') {
                 // Status will change to VEH-In Service on actual checkout
                 
 // Send approval email
-                $emailService = get_email_service($pdo);
-                $emailService->notifyApproved($reservation, $userName);               
+                NotificationService::fire('reservation_approved', array_merge($reservation, ['approver' => $userName]), $pdo);               
 
  $success = "Reservation #{$reservationId} has been approved.";
 

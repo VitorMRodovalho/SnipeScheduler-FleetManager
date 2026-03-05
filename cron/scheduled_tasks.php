@@ -19,6 +19,7 @@ require_once __DIR__ . '/../src/bootstrap.php';
 require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/snipeit_client.php';
 require_once SRC_PATH . '/email_service.php';
+require_once SRC_PATH . '/notification_service.php';
 
 // Get config
 $config = require CONFIG_PATH . '/config.php';
@@ -59,7 +60,7 @@ try {
         echo "  - Reservation #{$reservation['id']} for {$reservation['user_name']} ";
         echo "(pickup in {$reservation['minutes_until_start']} min)" . PHP_EOL;
         
-        $emailService->notifyPickupReminder($reservation);
+        NotificationService::fire('pickup_reminder', $reservation, $pdo);
         
         // Log notification
         $logStmt = $pdo->prepare("
@@ -102,7 +103,7 @@ try {
         echo "  - Reservation #{$reservation['id']} for {$reservation['user_name']} ";
         echo "({$reservation['minutes_overdue']} min overdue)" . PHP_EOL;
         
-        $emailService->notifyOverdue($reservation);
+        NotificationService::fire('return_overdue', $reservation, $pdo);
         
         // Log notification
         $logStmt = $pdo->prepare("
@@ -422,11 +423,13 @@ try {
             ]);
 
             // Notify requester about redirect
-            $emailService->notifyReservationRedirected($nextReservation, $alternateVehicle,
-                "The originally assigned vehicle ({$overdue['asset_name_cache']}) has not been returned on time.");
+            NotificationService::fire('reservation_redirected', array_merge($nextReservation, [
+                'new_vehicle' => $alternateVehicle,
+                'reason'      => "The originally assigned vehicle ({$overdue['asset_name_cache']}) has not been returned on time.",
+            ]), $pdo);
 
             // Notify staff about the overdue situation
-            $emailService->notifyOverdueRedirectStaff($overdue, 'redirected');
+            NotificationService::fire('overdue_redirect_staff', array_merge($overdue, ['action' => 'redirected']), $pdo);
 
         } else {
             // Step 4B: No alternate — cancel the next reservation
@@ -450,11 +453,12 @@ try {
             ]);
 
             // Notify requester about cancellation
-            $emailService->notifyRedirectFailed($nextReservation,
-                "The assigned vehicle ({$overdue['asset_name_cache']}) has not been returned and no alternate vehicle is available at your location.");
+            NotificationService::fire('reservation_redirect_failed', array_merge($nextReservation, [
+                'reason' => "The assigned vehicle ({$overdue['asset_name_cache']}) has not been returned and no alternate vehicle is available at your location.",
+            ]), $pdo);
 
             // Notify staff
-            $emailService->notifyOverdueRedirectStaff($overdue, 'cancelled');
+            NotificationService::fire('overdue_redirect_staff', array_merge($overdue, ['action' => 'cancelled']), $pdo);
         }
 
         // Log that we processed this

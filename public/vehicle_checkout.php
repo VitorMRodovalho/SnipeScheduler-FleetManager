@@ -9,6 +9,7 @@ require_once SRC_PATH . '/snipeit_client.php';
 require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/layout.php';
 require_once SRC_PATH . '/email_service.php';
+require_once SRC_PATH . '/notification_service.php';
 
 $active = basename($_SERVER['PHP_SELF']);
 $isAdmin = !empty($currentUser['is_admin']);
@@ -113,8 +114,7 @@ if (!$snipeUserId) {
             checkout_asset_to_user($reservation['asset_id'], $snipeUserId, $note, $expectedCheckin);
             $stmt = $pdo->prepare("UPDATE reservations SET status = 'confirmed', checkout_form_data = ? WHERE id = ?");
 // Send checkout receipt email
-            $emailService = get_email_service($pdo);
-            $emailService->notifyCheckout($reservation, $mileage);            
+            NotificationService::fire('vehicle_checked_out', array_merge($reservation, ['mileage' => $mileage]), $pdo);            
 $stmt->execute([json_encode($inspectionData), $reservationId]);
             header('Location: my_bookings?success=' . urlencode('Vehicle checked out successfully at ' . $checkoutTime));
             exit;
