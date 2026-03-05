@@ -2,7 +2,7 @@
 
 A comprehensive fleet vehicle management system built on top of [Snipe-IT](https://snipeitapp.com/), designed for enterprise fleet operations with reservation scheduling, maintenance tracking, and compliance management.
 
-> **Current Version:** v1.3.5 · [Changelog](CHANGELOG.md) · [Releases](https://github.com/VitorMRodovalho/SnipeScheduler-FleetManager/releases)
+> **Current Version:** v1.4.0 · [Changelog](CHANGELOG.md) · [Releases](https://github.com/VitorMRodovalho/SnipeScheduler-FleetManager/releases)
 
 ## Why This Project?
 
@@ -32,7 +32,7 @@ This project was born from a real need in **large-scale infrastructure programs*
 - 📅 **Book Vehicles** — Reserve vehicles in advance with pickup/return times
 - 📱 **Mobile-Friendly** — Responsive design with QR code scanning
 - ✅ **Digital Inspections** — Complete checkout/checkin forms on any device
-- 📧 **Email Notifications** — Confirmation, reminders, and approvals
+- 📧 **Email & Teams Notifications** — Confirmation, reminders, and approvals via email and/or Microsoft Teams Adaptive Cards
 - 📆 **Smart Booking Calendar** — Business day enforcement with holiday awareness; weekends, holidays, and blackouts grayed out
 
 ### For Fleet Staff
@@ -45,7 +45,8 @@ This project was born from a real need in **large-scale infrastructure programs*
 ### For Administrators
 
 - ⚙️ **Full Configuration** — LDAP/OAuth authentication, SMTP, custom fields
-- 🔔 **Notification Controls** — Configure who receives which emails
+- 🔔 **Notification Controls** — Configure recipients, delivery channel (Email / Teams / Both / Off) per event type
+- 💬 **Microsoft Teams Integration** — Deliver Adaptive Cards to Teams channels via Power Automate webhooks; webhook URLs managed securely by Super Admin
 - 📢 **Announcements** — Display system-wide notices with scheduling and urgency levels
 - 🔒 **Security Dashboard** — Monitor backup status, config permissions, and security headers
 - 📋 **Reservation Controls** — Set booking rules (min notice, max duration, blackouts)
@@ -72,7 +73,7 @@ This project was born from a real need in **large-scale infrastructure programs*
 │         │   - Reservation Management      │                  │
 │         │   - Inspection Forms            │                  │
 │         │   - Approval Workflow           │                  │
-│         │   - Email Notifications         │                  │
+│         │   - Email & Teams Notifications │                  │
 │         └────────────────┬────────────────┘                  │
 │                          │ API Calls                         │
 └──────────────────────────┼───────────────────────────────────┘
@@ -221,11 +222,11 @@ Permissions are managed through **Snipe-IT Groups**:
 
 ---
 
-### Email Notifications
+### Notifications
 
-![Email Notifications](docs/screenshots/notifications.png)
+![Notifications](docs/screenshots/notifications.png)
 
-*Configure email notifications per event type. Set recipients, customize templates, toggle SMTP settings, and view default templates.*
+*Configure notification delivery per event type. Each event can be set to Email, Microsoft Teams, Both, or Off. Fleet Admins see SMTP and Teams channel status cards, a split queue counter (email pending / Teams pending), and a per-event channel selector. Message templates are shared between email and Teams Adaptive Cards — one edit updates both channels.*
 
 **Access:** Fleet Admin
 
@@ -265,7 +266,7 @@ Permissions are managed through **Snipe-IT Groups**:
 
 ![Settings](docs/screenshots/settings.png)
 
-*Full system configuration including authentication providers (Microsoft OAuth, Google OAuth), SMTP settings, reservation controls, blackout period management, and system preferences.*
+*Full system configuration including authentication providers (Microsoft OAuth, Google OAuth), SMTP settings, Microsoft Teams webhook URLs (masked, reveal-on-demand), reservation controls, blackout period management, and system preferences. The Teams Integration card includes inline setup instructions for creating Power Automate HTTP trigger flows — Fleet Admins can enable/disable Teams and test delivery, but webhook URLs are only visible to Super Admins.*
 
 **Access:** Super Admin only
 
