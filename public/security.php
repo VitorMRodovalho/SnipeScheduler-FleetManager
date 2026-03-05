@@ -122,6 +122,7 @@ $totalChecks = count($checkResults);
             </div>
             
             <?= layout_render_nav($active, $isStaff, $isAdmin) ?>
+            <?= render_top_bar($currentUser, $isStaff, $isAdmin) ?>
             
             <ul class="nav nav-tabs reservations-subtabs mb-3">
                 <li class="nav-item">
@@ -148,7 +149,6 @@ $totalChecks = count($checkResults);
                 </li>
             </ul>
             
-        <?= render_top_bar($currentUser, $isStaff, $isAdmin) ?>
             
             <div class="row">
                 <!-- Security Status -->
