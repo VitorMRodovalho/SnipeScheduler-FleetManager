@@ -1483,7 +1483,7 @@ function create_maintenance(array $data): ?array
         'asset_id' => $data['asset_id'],
         'supplier_id' => $data['supplier_id'] ?? null,
         'asset_maintenance_type' => $data['asset_maintenance_type'] ?? 'Maintenance',
-        'title' => $data['title'] ?? 'Scheduled Maintenance',
+        'name' => $data['title'] ?? 'Scheduled Maintenance',
         'start_date' => $data['start_date'] ?? date('Y-m-d'),
         'completion_date' => $data['completion_date'] ?? $data['start_date'] ?? date('Y-m-d'),
         'cost' => $data['cost'] ?? 0,

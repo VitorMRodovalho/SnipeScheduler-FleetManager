@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.4.0 (2026-03-04)
+
+Microsoft Teams notification channel — deliver Adaptive Cards to Teams via Power Automate webhooks; unified NotificationService dispatcher; per-event channel selector (Email/Teams/Both/Off); Super Admin webhook URL management with masked fields in Settings; Fleet Admin status-only view on Notifications page; async queue delivery with cron processing
+
 ## v1.3.6 (2026-03-04)
 
 Configurable asset tag prefix, URL cleanup & security hardening

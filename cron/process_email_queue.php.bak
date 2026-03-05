@@ -12,8 +12,6 @@ if (php_sapi_name() !== 'cli') {
 require_once __DIR__ . '/../src/bootstrap.php';
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once SRC_PATH . '/db.php';
-require_once SRC_PATH . '/teams_service.php';
-require_once SRC_PATH . '/notification_service.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
@@ -21,56 +19,10 @@ use PHPMailer\PHPMailer\Exception;
 $config = require CONFIG_PATH . '/config.php';
 $smtpConfig = $config['smtp'];
 
-
-// Load system_settings once per run (needed for Teams webhook URLs)
-$system_settings = NotificationService::loadSystemSettings($pdo);
-
-// ---------------------------------------------------------------
-// TEAMS: process pending Teams notifications
-// ---------------------------------------------------------------
-$teams_stmt = $pdo->query("
-    SELECT * FROM email_queue
-    WHERE channel = 'teams' AND status = 'pending'
-    ORDER BY created_at ASC
-    LIMIT 10
-");
-$teams_queue = $teams_stmt->fetchAll(PDO::FETCH_ASSOC);
-
-if (!empty($teams_queue)) {
-    echo "Processing " . count($teams_queue) . " Teams notification(s)...\n\n";
-    $teams_sent   = 0;
-    $teams_failed = 0;
-
-    foreach ($teams_queue as $row) {
-        echo "Teams #{$row['id']}: {$row['subject']} [{$row['teams_audience']}]... ";
-
-        $pdo->prepare("UPDATE email_queue SET status = 'processing' WHERE id = ?")
-            ->execute([$row['id']]);
-
-        $success = TeamsService::deliver($row, $system_settings);
-
-        if ($success) {
-            $pdo->prepare("UPDATE email_queue SET status = 'sent', sent_at = NOW() WHERE id = ?")
-                ->execute([$row['id']]);
-            echo "Sent\n";
-            $teams_sent++;
-        } else {
-            $pdo->prepare("UPDATE email_queue SET status = 'failed', error_message = 'TeamsService::deliver returned false' WHERE id = ?")
-                ->execute([$row['id']]);
-            echo "Failed\n";
-            $teams_failed++;
-        }
-    }
-
-    echo "\n=== Teams Summary ===\n";
-    echo "Sent: $teams_sent\n";
-    echo "Failed: $teams_failed\n\n";
-}
-
 // Get pending emails (max 10 per run to avoid timeout)
 $stmt = $pdo->query("
     SELECT * FROM email_queue 
-    WHERE channel = 'email' AND status = 'pending' AND attempts < 3
+    WHERE status = 'pending' AND attempts < 3
     ORDER BY created_at ASC 
     LIMIT 10
 ");

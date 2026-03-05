@@ -10,8 +10,6 @@ require_once SRC_PATH . '/layout.php';
 require_once SRC_PATH . '/config_writer.php';
 require_once SRC_PATH . '/snipeit_client.php';
 require_once SRC_PATH . '/email.php';
-require_once SRC_PATH . '/notification_service.php';
-require_once SRC_PATH . '/db.php';
 
 $active  = basename($_SERVER['PHP_SELF']);
 $isAdmin = !empty($currentUser['is_admin']);
@@ -39,12 +37,6 @@ try {
     $errors[] = 'Config file missing – showing defaults from config.example.php.';
 }
 $loadedConfig = $config;
-
-// Load Teams webhook settings from system_settings (stored in DB, not config.php)
-$teamsRows = $pdo->query("SELECT setting_key, setting_value FROM system_settings WHERE setting_key LIKE 'teams_%'")->fetchAll(PDO::FETCH_KEY_PAIR);
-$teamsEnabled     = ($teamsRows['teams_webhook_enabled']       ?? '0') === '1';
-$teamsUrlFleetOps = $teamsRows['teams_webhook_url_fleet_ops']  ?? '';
-$teamsUrlAdmin    = $teamsRows['teams_webhook_url_admin']      ?? '';
 
 $dateFormatOptions = app_date_format_options();
 $timeFormatOptions = app_time_format_options();
@@ -491,33 +483,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } catch (Throwable $e) {
             $errors[] = 'SMTP test failed: ' . $e->getMessage();
         }
-    } elseif ($action === 'save_teams_config') {
-        $newEnabled   = isset($_POST['teams_webhook_enabled']) ? '1' : '0';
-        $newFleetOps  = trim($_POST['teams_webhook_url_fleet_ops'] ?? '');
-        $newAdmin     = trim($_POST['teams_webhook_url_admin']     ?? '');
-
-        $urlError = false;
-        if (!empty($newFleetOps) && !filter_var($newFleetOps, FILTER_VALIDATE_URL)) {
-            $errors[] = 'Fleet Ops webhook URL is not a valid URL.';
-            $urlError = true;
-        }
-        if (!empty($newAdmin) && !filter_var($newAdmin, FILTER_VALIDATE_URL)) {
-            $errors[] = 'Admin webhook URL is not a valid URL.';
-            $urlError = true;
-        }
-
-        if (!$urlError) {
-            $stmt = $pdo->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES (?,?) ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value)");
-            $stmt->execute(['teams_webhook_enabled',       $newEnabled]);
-            // Only update URL if a value was submitted (blank = keep existing)
-            if ($newFleetOps !== '') $stmt->execute(['teams_webhook_url_fleet_ops', $newFleetOps]);
-            if ($newAdmin     !== '') $stmt->execute(['teams_webhook_url_admin',     $newAdmin]);
-            $messages[] = 'Teams configuration saved.';
-            // Reload
-            $teamsEnabled     = $newEnabled === '1';
-            if ($newFleetOps !== '') $teamsUrlFleetOps = $newFleetOps;
-            if ($newAdmin     !== '') $teamsUrlAdmin    = $newAdmin;
-        }
     } else {
         $content = layout_build_config_file($newConfig, [
             'SNIPEIT_API_PAGE_LIMIT'   => $pageLimit,
@@ -637,7 +602,7 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
     <title>Admin – SnipeScheduler</title>
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="assets/style.css?v=1.4.0">
+    <link rel="stylesheet" href="assets/style.css?v=1.3.6">
     <link rel="stylesheet" href="/booking/css/mobile.css">
     <?= layout_theme_styles($config) ?>
 </head>
@@ -999,128 +964,6 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
                 </div>
             </div>
 
-            <!-- Microsoft Teams Integration -->
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title mb-1" style="color:#6264a7;">
-                            <i class="bi bi-microsoft-teams me-2"></i>Microsoft Teams Integration
-                        </h5>
-                        <p class="text-muted small mb-3">
-                            Deliver notification cards to Teams channels via Power Automate HTTP trigger or Incoming Webhook URLs.
-                            Webhook URLs contain authentication tokens — treat them as passwords.
-                            Fleet Admins can enable/disable notifications and select per-event channels on the
-                            <a href="notifications">Notifications</a> page, but cannot view these URLs.
-                        </p>
-
-                        <div class="alert alert-light border small mb-3">
-                            <strong>How to get a webhook URL (Power Automate):</strong><br>
-                            1. Open <a href="https://make.powerautomate.com" target="_blank" rel="noopener">Power Automate</a>
-                            and create a new <strong>Instant cloud flow</strong>.<br>
-                            2. Add trigger: <strong>When an HTTP request is received</strong> — no schema needed.<br>
-                            3. Add action: <strong>Post adaptive card in a chat or channel</strong> → choose your Teams channel.<br>
-                            4. In the card body field enter: <code>@{triggerBody()?['attachments'][0]['content']}</code><br>
-                            5. Save the flow and copy the <strong>HTTP POST URL</strong> — paste it below.<br>
-                            <span class="text-muted">Each channel requires its own flow and its own URL. The URL contains a
-                            <code>sig=</code> token that authorises delivery — keep it secret.</span>
-                        </div>
-
-                        <form method="post" id="teams-settings-form">
-                            <?= csrf_field() ?>
-                            <input type="hidden" name="action" value="save_teams_config">
-
-                            <div class="row g-3 mb-3">
-                                <div class="col-12">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox"
-                                               name="teams_webhook_enabled" id="teams_webhook_enabled"
-                                               value="1" <?= $teamsEnabled ? 'checked' : '' ?>>
-                                        <label class="form-check-label fw-semibold" for="teams_webhook_enabled">
-                                            Enable Teams Notifications
-                                        </label>
-                                    </div>
-                                    <div class="form-text">
-                                        When enabled, events configured for "Teams" or "Both" on the Notifications page
-                                        will deliver cards to the channels below.
-                                    </div>
-                                </div>
-
-                                <!-- Fleet Ops URL -->
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold">
-                                        Fleet Ops Channel URL
-                                        <?php if ($teamsUrlFleetOps): ?>
-                                            <span class="badge bg-success ms-1">Configured</span>
-                                        <?php else: ?>
-                                            <span class="badge bg-secondary ms-1">Not set</span>
-                                        <?php endif; ?>
-                                    </label>
-                                    <div class="form-text mb-1">
-                                        Receives: checkout, check-in, reservations, reminders, overdue alerts.
-                                    </div>
-                                    <div class="input-group">
-                                        <input type="password"
-                                               name="teams_webhook_url_fleet_ops"
-                                               id="teams_url_fleet_ops"
-                                               class="form-control font-monospace"
-                                               placeholder="<?= $teamsUrlFleetOps ? 'Leave blank to keep existing URL' : 'https://prod-xx.eastus.logic.azure.com/...' ?>"
-                                               autocomplete="off">
-                                        <button type="button" class="btn btn-outline-secondary"
-                                                onclick="toggleUrlReveal('teams_url_fleet_ops', this)">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-outline-primary"
-                                                onclick="testTeamsFromSettings('fleet_ops')">
-                                            Test
-                                        </button>
-                                    </div>
-                                    <div id="teams-test-fleet_ops" class="mt-1 small"></div>
-                                </div>
-
-                                <!-- Admin URL -->
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold">
-                                        Admin Channel URL
-                                        <?php if ($teamsUrlAdmin): ?>
-                                            <span class="badge bg-success ms-1">Configured</span>
-                                        <?php else: ?>
-                                            <span class="badge bg-secondary ms-1">Not set</span>
-                                        <?php endif; ?>
-                                    </label>
-                                    <div class="form-text mb-1">
-                                        Receives: mileage anomalies, compliance expiry, admin-only alerts.
-                                    </div>
-                                    <div class="input-group">
-                                        <input type="password"
-                                               name="teams_webhook_url_admin"
-                                               id="teams_url_admin"
-                                               class="form-control font-monospace"
-                                               placeholder="<?= $teamsUrlAdmin ? 'Leave blank to keep existing URL' : 'https://prod-xx.eastus.logic.azure.com/...' ?>"
-                                               autocomplete="off">
-                                        <button type="button" class="btn btn-outline-secondary"
-                                                onclick="toggleUrlReveal('teams_url_admin', this)">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-outline-primary"
-                                                onclick="testTeamsFromSettings('admin')">
-                                            Test
-                                        </button>
-                                    </div>
-                                    <div id="teams-test-admin" class="mt-1 small"></div>
-                                </div>
-                            </div>
-
-                            <button type="submit" class="btn btn-primary btn-sm">
-                                Save Teams Configuration
-                            </button>
-                            <span class="text-muted small ms-2">
-                                Saved separately from main settings. Leave URL blank to keep existing value.
-                            </span>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
             <div class="col-12">
                 <div class="card">
                     <div class="card-body">
@@ -1320,47 +1163,6 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
 </div>
 <?php layout_footer(); ?>
 <script>
-function toggleUrlReveal(inputId, btn) {
-    var inp = document.getElementById(inputId);
-    if (!inp) return;
-    if (inp.type === 'password') {
-        inp.type = 'text';
-        btn.innerHTML = '<i class="bi bi-eye-slash"></i>';
-    } else {
-        inp.type = 'password';
-        btn.innerHTML = '<i class="bi bi-eye"></i>';
-    }
-}
-
-function testTeamsFromSettings(audience) {
-    var resultEl = document.getElementById('teams-test-' + audience);
-    resultEl.textContent = 'Sending test card...';
-    resultEl.className = 'mt-1 small text-muted';
-
-    fetch('/booking/api/test_teams_webhook', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            audience: audience,
-            csrf_token: document.querySelector('[name="csrf_token"]').value
-        })
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-        if (data.success) {
-            resultEl.textContent = 'Test card sent — check Teams.';
-            resultEl.className = 'mt-1 small text-success';
-        } else {
-            resultEl.textContent = 'Failed: ' + (data.error || 'Unknown error');
-            resultEl.className = 'mt-1 small text-danger';
-        }
-    })
-    .catch(function() {
-        resultEl.textContent = 'Request failed. Check console.';
-        resultEl.className = 'mt-1 small text-danger';
-    });
-}
-
 (function () {
     const form = document.getElementById('settings-form');
     if (!form) return;
