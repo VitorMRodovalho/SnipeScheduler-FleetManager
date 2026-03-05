@@ -114,6 +114,9 @@ $stmt->execute();
 $showAnnouncements = $stmt->fetchColumn() !== '0';
 
 if ($showAnnouncements) {
+    // 5a. Deactivate previous release announcements
+    $pdo->exec("UPDATE announcements SET is_active = 0 WHERE is_system = 1 AND system_type = 'release' AND is_active = 1");
+
     // 5. Create system announcement
     $title = "New Release: v{$newVersion}";
     $content = '<p><strong>Version ' . $newVersion . '</strong> is now available!</p>' . "\n" . '<p>' . htmlspecialchars($releaseNotes) . '</p>' . "\n" . '<p><em>See the full changelog at <a href="https://github.com/VitorMRodovalho/SnipeScheduler-FleetManager/releases/tag/v' . $newVersion . '" target="_blank">GitHub Release v' . $newVersion . '</a></em></p>'; 

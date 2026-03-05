@@ -20,11 +20,18 @@ function get_active_announcements(string $userEmail, PDO $pdo): array
         AND a.start_datetime <= ?
         AND a.end_datetime >= ?
         AND (a.show_once = 0 OR d.id IS NULL)
+        AND (
+            a.is_system = 0
+            OR a.created_at >= COALESCE(
+                (SELECT created_at FROM users WHERE email = ?),
+                a.created_at
+            )
+        )
         ORDER BY a.created_at DESC
     ";
     
     $stmt = $pdo->prepare($sql);
-    $stmt->execute([$userEmail, $now, $now]);
+    $stmt->execute([$userEmail, $now, $now, $userEmail]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
