@@ -15,6 +15,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 require_once SRC_PATH . '/layout.php';
 require_once SRC_PATH . '/db.php';
+require_once SRC_PATH . '/activity_log.php';
+// Load training settings
+$stmtTS = $pdo->prepare("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('training_required', 'training_validity_months')");
+$stmtTS->execute();
+$trainingSettings = [];
+while ($row = $stmtTS->fetch()) {
+    $trainingSettings[$row['setting_key']] = $row['setting_value'];
+}
+$trainingRequired = ($trainingSettings['training_required'] ?? '1') === '1';
+$trainingValidityMonths = (int)($trainingSettings['training_validity_months'] ?? 12);
 require_once SRC_PATH . '/business_days.php';
 
 $active = basename($_SERVER['PHP_SELF']);
@@ -28,6 +38,15 @@ if (!$isAdmin) {
 }
 
 $userName = trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''));
+// Load training settings
+$stmtTS = $pdo->prepare("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('training_required', 'training_validity_months')");
+$stmtTS->execute();
+$trainingSettings = [];
+while ($row = $stmtTS->fetch()) {
+    $trainingSettings[$row['setting_key']] = $row['setting_value'];
+}
+$trainingRequired = ($trainingSettings['training_required'] ?? '1') === '1';
+$trainingValidityMonths = (int)($trainingSettings['training_validity_months'] ?? 12);
 $messages = [];
 $errors = [];
 
@@ -71,6 +90,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($action === 'delete_holiday' && !empty($_POST['delete_holiday_id'])) {
             delete_custom_holiday((int)$_POST['delete_holiday_id'], $pdo);
             $messages[] = 'Custom holiday deleted.';
+        }
+
+if ($action === 'save_training_settings') {
+            $trainingRequired = isset($_POST['training_required']) ? '1' : '0';
+            $validityMonths = (int)($_POST['training_validity_months'] ?? 12);
+            if (!in_array($validityMonths, [0, 6, 12, 24])) $validityMonths = 12;
+
+            $stmtSave = $pdo->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
+            $stmtSave->execute(['training_required', $trainingRequired]);
+            $stmtSave->execute(['training_validity_months', (string)$validityMonths]);
+
+            activity_log_event('training_settings', 'Training settings updated', [
+                'metadata' => ['required' => $trainingRequired, 'validity_months' => $validityMonths],
+            ]);
+            $messages[] = 'Driver training settings saved.';
         }
 
     } catch (Exception $e) {
@@ -333,6 +367,61 @@ $customHolidays = array_filter($allHolidays, fn($h) => $h['holiday_type'] === 'c
                     </div>
                 </div>
             </div>
+
+<!-- Driver Training Settings -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning bg-opacity-25">
+                    <h5 class="mb-0"><i class="bi bi-mortarboard me-2"></i>Driver Training Requirements</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">
+                        When enabled, drivers must have valid training records to reserve vehicles.
+                        Disabling this removes the training gate but <strong>preserves all training records</strong> — 
+                        re-enabling will restore enforcement with existing data intact.
+                    </p>
+                </div>
+            </div>
+
+            <form method="post">
+                <?= csrf_field() ?>
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="trainingRequired" name="training_required" value="1"
+                                        <?= $trainingRequired ? 'checked' : '' ?>>
+                                    <label class="form-check-label fw-bold" for="trainingRequired">
+                                        Require Driver Safety Training
+                                    </label>
+                                </div>
+                                <small class="text-muted">
+                                    <?php if ($trainingRequired): ?>
+                                        <span class="text-success"><i class="bi bi-check-circle me-1"></i>Training enforcement is ACTIVE</span>
+                                    <?php else: ?>
+                                        <span class="text-danger"><i class="bi bi-x-circle me-1"></i>Training enforcement is DISABLED — all drivers can book</span>
+                                    <?php endif; ?>
+                                </small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold" for="validityMonths">Training Validity Period</label>
+                                <select class="form-select" id="validityMonths" name="training_validity_months">
+                                    <option value="0" <?= $trainingValidityMonths === 0 ? 'selected' : '' ?>>No expiration (manual management only)</option>
+                                    <option value="6" <?= $trainingValidityMonths === 6 ? 'selected' : '' ?>>6 months</option>
+                                    <option value="12" <?= $trainingValidityMonths === 12 ? 'selected' : '' ?>>12 months (annual renewal)</option>
+                                    <option value="24" <?= $trainingValidityMonths === 24 ? 'selected' : '' ?>>24 months</option>
+                                </select>
+                                <small class="text-muted">After this period, drivers must renew their training to continue booking.</small>
+                            </div>
+                        </div>
+                        <div class="mt-3 text-end">
+                            <button type="submit" name="action" value="save_training_settings" class="btn btn-primary">
+                                <i class="bi bi-save me-1"></i>Save Training Settings
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
 
             <div class="d-flex justify-content-between">
                 <a href="blackouts" class="btn btn-outline-secondary">

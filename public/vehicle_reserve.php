@@ -120,22 +120,39 @@ $userEmail = $currentUser['email'] ?? '';
 $isVip = !empty($currentUser['is_vip']);
 
 // Check driver training completion status
-$trainingCompleted = false;
-if ($isStaff) {
-    // Staff and admin bypass training requirement
-    $trainingCompleted = true;
-} else {
-    $stmtTraining = $pdo->prepare("SELECT training_completed FROM users WHERE email = ?");
+$trainingCompleted = true;
+$trainingMessage = '';
+
+// Load global training settings
+$stmtTS = $pdo->prepare("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('training_required', 'training_validity_months')");
+$stmtTS->execute();
+$tSettings = [];
+while ($tRow = $stmtTS->fetch()) { $tSettings[$tRow['setting_key']] = $tRow['setting_value']; }
+$trainingRequired = ($tSettings['training_required'] ?? '1') === '1';
+$trainingValidityMonths = (int)($tSettings['training_validity_months'] ?? 12);
+
+if ($trainingRequired && !$isStaff) {
+    $stmtTraining = $pdo->prepare("SELECT training_completed, training_date FROM users WHERE email = ?");
     $stmtTraining->execute([$userEmail]);
     $trainingRow = $stmtTraining->fetch();
-    $trainingCompleted = !empty($trainingRow['training_completed']);
+
+    if (empty($trainingRow['training_completed'])) {
+        $trainingCompleted = false;
+        $trainingMessage = 'You must complete Driver Safety Training before reserving a vehicle. Please contact Fleet Staff for training verification.';
+    } elseif ($trainingValidityMonths > 0 && !empty($trainingRow['training_date'])) {
+        $trainingExpiry = date('Y-m-d', strtotime($trainingRow['training_date'] . " +{$trainingValidityMonths} months"));
+        if (date('Y-m-d') > $trainingExpiry) {
+            $trainingCompleted = false;
+            $trainingMessage = 'Your Driver Safety Training expired on ' . date('M j, Y', strtotime($trainingExpiry)) . '. Please contact Fleet Staff to renew your training.';
+        }
+    }
 }
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_reservation'])) {
     // Training gate: block untrained drivers from submitting
     if (!$trainingCompleted) {
-        $error = 'You must complete Driver Safety Training before reserving a vehicle. Please contact Fleet Staff for training verification.';
+        $error = $trainingMessage;
     }
 
     if (empty($error)) {
@@ -348,12 +365,11 @@ function get_location_name($locations, $id) {
 
         <?= render_top_bar($currentUser, $isStaff, $isAdmin) ?>
 
-            <?php if (!$trainingCompleted): ?>
+           <?php if (!$trainingCompleted): ?>
             <div class="alert alert-warning d-flex align-items-center mb-3">
                 <i class="bi bi-exclamation-triangle-fill me-2"></i>
                 <div>
-                    <strong>Training Required</strong> — You must complete Driver Safety Training before reserving a vehicle.
-                    Please contact Fleet Staff for training verification.
+                    <strong>Training Required</strong> — <?= h($trainingMessage) ?>
                 </div>
             </div>
             <?php endif; ?>

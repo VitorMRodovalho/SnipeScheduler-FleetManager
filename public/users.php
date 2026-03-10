@@ -96,14 +96,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $userEmail = trim($_POST['user_email'] ?? '');
         $currentState = (int)($_POST['current_training'] ?? 0);
         $newState = $currentState ? 0 : 1;
+        $inputDate = trim($_POST['training_date_input'] ?? '');
         if ($userEmail) {
-            $stmtT = $pdo->prepare("UPDATE users SET training_completed = ?, training_date = ? WHERE email = ?");
-            $trainingDate = $newState ? date('Y-m-d H:i:s') : null;
-            $stmtT->execute([$newState, $trainingDate, $userEmail]);
+            if ($newState) {
+                // Enabling: use provided date or today
+                $trainingDate = $inputDate ?: date('Y-m-d');
+                $trainingDate .= ' ' . date('H:i:s');
+            } else {
+                // Disabling: keep the date in DB (set training_completed=0 only)
+                $trainingDate = null;
+            }
+            if ($newState && $trainingDate) {
+                $stmtT = $pdo->prepare("UPDATE users SET training_completed = 1, training_date = ? WHERE email = ?");
+                $stmtT->execute([$trainingDate, $userEmail]);
+            } else {
+                $stmtT = $pdo->prepare("UPDATE users SET training_completed = 0 WHERE email = ?");
+                $stmtT->execute([$userEmail]);
+            }
             if ($stmtT->rowCount() > 0) {
-                $success = $newState ? 'Driver training marked as completed.' : 'Driver training status cleared.';
+                $success = $newState ? 'Driver training marked as completed.' : 'Driver training status cleared (training date preserved).';
                 activity_log_event('training_toggle', $newState ? 'Training completed' : 'Training cleared', [
-                    'metadata' => ['target_email' => $userEmail, 'new_state' => $newState],
+                    'metadata' => ['target_email' => $userEmail, 'new_state' => $newState, 'training_date' => $inputDate ?: 'today'],
                 ]);
             } else {
                 $error = 'User not found in local database. They must log in at least once first.';
@@ -111,6 +124,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+// Load training settings for display
+$stmtTS2 = $pdo->prepare("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('training_required', 'training_validity_months')");
+$stmtTS2->execute();
+$trainCfg = [];
+while ($r = $stmtTS2->fetch()) { $trainCfg[$r['setting_key']] = $r['setting_value']; }
+$globalTrainingRequired = ($trainCfg['training_required'] ?? '1') === '1';
+$globalValidityMonths = (int)($trainCfg['training_validity_months'] ?? 12);
+
 // Get users from Snipe-IT
 $search = $_GET['search'] ?? '';
 $allUsers = get_snipeit_users(200, $search);
@@ -327,7 +348,6 @@ foreach ($allUsers as $user) {
 					<form method="post" class="d-inline" onsubmit="return confirm('<?= $userVip ? 'Remove VIP status?' : 'Grant VIP status (auto-approve reservations)?' ?>');">
                                                 <?= csrf_field() ?>
 					</td>
-                                       
 <td class="text-center">
                                             <?php
                                             $stmtTC = $pdo->prepare("SELECT training_completed, training_date FROM users WHERE email = ?");
@@ -335,10 +355,78 @@ foreach ($allUsers as $user) {
                                             $tcRow = $stmtTC->fetch();
                                             $isTrained = !empty($tcRow['training_completed']);
                                             $trainingDateStr = $tcRow['training_date'] ?? '';
+                                            $trainingExpiry = '';
+                                            $isExpired = false;
+                                            $isExpiringSoon = false;
+                                            if ($isTrained && $trainingDateStr && $globalValidityMonths > 0) {
+                                                $expiryTs = strtotime($trainingDateStr . " +{$globalValidityMonths} months");
+                                                $trainingExpiry = date('M j, Y', $expiryTs);
+                                                $isExpired = time() > $expiryTs;
+                                                $isExpiringSoon = !$isExpired && (time() > strtotime("-15 days", $expiryTs));
+                                            }
+                                            $btnClass = 'btn-outline-danger';
+                                            $iconSuffix = '';
+                                            $tooltip = 'Training NOT completed — click to set training date';
+                                            if ($isTrained && !$isExpired) {
+                                                $btnClass = $isExpiringSoon ? 'btn-warning' : 'btn-success';
+                                                $iconSuffix = '-fill';
+                                                $tooltip = 'Trained: ' . date('M j, Y', strtotime($trainingDateStr));
+                                                if ($trainingExpiry) {
+                                                    $tooltip .= $isExpiringSoon ? ' | EXPIRING: ' . $trainingExpiry : ' | Expires: ' . $trainingExpiry;
+                                                }
+                                                $tooltip .= ' — click to clear';
+                                            } elseif ($isTrained && $isExpired) {
+                                                $btnClass = 'btn-danger';
+                                                $iconSuffix = '-fill';
+                                                $tooltip = 'EXPIRED on ' . $trainingExpiry . ' (trained: ' . date('M j, Y', strtotime($trainingDateStr)) . ') — click to renew';
+                                            }
+                                            if (!$globalTrainingRequired) {
+                                                $tooltip .= ' [Training enforcement OFF]';
+                                            }
+                                            $userEmailSafe = h($user['email'] ?? '');
+                                            $userId = $user['id'] ?? 0;
                                             ?>
-        	                            <form method="post" class="d-inline" onsubmit="return confirm('<?= $isTrained ? 'Remove training completion for this driver?' : 'Mark this driver as training completed?' ?>');">
-                                                <?= csrf_field() ?>
-                                        </td>
+                                            <?php if ($isTrained && !$isExpired): ?>
+                                                <form method="post" class="d-inline" onsubmit="return confirm('Clear training status for this driver? The training date will be preserved in the database.');">
+                                                    <?= csrf_field() ?>
+                                                    <input type="hidden" name="action" value="toggle_training">
+                                                    <input type="hidden" name="user_email" value="<?= $userEmailSafe ?>">
+                                                    <input type="hidden" name="current_training" value="1">
+                                                    <button type="submit" class="btn btn-sm <?= $btnClass ?>" title="<?= h($tooltip) ?>">
+                                                        <i class="bi bi-mortarboard<?= $iconSuffix ?>"></i>
+                                                    </button>
+                                                </form>
+                                                <?php if ($trainingExpiry): ?>
+                                                    <div class="small <?= $isExpiringSoon ? 'text-warning fw-bold' : 'text-muted' ?>" style="font-size:0.7rem;">
+                                                        <?= $isExpiringSoon ? 'Exp: ' : '' ?><?= $trainingExpiry ?>
+                                                    </div>
+                                                <?php endif; ?>
+                                            <?php else: ?>
+                                                <button type="button" class="btn btn-sm <?= $btnClass ?>" title="<?= h($tooltip) ?>"
+                                                    onclick="document.getElementById('trainingModal<?= $userId ?>').style.display='block'">
+                                                    <i class="bi bi-mortarboard<?= $iconSuffix ?>"></i>
+                                                </button>
+                                                <?php if ($isExpired && $trainingExpiry): ?>
+                                                    <div class="small text-danger fw-bold" style="font-size:0.7rem;">Exp: <?= $trainingExpiry ?></div>
+                                                <?php endif; ?>
+                                                <div id="trainingModal<?= $userId ?>" style="display:none;" class="mt-1">
+                                                    <form method="post" class="d-inline" onsubmit="return confirm('Set training as completed?');">
+                                                        <?= csrf_field() ?>
+                                                        <input type="hidden" name="action" value="toggle_training">
+                                                        <input type="hidden" name="user_email" value="<?= $userEmailSafe ?>">
+                                                        <input type="hidden" name="current_training" value="0">
+                                                        <div class="input-group input-group-sm" style="width:180px;">
+                                                            <input type="date" name="training_date_input" class="form-control form-control-sm"
+                                                                value="<?= date('Y-m-d') ?>" max="<?= date('Y-m-d') ?>" required>
+                                                            <button type="submit" class="btn btn-success btn-sm" title="Save training date">
+                                                                <i class="bi bi-check"></i>
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            <?php endif; ?>
+                                        </td>                                       
+
  <td>
                                             <form method="post" class="d-inline" onsubmit="return confirm('Deactivate this user?');">
                                                 <?= csrf_field() ?>
