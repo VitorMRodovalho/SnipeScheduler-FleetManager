@@ -116,19 +116,47 @@ function snipeit_request(string $method, string $endpoint, array $params = []): 
         CURLOPT_CONNECTTIMEOUT => 10,
     ]);
 
-    $raw = curl_exec($ch);
+    $maxRetries = 3;
+    $raw = false;
+    $httpCode = 0;
+    $lastErr = '';
 
-    if ($raw === false) {
-        $err = curl_error($ch);
-        curl_close($ch);
-        throw new Exception('Error talking to Snipe-IT API: ' . $err);
+    for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+        $raw = curl_exec($ch);
+        if ($raw === false) {
+            $lastErr = curl_error($ch);
+            if ($attempt < $maxRetries) {
+                $wait = pow(2, $attempt);
+                error_log("Snipe-IT API curl error (attempt {$attempt}/{$maxRetries}): {$lastErr}. Retrying in {$wait}s...");
+                sleep($wait);
+                continue;
+            }
+            curl_close($ch);
+            throw new Exception('Error talking to Snipe-IT API after ' . $maxRetries . ' attempts: ' . $lastErr);
+        }
+
+        $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        // Retry on 429 (rate limited) or 5xx (server error)
+        if ($httpCode === 429 || $httpCode >= 500) {
+            if ($attempt < $maxRetries) {
+                $retryAfter = 0;
+                if ($httpCode === 429) {
+                    // Check Retry-After header
+                    $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+                    $retryAfter = 2;
+                }
+                $wait = max($retryAfter, pow(2, $attempt));
+                error_log("Snipe-IT API HTTP {$httpCode} (attempt {$attempt}/{$maxRetries}). Retrying in {$wait}s...");
+                sleep($wait);
+                continue;
+            }
+        }
+        break;
     }
-
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
 
     $decoded = json_decode($raw, true);
-
     if ($httpCode >= 400) {
         $msg = $decoded['message'] ?? $raw;
         throw new Exception('Snipe-IT API returned HTTP ' . $httpCode . ': ' . $msg);
