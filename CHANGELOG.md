@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.4.1 (2026-03-10)
+
+HOTFIX: Block login for users without authorized Fleet group. Users who exist in Snipe-IT but are not assigned to any authorized group (Admins, Drivers, Fleet Staff, Fleet Admin) are now correctly denied access.
+
 ## v1.4.0 (2026-03-04)
 
 Microsoft Teams notification channel — deliver Adaptive Cards to Teams via Power Automate webhooks; unified NotificationService dispatcher; per-event channel selector (Email/Teams/Both/Off); Super Admin webhook URL management with masked fields in Settings; Fleet Admin status-only view on Notifications page; async queue delivery with cron processing
