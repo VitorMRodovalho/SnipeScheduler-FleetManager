@@ -1651,6 +1651,7 @@ function get_user_permissions_from_snipeit(string $email): array
         'is_staff' => false,         // Group 3 - Fleet Staff
         'is_vip' => false,
         'groups' => [],
+        'has_fleet_access' => false, // Must belong to an authorized group
         'exists' => false,
     ];
     
@@ -1691,6 +1692,10 @@ function get_user_permissions_from_snipeit(string $email): array
     if (in_array(SNIPEIT_GROUP_FLEET_STAFF, $userGroups)) {
         $result['is_staff'] = true;
     }
+
+    // Check if user belongs to at least one authorized Fleet Management group
+    $authorizedGroups = [1, SNIPEIT_GROUP_DRIVERS, SNIPEIT_GROUP_FLEET_STAFF, SNIPEIT_GROUP_FLEET_ADMIN];
+    $result['has_fleet_access'] = !empty(array_intersect($userGroups, $authorizedGroups));
     
     // Drivers (group 2) = basic user (can book vehicles)
     // No special permissions needed, just needs to exist

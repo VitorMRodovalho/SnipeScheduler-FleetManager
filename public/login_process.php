@@ -482,8 +482,12 @@ if ($provider === 'microsoft') {
     if (!$snipePerms['snipeit_id']) {
         $redirectWithError('Access denied. Your account is not properly configured. Please contact the Fleet Administrator.');
     }
-    
-    $isAdmin = $snipePerms['is_admin'];
+    // Verify user belongs to an authorized Fleet Management group
+    if (empty($snipePerms['has_fleet_access'])) {
+        $redirectWithError('Access denied. Your account does not have Fleet Management access. Please contact the Fleet Staff team to request access.');
+    }
+
+        $isAdmin = $snipePerms['is_admin'];
     $isStaff = $snipePerms['is_staff'];
     $isVip = $snipePerms['is_vip'];
     $snipeitId = $snipePerms['snipeit_id'];
@@ -701,6 +705,12 @@ if (!$snipePerms['exists']) {
     // User not registered in Snipe-IT - block login
     ldap_unbind($ldap);
     $redirectWithError('Access denied. You must be registered in the Fleet Management system to use this application. Please contact the Fleet Administrator.');
+}
+
+// Verify user belongs to an authorized Fleet Management group
+if (empty($snipePerms['has_fleet_access'])) {
+    ldap_unbind($ldap);
+    $redirectWithError('Access denied. Your account does not have Fleet Management access. Please contact the Fleet Staff team to request access.');
 }
 
 $isAdmin = $snipePerms['is_admin'];
