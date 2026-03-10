@@ -130,6 +130,12 @@ class NotificationService
             'teams_ch'     => 'admin',
             'action_param' => '/reservations/detail/{reservation_id}',
         ],
+	'training_expiring'           => [
+            'label'        => 'Driver Training Expiring',
+            'audience'     => 'admin',
+            'teams_ch'     => 'admin',
+            'action_param' => '/users?tab=list',
+        ],
     ];
 
     // ------------------------------------------------------------------

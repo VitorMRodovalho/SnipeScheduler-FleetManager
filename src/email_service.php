@@ -1094,6 +1094,97 @@ class FleetEmailService
         return true;
 
     }
+
+    /**
+     * TRAINING EXPIRING - Weekly digest to staff/admin
+     * @since v1.4.x
+     */
+    public function notifyTrainingExpiring(array $drivers, int $expiringCount, int $expiredCount): bool
+    {
+        $settings = $this->getNotificationSettings('training_expiring');
+        if (!$settings || !$settings['enabled']) return true;
+        $notifyEmails = $this->getSettingsBasedRecipients($settings);
+        if (empty($notifyEmails)) return true;
+        try {
+            $mail = $this->createMailer();
+            foreach ($notifyEmails as $email) {
+                $mail->addAddress($email);
+            }
+            $totalCount = $expiringCount + $expiredCount;
+            $mail->Subject = $this->resolveSubject('training_expiring', 'Driver Training Alert - {count} driver(s) need attention', ['count' => (string)$totalCount]);
+            $rows = '';
+            foreach ($drivers as $d) {
+                $sc = $d['status'] === 'expired' ? 'danger-box' : 'warning-box';
+                $sl = $d['status'] === 'expired' ? 'EXPIRED' : 'EXPIRING SOON';
+                $rows .= "<tr><td style='padding:8px;border-bottom:1px solid #eee;'>" . $d['name'] . "</td>"
+                    . "<td style='padding:8px;border-bottom:1px solid #eee;'>" . $d['email'] . "</td>"
+                    . "<td style='padding:8px;border-bottom:1px solid #eee;'>" . $d['training_date'] . "</td>"
+                    . "<td style='padding:8px;border-bottom:1px solid #eee;'>" . $d['expiry_date'] . "</td>"
+                    . "<td style='padding:8px;border-bottom:1px solid #eee;'><span class='" . $sc . "' style='padding:2px 8px;border-radius:4px;font-size:12px;'>" . $sl . "</span></td></tr>";
+            }
+            $content = "<p>The following drivers have training records that need attention:</p>";
+            if ($expiredCount > 0) {
+                $content .= "<div class='danger-box'><strong>" . $expiredCount . " driver(s)</strong> have expired training and are currently <strong>blocked from booking</strong>.</div>";
+            }
+            if ($expiringCount > 0) {
+                $content .= "<div class='warning-box'><strong>" . $expiringCount . " driver(s)</strong> have training expiring within 15 days.</div>";
+            }
+            $content .= "<table style='width:100%;border-collapse:collapse;margin-top:15px;'>"
+                . "<thead><tr style='background:#f8f9fa;'>"
+                . "<th style='padding:8px;text-align:left;'>Driver</th>"
+                . "<th style='padding:8px;text-align:left;'>Email</th>"
+                . "<th style='padding:8px;text-align:left;'>Trained</th>"
+                . "<th style='padding:8px;text-align:left;'>Expires</th>"
+                . "<th style='padding:8px;text-align:left;'>Status</th>"
+                . "</tr></thead><tbody>" . $rows . "</tbody></table>";
+            $content .= "<p style='margin-top:15px;'>Please coordinate training renewals with affected drivers.</p>";
+            $tv = ['count' => (string)$totalCount, 'expiring' => (string)$expiringCount, 'expired' => (string)$expiredCount];
+            $dbBody = $this->resolveBody('training_expiring', $tv);
+            if ($dbBody !== null) {
+                $content = $dbBody;
+            }
+            $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
+            $mail->Body = $this->template('Driver Training Alert', $content, $baseUrl . '/users?tab=list', 'View Users');
+            $this->send($mail);
+        } catch (Exception $e) {
+            error_log("Training expiring email failed: " . $e->getMessage());
+        }
+        return true;
+    }
+
+    /**
+     * Send individual training reminder to a driver
+     * @since v1.4.x
+     */
+    public function notifyDriverTrainingReminder(string $email, string $name, string $expiryDate, bool $isExpired): bool
+    {
+        try {
+            $mail = $this->createMailer();
+            $mail->addAddress($email);
+            $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
+            if ($isExpired) {
+                $mail->Subject = 'Driver Training Expired - Action Required';
+                $c = "<p>Hi " . $name . ",</p>"
+                    . "<div class='danger-box'><strong>Your Driver Safety Training expired on " . $expiryDate . ".</strong></div>"
+                    . "<p>You are currently <strong>unable to reserve fleet vehicles</strong>. "
+                    . "Please contact Fleet Staff immediately to renew your training.</p>";
+                $mail->Body = $this->template('Training Expired', $c, $baseUrl . '/my_bookings', 'My Reservations');
+            } else {
+                $mail->Subject = 'Driver Training Expiring Soon';
+                $c = "<p>Hi " . $name . ",</p>"
+                    . "<div class='warning-box'><strong>Your Driver Safety Training expires on " . $expiryDate . ".</strong></div>"
+                    . "<p>Please contact Fleet Staff to schedule your training renewal. "
+                    . "After expiration, you will be unable to reserve fleet vehicles.</p>";
+                $mail->Body = $this->template('Training Expiring', $c, $baseUrl . '/my_bookings', 'My Reservations');
+            }
+            $this->send($mail);
+            return true;
+        } catch (Exception $e) {
+            error_log("Training reminder to " . $email . " failed: " . $e->getMessage());
+            return false;
+        }
+    }
+
 }
 
 /**
