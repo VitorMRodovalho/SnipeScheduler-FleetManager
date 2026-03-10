@@ -126,7 +126,13 @@ try {
     if ($pdo->inTransaction()) {
         $pdo->commit();
     }
-    echo "[done] Synced " . count($assets) . " checked-out asset(s).\n";
+    
+// Log successful sync to system_settings for health monitoring
+    $stmtSync = $pdo->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
+    $stmtSync->execute(['last_sync_at', date('Y-m-d H:i:s')]);
+    $stmtSync->execute(['last_sync_count', (string)count($assets)]);
+
+echo "[done] Synced " . count($assets) . " checked-out asset(s).\n";
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();

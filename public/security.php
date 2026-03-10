@@ -189,6 +189,57 @@ $totalChecks = count($checkResults);
                     </div>
                 </div>
                 
+<!-- CRON Health -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-dark text-white">
+                            <h5 class="mb-0"><i class="bi bi-arrow-repeat me-2"></i>CRON Sync Health</h5>
+                        </div>
+                        <div class="card-body">
+                            <?php
+                            $stmtHealth = $pdo->prepare("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('last_sync_at', 'last_sync_count', 'sync_health_status', 'sync_health_checked_at')");
+                            $stmtHealth->execute();
+                            $healthData = [];
+                            while ($r = $stmtHealth->fetch()) { $healthData[$r['setting_key']] = $r['setting_value']; }
+                            $lastSync = $healthData['last_sync_at'] ?? null;
+                            $syncCount = $healthData['last_sync_count'] ?? '?';
+                            $healthStatus = $healthData['sync_health_status'] ?? 'unknown';
+                            $healthChecked = $healthData['sync_health_checked_at'] ?? null;
+                            $syncAge = $lastSync ? round((time() - strtotime($lastSync)) / 60, 1) : null;
+                            $statusClass = 'secondary';
+                            $statusLabel = 'Unknown';
+                            if ($healthStatus === 'healthy') { $statusClass = 'success'; $statusLabel = 'Healthy'; }
+                            elseif ($healthStatus === 'stale') { $statusClass = 'danger'; $statusLabel = 'STALE - Check CRON'; }
+                            elseif ($healthStatus === 'never_run') { $statusClass = 'warning'; $statusLabel = 'Never Run'; }
+                            ?>
+                            <div class="d-flex align-items-center mb-3">
+                                <span class="badge bg-<?= $statusClass ?> fs-6 me-3"><?= $statusLabel ?></span>
+                                <?php if ($syncAge !== null): ?>
+                                    <span class="text-muted">Last sync: <?= $syncAge ?> min ago (<?= h($lastSync) ?>)</span>
+                                <?php else: ?>
+                                    <span class="text-muted">No sync data recorded yet. Run the sync once to initialize.</span>
+                                <?php endif; ?>
+                            </div>
+                            <table class="table table-sm mb-0">
+                                <tr>
+                                    <td class="text-muted" style="width:200px;">Sync Schedule</td>
+                                    <td>Every 1 minute</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Assets Synced</td>
+                                    <td><?= h($syncCount) ?></td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Health Check</td>
+                                    <td>Every 5 minutes<?= $healthChecked ? ' (last: ' . h($healthChecked) . ')' : '' ?></td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Alert Threshold</td>
+                                    <td>> 5 minutes without sync triggers admin notification</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
                 <!-- Backup Status -->
                 <div class="col-md-6 mb-4">
                     <div class="card">
