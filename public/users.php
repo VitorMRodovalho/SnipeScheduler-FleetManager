@@ -344,10 +344,18 @@ foreach ($allUsers as $user) {
                                         <td><strong><?= h($user['name']) ?></strong></td>
                                         <td><?= h($user['email'] ?? '-') ?></td>
                                         <td><code><?= h($user['username']) ?></code></td>
-                                        <td class="text-center">
-					<form method="post" class="d-inline" onsubmit="return confirm('<?= $userVip ? 'Remove VIP status?' : 'Grant VIP status (auto-approve reservations)?' ?>');">
+<td class="text-center">
+                                            <form method="post" class="d-inline" onsubmit="return confirm('<?= $userVip ? "Remove VIP status?" : "Grant VIP status (auto-approve reservations)?" ?>');">
                                                 <?= csrf_field() ?>
-					</td>
+                                                <input type="hidden" name="action" value="toggle_vip">
+                                                <input type="hidden" name="user_id" value="<?= $user['id'] ?>">
+                                                <input type="hidden" name="current_vip" value="<?= $userVip ? '1' : '0' ?>">
+                                                <button type="submit" class="btn btn-sm <?= $userVip ? 'btn-warning' : 'btn-outline-secondary' ?>"
+                                                        title="<?= $userVip ? 'Remove VIP' : 'Make VIP' ?>">
+                                                    <i class="bi bi-star<?= $userVip ? '-fill' : '' ?>"></i>
+                                                </button>
+                                            </form>
+                                        </td>
 <td class="text-center">
                                             <?php
                                             $stmtTC = $pdo->prepare("SELECT training_completed, training_date FROM users WHERE email = ?");
@@ -478,8 +486,16 @@ foreach ($allUsers as $user) {
                                         <td><?= h($user['email'] ?? '-') ?></td>
                                         <td><code><?= h($user['username']) ?></code></td>
                                         <td class="text-center">
-					<form method="post" class="d-inline" onsubmit="return confirm('<?= $userVip ? 'Remove VIP status?' : 'Grant VIP status (auto-approve reservations)?' ?>');">
+                                            <form method="post" class="d-inline" onsubmit="return confirm('<?= $userVip ? "Remove VIP status?" : "Grant VIP status (auto-approve reservations)?" ?>');">
                                                 <?= csrf_field() ?>
+                                                <input type="hidden" name="action" value="toggle_vip">
+                                                <input type="hidden" name="user_id" value="<?= $user['id'] ?>">
+                                                <input type="hidden" name="current_vip" value="<?= $userVip ? '1' : '0' ?>">
+                                                <button type="submit" class="btn btn-sm <?= $userVip ? 'btn-warning' : 'btn-outline-secondary' ?>"
+                                                        title="<?= $userVip ? 'Remove VIP' : 'Make VIP' ?>">
+                                                    <i class="bi bi-star<?= $userVip ? '-fill' : '' ?>"></i>
+                                                </button>
+                                            </form>
                                         </td>
                                         <td>
                                             <a href="<?= htmlspecialchars($config['snipeit']['base_url']) ?>/users/<?= $user['id'] ?>" target="_blank" 
@@ -524,8 +540,16 @@ foreach ($allUsers as $user) {
                                         <td><?= h($user['email'] ?? '-') ?></td>
                                         <td><code><?= h($user['username']) ?></code></td>
                                         <td class="text-center">
-<form method="post" class="d-inline" onsubmit="return confirm('<?= $userVip ? 'Remove VIP status?' : 'Grant VIP status (auto-approve reservations)?' ?>');">
+                                            <form method="post" class="d-inline" onsubmit="return confirm('<?= $userVip ? "Remove VIP status?" : "Grant VIP status (auto-approve reservations)?" ?>');">
                                                 <?= csrf_field() ?>
+                                                <input type="hidden" name="action" value="toggle_vip">
+                                                <input type="hidden" name="user_id" value="<?= $user['id'] ?>">
+                                                <input type="hidden" name="current_vip" value="<?= $userVip ? '1' : '0' ?>">
+                                                <button type="submit" class="btn btn-sm <?= $userVip ? 'btn-warning' : 'btn-outline-secondary' ?>"
+                                                        title="<?= $userVip ? 'Remove VIP' : 'Make VIP' ?>">
+                                                    <i class="bi bi-star<?= $userVip ? '-fill' : '' ?>"></i>
+                                                </button>
+                                            </form>
                                         </td>
                                         <td>
                                             <a href="<?= htmlspecialchars($config['snipeit']['base_url']) ?>/users/<?= $user['id'] ?>" target="_blank" 
