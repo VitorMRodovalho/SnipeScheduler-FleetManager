@@ -119,8 +119,26 @@ $userEmail = $currentUser['email'] ?? '';
 // Check if user is VIP (from session, set during login)
 $isVip = !empty($currentUser['is_vip']);
 
+// Check driver training completion status
+$trainingCompleted = false;
+if ($isStaff) {
+    // Staff and admin bypass training requirement
+    $trainingCompleted = true;
+} else {
+    $stmtTraining = $pdo->prepare("SELECT training_completed FROM users WHERE email = ?");
+    $stmtTraining->execute([$userEmail]);
+    $trainingRow = $stmtTraining->fetch();
+    $trainingCompleted = !empty($trainingRow['training_completed']);
+}
+
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_reservation'])) {
+    // Training gate: block untrained drivers from submitting
+    if (!$trainingCompleted) {
+        $error = 'You must complete Driver Safety Training before reserving a vehicle. Please contact Fleet Staff for training verification.';
+    }
+
+    if (empty($error)) {
     $assetId = (int)($_POST['asset_id'] ?? 0);
     $pickupLocationId = (int)($_POST['pickup_location'] ?? 0);
     $destinationId = (int)($_POST['destination'] ?? 0);
@@ -265,6 +283,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_reservation'])
             }
         }
     }
+    }
 }
 
 function get_location_name($locations, $id) {
@@ -328,6 +347,16 @@ function get_location_name($locations, $id) {
         <?= layout_render_nav($active, $isStaff, $isAdmin) ?>
 
         <?= render_top_bar($currentUser, $isStaff, $isAdmin) ?>
+
+            <?php if (!$trainingCompleted): ?>
+            <div class="alert alert-warning d-flex align-items-center mb-3">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <div>
+                    <strong>Training Required</strong> — You must complete Driver Safety Training before reserving a vehicle.
+                    Please contact Fleet Staff for training verification.
+                </div>
+            </div>
+            <?php endif; ?>
 
         <div class="row justify-content-center">
             <div class="col-lg-10">
@@ -477,7 +506,7 @@ function get_location_name($locations, $id) {
                             <div class="card-body">
                                 <div class="d-flex justify-content-between">
                                     <a href="my_bookings" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Cancel</a>
-                                    <button type="submit" name="submit_reservation" class="btn btn-primary btn-lg">
+                                    <button type="submit" name="submit_reservation" <?= !$trainingCompleted ? 'disabled' : '' ?> class="btn btn-primary btn-lg">
                                         <i class="bi bi-check-circle me-1"></i><?= $isVip ? 'Reserve (Auto-Approved)' : 'Submit for Approval' ?>
                                     </button>
                                 </div>

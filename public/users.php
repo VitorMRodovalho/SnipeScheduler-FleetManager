@@ -11,6 +11,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     csrf_check();
 }
 require_once SRC_PATH . '/snipeit_client.php';
+require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/layout.php';
 
 $active = 'activity_log.php'; // Keep Admin highlighted in nav
@@ -91,15 +92,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $error = 'Failed to activate user.';
         }
-    } elseif ($action === 'toggle_vip') {
-        $userId = (int)$_POST['user_id'];
-        $currentVip = $_POST['current_vip'] === '1';
-        $newVip = !$currentVip;
-        
-        if (set_user_vip_status($userId, $newVip)) {
-            $success = $newVip ? 'User marked as VIP.' : 'VIP status removed.';
-        } else {
-            $error = 'Failed to update VIP status.';
+} elseif ($action === 'toggle_training') {
+        $userEmail = trim($_POST['user_email'] ?? '');
+        $currentState = (int)($_POST['current_training'] ?? 0);
+        $newState = $currentState ? 0 : 1;
+        if ($userEmail) {
+            $stmtT = $pdo->prepare("UPDATE users SET training_completed = ?, training_date = ? WHERE email = ?");
+            $trainingDate = $newState ? date('Y-m-d H:i:s') : null;
+            $stmtT->execute([$newState, $trainingDate, $userEmail]);
+            if ($stmtT->rowCount() > 0) {
+                $success = $newState ? 'Driver training marked as completed.' : 'Driver training status cleared.';
+                activity_log_event('training_toggle', $newState ? 'Training completed' : 'Training cleared', [
+                    'metadata' => ['target_email' => $userEmail, 'new_state' => $newState],
+                ]);
+            } else {
+                $error = 'User not found in local database. They must log in at least once first.';
+            }
         }
     }
 }
@@ -304,6 +312,7 @@ foreach ($allUsers as $user) {
                                         <th>Email</th>
                                         <th>Username</th>
                                         <th class="text-center">VIP</th>
+                                        <th class="text-center">Training</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -315,22 +324,28 @@ foreach ($allUsers as $user) {
                                         <td><?= h($user['email'] ?? '-') ?></td>
                                         <td><code><?= h($user['username']) ?></code></td>
                                         <td class="text-center">
-                                            <form method="post" class="d-inline">
-                                                <input type="hidden" name="action" value="toggle_vip">
-                                                <input type="hidden" name="user_id" value="<?= $user['id'] ?>">
-                                                <input type="hidden" name="current_vip" value="<?= $userVip ? '1' : '0' ?>">
-                                                <button type="submit" class="btn btn-sm <?= $userVip ? 'btn-warning' : 'btn-outline-secondary' ?>" 
-                                                        title="<?= $userVip ? 'Remove VIP' : 'Make VIP' ?>">
-                                                    <i class="bi bi-star<?= $userVip ? '-fill' : '' ?>"></i>
-                                                </button>
-                                            </form>
+					<form method="post" class="d-inline" onsubmit="return confirm('<?= $userVip ? 'Remove VIP status?' : 'Grant VIP status (auto-approve reservations)?' ?>');">
+                                                <?= csrf_field() ?>
+					</td>
+                                       
+<td class="text-center">
+                                            <?php
+                                            $stmtTC = $pdo->prepare("SELECT training_completed, training_date FROM users WHERE email = ?");
+                                            $stmtTC->execute([$user['email'] ?? '']);
+                                            $tcRow = $stmtTC->fetch();
+                                            $isTrained = !empty($tcRow['training_completed']);
+                                            $trainingDateStr = $tcRow['training_date'] ?? '';
+                                            ?>
+        	                            <form method="post" class="d-inline" onsubmit="return confirm('<?= $isTrained ? 'Remove training completion for this driver?' : 'Mark this driver as training completed?' ?>');">
+                                                <?= csrf_field() ?>
                                         </td>
-                                        <td>
+ <td>
                                             <form method="post" class="d-inline" onsubmit="return confirm('Deactivate this user?');">
+                                                <?= csrf_field() ?>
                                                 <input type="hidden" name="action" value="deactivate_user">
                                                 <input type="hidden" name="user_id" value="<?= $user['id'] ?>">
                                                 <button type="submit" class="btn btn-sm btn-outline-warning" title="Deactivate">
-                                                    <i class="bi bi-pause-circle"></i>
+                                                   <i class="bi bi-pause-circle"></i>
                                                 </button>
                                             </form>
                                             <a href="<?= htmlspecialchars($config['snipeit']['base_url']) ?>/users/<?= $user['id'] ?>" target="_blank" 
@@ -375,15 +390,8 @@ foreach ($allUsers as $user) {
                                         <td><?= h($user['email'] ?? '-') ?></td>
                                         <td><code><?= h($user['username']) ?></code></td>
                                         <td class="text-center">
-                                            <form method="post" class="d-inline">
-                                                <input type="hidden" name="action" value="toggle_vip">
-                                                <input type="hidden" name="user_id" value="<?= $user['id'] ?>">
-                                                <input type="hidden" name="current_vip" value="<?= $userVip ? '1' : '0' ?>">
-                                                <button type="submit" class="btn btn-sm <?= $userVip ? 'btn-warning' : 'btn-outline-secondary' ?>" 
-                                                        title="<?= $userVip ? 'Remove VIP' : 'Make VIP' ?>">
-                                                    <i class="bi bi-star<?= $userVip ? '-fill' : '' ?>"></i>
-                                                </button>
-                                            </form>
+					<form method="post" class="d-inline" onsubmit="return confirm('<?= $userVip ? 'Remove VIP status?' : 'Grant VIP status (auto-approve reservations)?' ?>');">
+                                                <?= csrf_field() ?>
                                         </td>
                                         <td>
                                             <a href="<?= htmlspecialchars($config['snipeit']['base_url']) ?>/users/<?= $user['id'] ?>" target="_blank" 
@@ -428,15 +436,8 @@ foreach ($allUsers as $user) {
                                         <td><?= h($user['email'] ?? '-') ?></td>
                                         <td><code><?= h($user['username']) ?></code></td>
                                         <td class="text-center">
-                                            <form method="post" class="d-inline">
-                                                <input type="hidden" name="action" value="toggle_vip">
-                                                <input type="hidden" name="user_id" value="<?= $user['id'] ?>">
-                                                <input type="hidden" name="current_vip" value="<?= $userVip ? '1' : '0' ?>">
-                                                <button type="submit" class="btn btn-sm <?= $userVip ? 'btn-warning' : 'btn-outline-secondary' ?>" 
-                                                        title="<?= $userVip ? 'Remove VIP' : 'Make VIP' ?>">
-                                                    <i class="bi bi-star<?= $userVip ? '-fill' : '' ?>"></i>
-                                                </button>
-                                            </form>
+<form method="post" class="d-inline" onsubmit="return confirm('<?= $userVip ? 'Remove VIP status?' : 'Grant VIP status (auto-approve reservations)?' ?>');">
+                                                <?= csrf_field() ?>
                                         </td>
                                         <td>
                                             <a href="<?= htmlspecialchars($config['snipeit']['base_url']) ?>/users/<?= $user['id'] ?>" target="_blank" 
@@ -464,6 +465,7 @@ foreach ($allUsers as $user) {
                 <div class="card-body">
                     <p class="text-muted mb-4">This will create a user in Snipe-IT with the appropriate permissions.</p>
                     <form method="post">
+                                                <?= csrf_field() ?>
                     <?= csrf_field() ?>
                         <input type="hidden" name="action" value="create_user">
                         
@@ -573,6 +575,7 @@ foreach ($allUsers as $user) {
                                         <td><?= h($user['email'] ?? '-') ?></td>
                                         <td>
                                             <form method="post" class="d-inline">
+                                                <?= csrf_field() ?>
                                                 <input type="hidden" name="action" value="activate_user">
                                                 <input type="hidden" name="user_id" value="<?= $user['id'] ?>">
                                                 <button type="submit" class="btn btn-sm btn-success" title="Reactivate">
