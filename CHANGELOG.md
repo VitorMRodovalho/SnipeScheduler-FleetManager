@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.4.2 (2026-03-10)
+
+Externalize hardcoded Snipe-IT IDs and field mappings to config. Group IDs, status label IDs, and custom field column names are now configurable. Added startup validation script (scripts/validate_snipeit.php).
+
 ## v1.4.1 (2026-03-10)
 
 HOTFIX: Block login for users without authorized Fleet group. Users who exist in Snipe-IT but are not assigned to any authorized group (Admins, Drivers, Fleet Staff, Fleet Admin) are now correctly denied access.
