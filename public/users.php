@@ -91,9 +91,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (activate_snipeit_user($userId)) {
             $success = 'User activated successfully.';
         } else {
-            $error = 'Failed to activate user.';
-        }
-} elseif ($action === 'toggle_training') {
+}
+    } elseif ($action === 'toggle_vip') {
+        $userId = (int)$_POST['user_id'];
+        $currentVip = $_POST['current_vip'] === '1';
+        $newVip = !$currentVip;
+        if (set_user_vip_status($userId, $newVip)) {
+            $success = $newVip ? 'User marked as VIP.' : 'VIP status removed.';
+        } 
+
+    } elseif ($action === 'toggle_training') {
         $userEmail = trim($_POST['user_email'] ?? '');
         $currentState = (int)($_POST['current_training'] ?? 0);
         $newState = $currentState ? 0 : 1;
