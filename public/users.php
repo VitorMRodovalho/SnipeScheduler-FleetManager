@@ -96,9 +96,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $userId = (int)$_POST['user_id'];
         $currentVip = $_POST['current_vip'] === '1';
         $newVip = !$currentVip;
-        if (set_user_vip_status($userId, $newVip)) {
+if (set_user_vip_status($userId, $newVip)) {
             $success = $newVip ? 'User marked as VIP.' : 'VIP status removed.';
-        } 
+            array_map('unlink', glob(CONFIG_PATH . '/cache/*.json'));
+        } else {
+            $error = 'Failed to update VIP status.';
+        }
 
     } elseif ($action === 'toggle_training') {
         $userEmail = trim($_POST['user_email'] ?? '');
