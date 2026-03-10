@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.4.3 (2026-03-10)
+
+BL-008: CRON sync health check with alerting and Security dashboard monitoring. BL-009: API retry with exponential backoff for rate limiting and server errors. BL-011 complete: Driver training gate with configurable validity, date picker, expiration alerts, and Booking Rules admin. VIP toggle and CSRF fixes across Users page.
+
 ## v1.4.2 (2026-03-10)
 
 Externalize hardcoded Snipe-IT IDs and field mappings to config. Group IDs, status label IDs, and custom field column names are now configurable. Added startup validation script (scripts/validate_snipeit.php).

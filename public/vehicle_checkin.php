@@ -201,7 +201,7 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
     <title>Vehicle Checkin</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="assets/style.css?v=1.4.2">
+    <link rel="stylesheet" href="assets/style.css?v=1.4.3">
     <link rel="stylesheet" href="/booking/css/mobile.css">
     <?= layout_theme_styles() ?>
 </head>
