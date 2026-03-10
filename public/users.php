@@ -11,6 +11,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     csrf_check();
 }
 require_once SRC_PATH . '/snipeit_client.php';
+require_once SRC_PATH . '/activity_log.php';
 require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/layout.php';
 
