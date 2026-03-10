@@ -83,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $asset && empty($error)) {
     // Auto-fill checkout time with current timestamp
     $checkoutTime = date('H:i');
     $checkoutDate = date('Y-m-d');
-    $formData['_snipeit_checkout_time_18'] = $checkoutTime;
+    $formData[snipeit_field('checkout_time')] = $checkoutTime;
     $inspectionData['checkout_time'] = $checkoutTime;
     $inspectionData['checkout_date'] = $checkoutDate;
     $inspectionData['pickup_location_id'] = $reservation['pickup_location_id'];
@@ -106,7 +106,7 @@ if (!$snipeUserId) {
             update_asset_location($reservation['asset_id'], $reservation['destination_id']);
         }
         
-        $mileage = $formData['_snipeit_current_mileage_6'] ?? 'N/A';
+        $mileage = $formData[snipeit_field('current_mileage')] ?? 'N/A';
         $note = "Checkout by {$userName} at {$checkoutDate} {$checkoutTime}. Mileage: {$mileage}. Destination: {$destinationName}";
         $expectedCheckin = date('Y-m-d', strtotime($reservation['end_datetime']));
         

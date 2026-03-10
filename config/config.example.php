@@ -146,6 +146,46 @@ return [
         'allowed_categories' => [],
     ],
 
+
+    // ---------------------------------------------------------------
+    // Snipe-IT Group IDs (match your Snipe-IT instance)
+    // Run: GET /api/v1/groups to find IDs for your environment
+    // ---------------------------------------------------------------
+    'snipeit_groups' => [
+        'admins'      => 1,   // Super Admin - full system access including Settings
+        'drivers'     => 2,   // Basic user - can book vehicles
+        'fleet_staff' => 3,   // Fleet Staff - approval queue, maintenance, reports
+        'fleet_admin' => 4,   // Fleet Admin - user/vehicle management, notifications
+    ],
+
+    // ---------------------------------------------------------------
+    // Snipe-IT Status Label IDs for Fleet Vehicles
+    // Run: GET /api/v1/statuslabels to find IDs for your environment
+    // ---------------------------------------------------------------
+    'snipeit_statuses' => [
+        'available'      => 5,   // Vehicle ready for booking
+        'in_service'     => 6,   // Vehicle currently checked out
+        'out_of_service' => 7,   // Vehicle under maintenance / not available
+        'reserved'       => 8,   // Vehicle has approved reservation
+    ],
+
+
+    // ---------------------------------------------------------------
+    // Snipe-IT Custom Field DB Column Names
+    // These vary per Snipe-IT instance (format: _snipeit_{name}_{id})
+    // Run: GET /api/v1/fields to discover your field IDs
+    // ---------------------------------------------------------------
+    'snipeit_fields' => [
+        'current_mileage'            => '_snipeit_current_mileage_XX',
+        'last_oil_change_miles'      => '_snipeit_last_oil_change_miles_XX',
+        'last_tire_rotation_miles'   => '_snipeit_last_tire_rotation_miles_XX',
+        'visual_inspection_complete' => '_snipeit_visual_inspection_complete_XX',
+        'checkout_time'              => '_snipeit_checkout_time_XX',
+        'return_time'                => '_snipeit_return_time_XX',
+        'last_maintenance_date'      => '_snipeit_last_maintenance_date_XX',
+        'last_maintenance_mileage'   => '_snipeit_last_maintenance_mileage_XX',
+    ],
+
     'smtp' => [
         'host'       => '',
         'port'       => 587,

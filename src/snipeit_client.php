@@ -1362,10 +1362,15 @@ function checkin_asset_with_form_data(
 /**
  * Snipe-IT Status IDs for Fleet Vehicles
  */
-define('STATUS_VEH_AVAILABLE', 5);
-define('STATUS_VEH_IN_SERVICE', 6);
-define('STATUS_VEH_OUT_OF_SERVICE', 7);
-define('STATUS_VEH_RESERVED', 8);
+// Fleet vehicle status label IDs (from config.php)
+$_cfg = require CONFIG_PATH . '/config.php';
+$_groups = $_cfg['snipeit_groups'] ?? [];
+$_statuses = $_cfg['snipeit_statuses'] ?? [];
+
+define('STATUS_VEH_AVAILABLE', $_statuses['available'] ?? 5);
+define('STATUS_VEH_IN_SERVICE', $_statuses['in_service'] ?? 6);
+define('STATUS_VEH_OUT_OF_SERVICE', $_statuses['out_of_service'] ?? 7);
+define('STATUS_VEH_RESERVED', $_statuses['reserved'] ?? 8);
 
 /**
  * Get pickup locations (parent_id = 9)
@@ -1633,9 +1638,14 @@ function get_snipeit_groups(): array
 }
 
 // Group ID constants for fleet management
-define('SNIPEIT_GROUP_DRIVERS', 2);
-define('SNIPEIT_GROUP_FLEET_STAFF', 3);
-define('SNIPEIT_GROUP_FLEET_ADMIN', 4);
+// Fleet user group IDs (from config.php)
+if (!isset($_cfg)) { $_cfg = require CONFIG_PATH . '/config.php'; }
+if (!isset($_groups)) { $_groups = $_cfg['snipeit_groups'] ?? []; }
+
+define('SNIPEIT_GROUP_ADMINS', $_groups['admins'] ?? 1);
+define('SNIPEIT_GROUP_DRIVERS', $_groups['drivers'] ?? 2);
+define('SNIPEIT_GROUP_FLEET_STAFF', $_groups['fleet_staff'] ?? 3);
+define('SNIPEIT_GROUP_FLEET_ADMIN', $_groups['fleet_admin'] ?? 4);
 
 
 /**
@@ -1676,7 +1686,7 @@ function get_user_permissions_from_snipeit(string $email): array
     
     // Check group permissions
     // Admins (group 1) = Super Admin (full system access including Settings)
-    if (in_array(1, $userGroups)) {
+    if (in_array(SNIPEIT_GROUP_ADMINS, $userGroups)) {
         $result['is_super_admin'] = true;
         $result['is_admin'] = true;
         $result['is_staff'] = true;
@@ -1694,7 +1704,7 @@ function get_user_permissions_from_snipeit(string $email): array
     }
 
     // Check if user belongs to at least one authorized Fleet Management group
-    $authorizedGroups = [1, SNIPEIT_GROUP_DRIVERS, SNIPEIT_GROUP_FLEET_STAFF, SNIPEIT_GROUP_FLEET_ADMIN];
+    $authorizedGroups = [SNIPEIT_GROUP_ADMINS, SNIPEIT_GROUP_DRIVERS, SNIPEIT_GROUP_FLEET_STAFF, SNIPEIT_GROUP_FLEET_ADMIN];
     $result['has_fleet_access'] = !empty(array_intersect($userGroups, $authorizedGroups));
     
     // Drivers (group 2) = basic user (can book vehicles)
@@ -1720,6 +1730,28 @@ function sync_user_name_to_snipeit(int $snipeitId, string $firstName, string $la
     
     return $result !== null;
 }
+
+/**
+ * Get a Snipe-IT custom field DB column name from config.
+ * Avoids hardcoding _snipeit_fieldname_N which varies per instance.
+ *
+ * @param string $name Logical field name (e.g. 'current_mileage')
+ * @return string DB column name (e.g. '_snipeit_current_mileage_6')
+ * @throws RuntimeException if field not configured
+ */
+function snipeit_field(string $name): string
+{
+    static $fields = null;
+    if ($fields === null) {
+        $cfg = require CONFIG_PATH . '/config.php';
+        $fields = $cfg['snipeit_fields'] ?? [];
+    }
+    if (!isset($fields[$name])) {
+        throw new RuntimeException("Snipe-IT custom field '{$name}' not configured in config.php['snipeit_fields']");
+    }
+    return $fields[$name];
+}
+
 /**
  * Set VI"smart API" in a few critical areas—specifically through the use of hardcoded custom database columns (e.g., _snipeit_vin_5) and hardcoded environment-specific strings (e.g., organization-specific strings).
 

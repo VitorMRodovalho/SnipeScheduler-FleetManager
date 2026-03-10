@@ -85,17 +85,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             // 2. Update Snipe-IT custom fields on the asset
             $updateFields = [
-                '_snipeit_last_maintenance_date_21' => $completionDate,
-                '_snipeit_last_maintenance_mileage_24' => $mileageAtService,
-                '_snipeit_current_mileage_6' => $mileageAtService,
+                snipeit_field('last_maintenance_date') => $completionDate,
+                snipeit_field('last_maintenance_mileage') => $mileageAtService,
+                snipeit_field('current_mileage') => $mileageAtService,
             ];
             
 		// Update specific maintenance types based on checkboxes
             if ($oilChange) {
-                $updateFields['_snipeit_last_oil_change_miles_7'] = $mileageAtService;
+                $updateFields[snipeit_field('last_oil_change_miles')] = $mileageAtService;
             }
             if ($tireRotation) {
-                $updateFields['_snipeit_last_tire_rotation_miles_8'] = $mileageAtService;
+                $updateFields[snipeit_field('last_tire_rotation_miles')] = $mileageAtService;
             }            
 
 
@@ -163,7 +163,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             // Update mileage in Snipe-IT
             update_asset_custom_fields($assetId, [
-                '_snipeit_current_mileage_6' => $returnMileage
+                snipeit_field('current_mileage') => $returnMileage
             ]);
             
             // Clear schedule

@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $asset && empty($error)) {
     // Auto-fill return time
     $returnTime = date('H:i');
     $returnDate = date('Y-m-d');
-    $formData['_snipeit_return_time_19'] = $returnTime;
+    $formData[snipeit_field('return_time')] = $returnTime;
     $inspectionData['return_time'] = $returnTime;
     $inspectionData['return_date'] = $returnDate;
     
@@ -82,10 +82,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $asset && empty($error)) {
     // === BUSINESS RULES VALIDATION ===
     
     // 1. Current Mileage is mandatory
-    $newMileage = (int)($formData['_snipeit_current_mileage_6'] ?? 0);
+    $newMileage = (int)($formData[snipeit_field('current_mileage')] ?? 0);
     $previousMileage = (int)($customFields['Current Mileage']['value'] ?? 0);
     
-    if (empty($formData['_snipeit_current_mileage_6']) || $newMileage <= 0) {
+    if (empty($formData[snipeit_field('current_mileage')]) || $newMileage <= 0) {
         $error = 'Current Mileage is required. Please enter the odometer reading.';
     }
     // Mileage cannot be less than previously recorded (checkout mileage)
@@ -104,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $asset && empty($error)) {
     }
     
     // 2. Visual Inspection must be "Yes"
-    $visualInspection = $formData['_snipeit_visual_inspection_complete_11'] ?? '';
+    $visualInspection = $formData[snipeit_field('visual_inspection_complete')] ?? '';
     if (empty($error) && $visualInspection !== 'Yes') {
         $error = 'Visual Inspection must be marked as "Yes" before proceeding. You must complete the vehicle inspection.';
     }
@@ -125,7 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $asset && empty($error)) {
         update_asset_status($reservation['asset_id'], $newStatusId);
         update_asset_location($reservation['asset_id'], $returnLocationId);
         
-        $mileage = $formData['_snipeit_current_mileage_6'] ?? 'N/A';
+        $mileage = $formData[snipeit_field('current_mileage')] ?? 'N/A';
         $note = "Returned by {$userName} at {$returnDate} {$returnTime}. Mileage: {$mileage}";
         if ($needsMaintenance) { $note .= " | MAINTENANCE REQUIRED: {$maintenanceNotes}"; }
         
