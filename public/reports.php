@@ -279,7 +279,23 @@ if ($report === 'summary') {
     
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
-    $reportData['usage'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $rawUsage = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($rawUsage as &$row) {
+        $coData = json_decode($row['checkout_form_data'] ?? '{}', true) ?: [];
+        $ciData = json_decode($row['checkin_form_data'] ?? '{}', true) ?: [];
+        $row['actual_checkout'] = (!empty($coData['checkout_date']) && !empty($coData['checkout_time'])) ? $coData['checkout_date'] . ' ' . $coData['checkout_time'] : $row['start_datetime'];
+        if (!empty($ciData['return_date']) && !empty($ciData['return_time'])) { $row['actual_checkin'] = $ciData['return_date'] . ' ' . $ciData['return_time']; }
+        elseif (in_array($row['status'], ['completed','maintenance_required'])) { $row['actual_checkin'] = $row['end_datetime']; }
+        else { $row['actual_checkin'] = null; }
+        if ($row['actual_checkout'] && $row['actual_checkin']) { $row['actual_hours'] = max(0, round((strtotime($row['actual_checkin']) - strtotime($row['actual_checkout'])) / 3600, 1)); }
+        else { $row['actual_hours'] = $row['duration_hours']; }
+        $row['checkout_mileage'] = null; $row['checkin_mileage'] = null;
+        foreach ($coData as $k => $v) { if (stripos($k, 'current_mileage') !== false && $v !== '') $row['checkout_mileage'] = (int)$v; }
+        foreach ($ciData as $k => $v) { if (stripos($k, 'current_mileage') !== false && $v !== '') $row['checkin_mileage'] = (int)$v; }
+        $row['trip_miles'] = ($row['checkout_mileage'] !== null && $row['checkin_mileage'] !== null) ? max(0, $row['checkin_mileage'] - $row['checkout_mileage']) : null;
+    }
+    unset($row);
+    $reportData['usage'] = $rawUsage;
 
 } elseif ($report === 'maintenance') {
     // Maintenance history report - from Snipe-IT API
