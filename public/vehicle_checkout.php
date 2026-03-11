@@ -15,6 +15,7 @@ $active = basename($_SERVER['PHP_SELF']);
 $isAdmin = !empty($currentUser['is_admin']);
 $isStaff = !empty($currentUser['is_staff']) || $isAdmin;
 $error = '';
+$formError = '';
 
 $reservationId = isset($_GET['reservation_id']) ? (int)$_GET['reservation_id'] : 0;
 if (!$reservationId) { header('Location: my_bookings'); exit; }
@@ -144,7 +145,20 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
     
     switch ($element) {
         case 'textarea':
-            $html .= '<textarea name="' . $inputName . '" class="form-control" rows="2" placeholder="Enter details if applicable...">' . h($currentValue) . '</textarea>';
+            // Detect condition description fields for checkbox coupling
+            $conditionArea = '';
+            $lowerName = strtolower($fieldName);
+            if (strpos($lowerName, 'exterior') !== false) $conditionArea = 'exterior';
+            elseif (strpos($lowerName, 'tire') !== false) $conditionArea = 'tires';
+            elseif (strpos($lowerName, 'undercarriage') !== false) $conditionArea = 'undercarriage';
+            elseif (strpos($lowerName, 'interior') !== false) $conditionArea = 'interior';
+            
+            $isConditionDesc = !empty($conditionArea);
+            $disabledAttr = $isConditionDesc ? ' disabled' : '';
+            $dataAttr = $isConditionDesc ? ' data-condition-area="' . $conditionArea . '"' : '';
+            $placeholder = $isConditionDesc ? 'Check the corresponding issue checkbox above to enable...' : 'Enter details if applicable...';
+            $dimClass = $isConditionDesc ? ' condition-textarea' : '';
+            $html .= '<textarea name="' . $inputName . '" class="form-control' . $dimClass . '" rows="2" placeholder="' . $placeholder . '"' . $disabledAttr . $dataAttr . '>' . h($currentValue) . '</textarea>';
             break;
         case 'listbox':
             // FIX #4: For inspection fields, always force default to unselected
@@ -156,11 +170,20 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
             $html .= '<option value="No"' . (!$forceEmpty && $currentValue === 'No' ? ' selected' : '') . '>No</option></select>';
             break;
         case 'checkbox':
-            $options = ['Exterior', 'Tires', 'Undercarriage', 'Interior'];
+            // Dynamic options from Snipe-IT field_values (not hardcoded)
+            $fieldValuesRaw = $fieldData['field_values_list'] ?? $fieldData['field_values'] ?? '';
+            if (!empty($fieldValuesRaw)) {
+                $options = array_filter(array_map('trim', preg_split('/[\n,]+/', $fieldValuesRaw)));
+            } else {
+                $options = ['Exterior', 'Tires', 'Undercarriage', 'Interior']; // fallback
+            }
+            $isConditionField = (stripos($dbColumn, 'condition') !== false || stripos($fieldName, 'issues with the condition') !== false);
             $currentValues = array_map('trim', explode(',', $currentValue));
             foreach ($options as $opt) {
                 $checked = in_array($opt, $currentValues) ? ' checked' : '';
-                $html .= '<div class="form-check form-check-inline"><input type="checkbox" class="form-check-input" name="' . $inputName . '[]" value="' . h($opt) . '"' . $checked . '>';
+                $condClass = $isConditionField ? ' condition-checkbox' : '';
+                $condData = $isConditionField ? ' data-controls="' . h(strtolower(trim($opt))) . '"' : '';
+                $html .= '<div class="form-check form-check-inline"><input type="checkbox" class="form-check-input' . $condClass . '" name="' . $inputName . '[]" value="' . h($opt) . '"' . $checked . $condData . '>';
                 $html .= '<label class="form-check-label">' . h($opt) . '</label></div>';
             }
             break;
@@ -213,6 +236,13 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
                     <br><a href="my_bookings" class="btn btn-outline-danger btn-sm mt-2">Back to My Reservations</a>
                 </div>
             <?php elseif ($asset && $reservation): ?>
+            
+                <?php if (!empty($formError)): ?>
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle me-2"></i><strong>Please correct:</strong> <?= h($formError) ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                <?php endif; ?>
                 
                 <!-- Auto Timestamp Notice -->
                 <div class="alert alert-info">
@@ -318,6 +348,16 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
                         <div class="card-body">
                             <div class="row">
                                 <?php 
+                                // Merge field_values from Snipe-IT fieldset into customFields for dynamic rendering
+                                $allFieldDefs = $fieldSettings['checkout_fields'] ?? [];
+                                foreach ($allFieldDefs as $fDef) {
+                                    foreach ($customFields as $cfName => &$cfData) {
+                                        if (($cfData['field'] ?? '') === ($fDef['db_column'] ?? '')) {
+                                            $cfData['field_values_list'] = $fDef['field_values'] ?? '';
+                                        }
+                                    }
+                                }
+                                unset($cfData);
                                 foreach ($customFields as $fieldName => $fieldData):
                                     // Only show fields marked for checkout in Snipe-IT, exclude auto-filled
                                     if (!in_array($fieldName, $allowedCheckoutFields) || in_array($fieldName, $autoFields)) continue;
@@ -567,6 +607,48 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initial state
     updateSubmitState();
+});
+</script>
+
+<script>
+// Condition checkbox ↔ textarea coupling
+// Textareas are disabled until their corresponding condition checkbox is checked
+document.addEventListener('DOMContentLoaded', function() {
+    const conditionCheckboxes = document.querySelectorAll('.condition-checkbox');
+    const conditionTextareas = document.querySelectorAll('.condition-textarea');
+    
+    function updateTextareaState() {
+        conditionCheckboxes.forEach(function(cb) {
+            const area = cb.dataset.controls; // e.g. "exterior", "tires"
+            if (!area) return;
+            const textarea = document.querySelector('[data-condition-area="' + area + '"]');
+            if (textarea) {
+                if (cb.checked) {
+                    textarea.disabled = false;
+                    textarea.placeholder = 'Describe the ' + area + ' issue...';
+                    textarea.closest('.mb-3').style.opacity = '1';
+                } else {
+                    textarea.disabled = true;
+                    textarea.value = '';
+                    textarea.placeholder = 'Check the corresponding issue checkbox above to enable...';
+                    textarea.closest('.mb-3').style.opacity = '0.5';
+                }
+            }
+        });
+    }
+    
+    // Set initial state (all condition textareas dimmed)
+    conditionTextareas.forEach(function(ta) {
+        ta.closest('.mb-3').style.opacity = '0.5';
+        ta.closest('.mb-3').style.transition = 'opacity 0.2s ease';
+    });
+    
+    conditionCheckboxes.forEach(function(cb) {
+        cb.addEventListener('change', updateTextareaState);
+    });
+    
+    // Run once on load (in case of POST with preserved values)
+    updateTextareaState();
 });
 </script>
 <?php layout_footer(); ?>
