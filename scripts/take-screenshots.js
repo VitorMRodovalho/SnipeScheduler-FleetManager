@@ -12,6 +12,7 @@ const SCREENSHOT_DIR = path.join(__dirname, '../docs/screenshots');
 
 const PAGES = [
     { name: 'login', path: '/login', auth: false },
+    { name: 'index', path: '/index', auth: true },
     { name: 'dashboard', path: '/dashboard', auth: true },
     { name: 'vehicle_catalogue', path: '/vehicle_catalogue', auth: true },
     { name: 'vehicle_reserve', path: '/vehicle_reserve', auth: true },
@@ -20,6 +21,8 @@ const PAGES = [
     { name: 'reservations', path: '/reservations', auth: true },
     { name: 'maintenance', path: '/maintenance', auth: true },
     { name: 'reports', path: '/reports', auth: true },
+    { name: 'scan', path: '/scan', auth: true },
+    { name: 'activity_log', path: '/activity_log', auth: true },
     { name: 'vehicles', path: '/vehicles', auth: true },
     { name: 'vehicles_create', path: '/vehicles?tab=create', auth: true },
     { name: 'users', path: '/users', auth: true },
