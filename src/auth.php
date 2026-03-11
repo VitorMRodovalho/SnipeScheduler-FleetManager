@@ -27,7 +27,7 @@ $currentUser = $_SESSION['user'];
 // Periodic group re-validation (every 15 minutes)
 // Catches group changes made in Snipe-IT mid-session
 // ==========================================
-$revalidateInterval = 15 * 60; // 15 minutes
+$revalidateInterval = 2 * 60; // 2 minutes
 $lastCheck = $_SESSION['group_revalidated_at'] ?? 0;
 
 if ((time() - $lastCheck) > $revalidateInterval) {

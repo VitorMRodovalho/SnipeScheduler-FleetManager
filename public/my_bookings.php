@@ -215,14 +215,24 @@ if (!empty($_GET['deleted'])) {
                         
                         $isOverdue = ($status === 'confirmed' && strtotime($res['end_datetime']) < time());
                         
-                        $badgeColor = match($status) {
-                            'completed' => 'success',
-                            'confirmed' => ($isOverdue ? 'danger' : 'warning'),
-                            'cancelled' => 'secondary',
-                            'missed' => 'dark',
-                            'maintenance_required' => 'danger',
-                            default => 'primary',
-                        };
+                        // Badge color: distinguish "approved but awaiting pickup" from plain "pending"
+                        if ($status === 'pending' && $isApproved) {
+                            $badgeColor = 'info';
+                            $badgeLabel = 'Approved - Awaiting Pickup';
+                        } elseif ($status === 'pending' && $approvalStatus === 'pending_approval') {
+                            $badgeColor = 'warning';
+                            $badgeLabel = 'Pending Approval';
+                        } else {
+                            $badgeColor = match($status) {
+                                'completed' => 'success',
+                                'confirmed' => ($isOverdue ? 'danger' : 'warning'),
+                                'cancelled' => 'secondary',
+                                'missed' => 'dark',
+                                'maintenance_required' => 'danger',
+                                default => 'primary',
+                            };
+                            $badgeLabel = $isOverdue ? 'OVERDUE' : ucfirst(str_replace('_', ' ', $status));
+                        }
                     ?>
                     <div class="card mb-3 <?= $isOverdue ? 'border-danger border-2' : '' ?>">
                         <div class="card-body">
@@ -234,7 +244,7 @@ if (!empty($_GET['deleted'])) {
                                     <?php endif; ?>
                                 </h5>
                                 <span class="badge bg-<?= $badgeColor ?> px-3 py-2">
-                                    <?= $isOverdue ? '⚠ OVERDUE' : ucfirst(str_replace('_', ' ', $status)) ?>
+                                    <?= h($badgeLabel) ?>
                                 </span>
                             </div>
                             

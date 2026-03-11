@@ -49,21 +49,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'First name and email are required.';
         } else {
             $existingUser = get_snipeit_user_by_email($email);
-            if ($existingUser) {
-                $error = 'A user with this email already exists in Snipe-IT.';
+            
+            // Handle multiple groups from form
+            if (is_array($groups)) {
+                $requestedGroupIds = array_map('intval', $groups);
             } else {
-                // Handle multiple groups
-                if (is_array($groups)) {
-                    $groups = implode(',', $groups);
+                $requestedGroupIds = [intval($groups)];
+            }
+            
+            if ($existingUser) {
+                // User exists in Snipe-IT - merge groups instead of blocking
+                $existingGroupIds = [];
+                if (isset($existingUser['groups']['rows'])) {
+                    $existingGroupIds = array_map('intval', array_column($existingUser['groups']['rows'], 'id'));
                 }
                 
+                // Append new groups (union of existing + requested)
+                $mergedGroupIds = array_values(array_unique(array_merge($existingGroupIds, $requestedGroupIds)));
+                $mergedGroupsCsv = implode(',', $mergedGroupIds);
+                
+                $updateData = ['groups' => $mergedGroupsCsv];
+                if ($isVip) { $updateData['vip'] = true; }
+                if ($notes) { $updateData['notes'] = $existingUser['notes'] . ' | ' . $notes; }
+                
+                $result = update_snipeit_user($existingUser['id'], $updateData);
+                
+                if ($result !== null) {
+                    $addedGroups = array_diff($requestedGroupIds, $existingGroupIds);
+                    if (empty($addedGroups)) {
+                        $success = "User '{$existingUser['name']}' already has all requested groups. No changes needed (ID: {$existingUser['id']}).";
+                    } else {
+                        $success = "User '{$existingUser['name']}' already existed in Snipe-IT. Groups updated successfully (ID: {$existingUser['id']}).";
+                    }
+                } else {
+                    $error = "User exists in Snipe-IT but failed to update their groups. Check logs for details.";
+                }
+            } else {
+                // New user - create in Snipe-IT
                 $userData = [
                     'first_name' => $firstName,
                     'last_name' => $lastName,
                     'username' => $email,
                     'email' => $email,
                     'activated' => $canLogin,
-                    'groups' => $groups,
+                    'groups' => implode(',', $requestedGroupIds),
                     'vip' => $isVip,
                     'notes' => $notes ?: 'Created via SnipeScheduler - Safety driving certified',
                 ];

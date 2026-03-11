@@ -167,15 +167,21 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
         return $html . '<input type="text" class="form-control bg-light" value="' . h($displayValue) . '" readonly disabled></div>';
     }
     
+    // Detect special fields by their db column name
+    $isMileageField = (stripos($dbColumn, 'current_mileage') !== false);
+    $isInspectionField = (stripos($dbColumn, 'visual_inspection') !== false);
+    
     switch ($element) {
         case 'textarea':
             $html .= '<textarea name="' . $inputName . '" class="form-control" rows="2">' . h($currentValue) . '</textarea>';
             break;
         case 'listbox':
+            // FIX #4: For inspection fields, always force default to unselected
+            $forceEmpty = $isInspectionField;
             $html .= '<select name="' . $inputName . '" class="form-select">';
-            $html .= '<option value=""' . (empty($currentValue) ? ' selected' : '') . ' disabled>-- Select --</option>';
-            $html .= '<option value="Yes"' . ($currentValue === 'Yes' ? ' selected' : '') . '>Yes</option>';
-            $html .= '<option value="No"' . ($currentValue === 'No' ? ' selected' : '') . '>No</option></select>';
+            $html .= '<option value=""' . (($forceEmpty || empty($currentValue)) ? ' selected' : '') . ' disabled>-- Select --</option>';
+            $html .= '<option value="Yes"' . (!$forceEmpty && $currentValue === 'Yes' ? ' selected' : '') . '>Yes</option>';
+            $html .= '<option value="No"' . (!$forceEmpty && $currentValue === 'No' ? ' selected' : '') . '>No</option></select>';
             break;
         case 'checkbox':
             $options = ['Exterior', 'Tires', 'Undercarriage', 'Interior'];
@@ -189,7 +195,17 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
         default:
             $inputType = ($format === 'DATE') ? 'date' : 'text';
             if ($format === 'DATE' && $currentValue && strtotime($currentValue)) { $currentValue = date('Y-m-d', strtotime($currentValue)); }
-            $html .= '<input type="' . $inputType . '" name="' . $inputName . '" class="form-control" value="' . h($currentValue) . '">';
+            
+            // FIX #5: For mileage, don't pre-fill - use placeholder instead
+            if ($isMileageField && $currentValue) {
+                $html .= '<input type="' . $inputType . '" name="' . $inputName . '" class="form-control"'
+                       . ' value=""'
+                       . ' placeholder="Checkout: ' . h(number_format((int)$currentValue)) . ' miles"'
+                       . ' data-previous-mileage="' . h($currentValue) . '"'
+                       . ' inputmode="numeric" pattern="[0-9]*">';
+            } else {
+                $html .= '<input type="' . $inputType . '" name="' . $inputName . '" class="form-control" value="' . h($currentValue) . '">';
+            }
     }
     return $html . '</div>';
 }
@@ -429,7 +445,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (!form || !mileageInput || !visualSelect) return;
     
-    const previousMileage = parseInt(mileageInput.value) || 0;
+    // FIX #5/#6: Read previous mileage from data attribute (input is now empty)
+    const previousMileage = parseInt(mileageInput.dataset.previousMileage || mileageInput.value) || 0;
     
     // Add required indicators
     const mileageLabel = mileageInput.closest('.mb-3')?.querySelector('.form-label');
@@ -438,8 +455,23 @@ document.addEventListener('DOMContentLoaded', function() {
     if (visualLabel) visualLabel.innerHTML += ' <span class="text-danger">*</span>';
     
     mileageInput.setAttribute('required', 'required');
-    mileageInput.setAttribute('placeholder', previousMileage > 0 ? 'Checkout: ' + previousMileage.toLocaleString() + ' miles' : 'Enter odometer reading');
+    if (!mileageInput.placeholder || mileageInput.placeholder === '') {
+        mileageInput.setAttribute('placeholder', previousMileage > 0 ? 'Checkout: ' + previousMileage.toLocaleString() + ' miles' : 'Enter odometer reading');
+    }
     mileageInput.setAttribute('min', previousMileage || 0);
+    mileageInput.setAttribute('inputmode', 'numeric');
+    
+    // FIX #6: Show initial validation hints
+    setTimeout(function() {
+        if (!mileageInput.value) {
+            mileageInput.classList.add('is-invalid');
+            addFeedback(mileageInput, 'Required: Enter the current odometer reading.');
+        }
+        if (visualSelect.value !== 'Yes') {
+            visualSelect.classList.add('is-invalid');
+            addFeedback(visualSelect, 'Required: Complete visual inspection and select "Yes".');
+        }
+    }, 300);
     
     mileageInput.addEventListener('input', function() {
         const val = parseInt(this.value) || 0;
@@ -511,6 +543,28 @@ document.addEventListener('DOMContentLoaded', function() {
         bootstrap.Modal.getInstance(document.getElementById('checkinConfirmModal')).hide();
         form.submit();
     });
+    
+    // FIX #6: Show why button is disabled when user tries to click
+    const submitWrapper = submitBtn?.parentNode;
+    if (submitWrapper) {
+        submitWrapper.addEventListener('click', function(e) {
+            if (submitBtn.disabled) {
+                const reasons = [];
+                if (!mileageInput.classList.contains('is-valid')) reasons.push('Enter current odometer reading');
+                if (visualSelect.value !== 'Yes') reasons.push('Complete visual inspection (select "Yes")');
+                if (!agreement?.checked) reasons.push('Check the confirmation agreement');
+                
+                let hint = submitWrapper.querySelector('.submit-hint');
+                if (!hint) {
+                    hint = document.createElement('div');
+                    hint.className = 'submit-hint text-danger small mt-2';
+                    submitWrapper.appendChild(hint);
+                }
+                hint.innerHTML = '<strong>Cannot submit yet:</strong><br>' + reasons.map(r => '&bull; ' + r).join('<br>');
+                setTimeout(() => { if (hint) hint.remove(); }, 5000);
+            }
+        });
+    }
     
     updateSubmitState();
 });

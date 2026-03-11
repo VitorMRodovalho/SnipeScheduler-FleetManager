@@ -1219,7 +1219,7 @@ form .form-select {
 .btn-success {
     border-radius: 0.6rem;
     box-shadow: 0 10px 20px rgba(var(--primary-rgb), 0.18);
-    color: #0f172a;
+    color: #ffffff;
 }
 
 /* Optional: subtle hover effect */
@@ -1249,7 +1249,7 @@ form .form-select {
 }
 
 .pagination .page-item.active .page-link {
-    color: #000000; /* Changed from white to dark navy/black */
+    color: #ffffff;
     background: linear-gradient(120deg, var(--primary-strong), var(--primary-soft));
     border-color: rgba(var(--primary-rgb), 0.55);
 }
@@ -1285,7 +1285,7 @@ form .form-select {
 }
 
 .reservations-subtabs .nav-link.active {
-    color: #000000;
+    color: #ffffff;
     background: linear-gradient(135deg, var(--primary), var(--primary-strong));
     border-color: var(--primary-strong) var(--primary-strong) #fff;
     box-shadow: 0 8px 18px rgba(var(--primary-rgb), 0.2);
@@ -1399,7 +1399,7 @@ form .form-select {
 .btn-primary:focus-visible {
     background: linear-gradient(120deg, var(--primary-strong), var(--primary-soft));
     border-color: rgba(var(--primary-rgb), 0.55);
-    color: #000000;
+    color: #ffffff;
 }
 
 .btn-primary:focus {
@@ -1438,21 +1438,22 @@ form .form-select {
 .btn-success:focus-visible {
     background: linear-gradient(120deg, var(--primary-strong), var(--primary-soft));
     border-color: rgba(var(--primary-rgb), 0.55);
-    color: #000000;
+    color: #ffffff;
 }
 
 .filter-panel .btn-primary {
-    background: #000000;
-    border-color: #000000;
-    box-shadow: 0 12px 22px rgba(0, 0, 0, 0.2);
+    background: linear-gradient(120deg, var(--accent), var(--accent-2));
+    border-color: rgba(var(--primary-rgb), 0.5);
+    box-shadow: 0 12px 22px rgba(var(--primary-rgb), 0.2);
+    color: #ffffff;
 }
 
 .filter-panel .btn-primary:hover,
 .filter-panel .btn-primary:active,
 .filter-panel .btn-primary:focus-visible {
-    background: #111111;
-    border-color: #111111;
-    color: #000000;
+    background: linear-gradient(120deg, var(--primary-strong), var(--primary-soft));
+    border-color: rgba(var(--primary-rgb), 0.55);
+    color: #ffffff;
 }
 
 /* --------------------------------------------------
