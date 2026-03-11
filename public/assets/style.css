@@ -1768,3 +1768,24 @@ form .form-select {
     background: rgba(var(--primary-rgb), 0.12);
     color: var(--text, #1e293b) !important;
 }
+
+/* Nav Pills active state (Admin subtabs: All Users, Add User, Inactive) */
+.nav-pills .nav-link.active,
+.nav-pills .show > .nav-link {
+    background: linear-gradient(120deg, var(--accent), var(--accent-2)) !important;
+    color: #ffffff !important;
+    border-color: rgba(var(--primary-rgb), 0.4) !important;
+    box-shadow: 0 8px 18px rgba(var(--primary-rgb), 0.2);
+}
+
+/* Nav Pills inactive state - ensure readable dark text */
+.nav-pills .nav-link:not(.active) {
+    color: var(--text, #1e293b) !important;
+    background: rgba(var(--primary-rgb), 0.06);
+    border: 1px solid rgba(var(--primary-rgb), 0.12);
+}
+
+.nav-pills .nav-link:not(.active):hover {
+    background: rgba(var(--primary-rgb), 0.12);
+    color: var(--text, #1e293b) !important;
+}
