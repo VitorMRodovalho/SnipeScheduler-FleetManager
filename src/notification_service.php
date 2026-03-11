@@ -379,7 +379,7 @@ class NotificationService
     {
         try {
             $stmt = $db->prepare("
-                SELECT channel, subject_template, body_template, is_enabled
+                SELECT channel, subject_template, body_template, enabled
                 FROM email_notification_settings
                 WHERE event_key = :key
                 LIMIT 1
