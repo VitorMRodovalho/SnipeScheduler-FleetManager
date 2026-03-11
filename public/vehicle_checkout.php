@@ -653,7 +653,47 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script>
 document.getElementById('needs_maintenance')?.addEventListener('change', function() {
-    document.getElementById('checkout_maintenance_details').style.display = this.checked ? 'block' : 'none';
+    const details = document.getElementById('checkout_maintenance_details');
+    if (this.checked) {
+        // Show confirmation before proceeding
+        if (confirm('Are you sure this vehicle is unusable?\n\nThis will:\n- Flag the vehicle for maintenance\n- Notify Fleet Staff\n- Attempt to assign you an alternate vehicle\n\nClick OK to proceed or Cancel to go back.')) {
+            details.style.display = 'block';
+            // Change submit button to maintenance mode
+            const submitBtn = document.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.className = 'btn btn-warning btn-lg';
+                submitBtn.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>Report Issue & Request Alternate';
+                submitBtn.disabled = false; // Enable directly - no mileage/inspection needed
+            }
+            // Disable mileage/inspection requirements
+            const mileage = document.querySelector('input[name*="current_mileage"]');
+            const visual = document.querySelector('select[name*="visual_inspection"]');
+            const agreement = document.getElementById('agreement');
+            if (mileage) { mileage.removeAttribute('required'); mileage.classList.remove('is-invalid'); }
+            if (visual) { visual.removeAttribute('required'); }
+            if (agreement) { agreement.required = false; }
+        } else {
+            this.checked = false;
+        }
+    } else {
+        details.style.display = 'none';
+        // Restore normal checkout mode
+        const submitBtn = document.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.className = 'btn btn-success btn-lg';
+            submitBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Complete Checkout';
+            submitBtn.disabled = true; // Re-enable validation
+        }
+        // Re-enable validation
+        const mileage = document.querySelector('input[name*="current_mileage"]');
+        const visual = document.querySelector('select[name*="visual_inspection"]');
+        const agreement = document.getElementById('agreement');
+        if (mileage) { mileage.setAttribute('required', 'required'); }
+        if (visual) { visual.setAttribute('required', 'required'); }
+        if (agreement) { agreement.required = true; }
+        // Re-run validation state
+        if (typeof updateSubmitState === 'function') updateSubmitState();
+    }
 });
 </script>
 <?php layout_footer(); ?>
