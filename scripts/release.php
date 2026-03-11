@@ -141,3 +141,27 @@ echo "  git tag -a v{$newVersion} -m \"Release v{$newVersion}\"\n";
 echo "  git push origin v{$newVersion}\n";
 
 echo "\n✅ Release v{$newVersion} prepared!\n";
+
+// 7. Screenshot capture prompt
+echo "\n=== Screenshots ===\n";
+echo "Update documentation screenshots for v{$newVersion}?\n";
+echo "Enter PHPSESSID (from browser DevTools > Cookies) or press Enter to skip: ";
+$sessionInput = trim(fgets(STDIN));
+if ($sessionInput !== '') {
+    $nodeScript = __DIR__ . '/take-screenshots.js';
+    if (file_exists($nodeScript)) {
+        echo "\nCapturing screenshots...\n";
+        $cmd = 'node ' . escapeshellarg($nodeScript) . ' --session=' . escapeshellarg($sessionInput);
+        passthru($cmd, $exitCode);
+        if ($exitCode === 0) {
+            echo "\n✓ Screenshots updated for v{$newVersion}\n";
+            echo "  (included in git add -A above)\n";
+        } else {
+            echo "\n⚠ Screenshot capture had errors (exit code: {$exitCode})\n";
+        }
+    } else {
+        echo "⚠ Screenshot script not found at: {$nodeScript}\n";
+    }
+} else {
+    echo "Skipped.\n";
+}
