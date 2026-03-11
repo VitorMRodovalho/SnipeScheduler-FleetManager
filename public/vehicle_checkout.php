@@ -519,6 +519,52 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // FIX #6: Show why button is disabled when user tries to click
+    const submitWrapper = submitBtn?.parentNode;
+    if (submitWrapper) {
+        submitWrapper.addEventListener('click', function(e) {
+            if (submitBtn.disabled) {
+                const reasons = [];
+                if (!mileageInput.classList.contains('is-valid')) reasons.push('Enter current odometer reading');
+                if (visualSelect.value !== 'Yes') reasons.push('Complete visual inspection (select "Yes")');
+                if (!agreement?.checked) reasons.push('Check the confirmation agreement');
+                
+                // Show a temporary tooltip-style message
+                let hint = submitWrapper.querySelector('.submit-hint');
+                if (!hint) {
+                    hint = document.createElement('div');
+                    hint.className = 'submit-hint text-danger small mt-2';
+                    submitWrapper.appendChild(hint);
+                }
+                hint.innerHTML = '<strong>Cannot submit yet:</strong><br>' + reasons.map(r => '&bull; ' + r).join('<br>');
+                setTimeout(() => { if (hint) hint.remove(); }, 5000);
+            }
+        });
+    }
+    
+    // FIX #6: Show why button is disabled when user tries to click
+    const submitWrapper = submitBtn?.parentNode;
+    if (submitWrapper) {
+        submitWrapper.addEventListener('click', function(e) {
+            if (submitBtn.disabled) {
+                const reasons = [];
+                if (!mileageInput.classList.contains('is-valid')) reasons.push('Enter current odometer reading');
+                if (visualSelect.value !== 'Yes') reasons.push('Complete visual inspection (select "Yes")');
+                if (!agreement?.checked) reasons.push('Check the confirmation agreement');
+                
+                // Show a temporary tooltip-style message
+                let hint = submitWrapper.querySelector('.submit-hint');
+                if (!hint) {
+                    hint = document.createElement('div');
+                    hint.className = 'submit-hint text-danger small mt-2';
+                    submitWrapper.appendChild(hint);
+                }
+                hint.innerHTML = '<strong>Cannot submit yet:</strong><br>' + reasons.map(r => '&bull; ' + r).join('<br>');
+                setTimeout(() => { if (hint) hint.remove(); }, 5000);
+            }
+        });
+    }
+    
     // Initial state
     updateSubmitState();
 });
