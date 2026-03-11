@@ -58,11 +58,6 @@ class FleetEmailService
         // Dynamic: resolve from Snipe-IT group membership (no hardcoded emails)
         return get_emails_by_snipeit_groups([SNIPEIT_GROUP_FLEET_STAFF, SNIPEIT_GROUP_FLEET_ADMIN]);
     }
-        if (!empty($auth['google_checkout_emails'])) {
-            $emails = array_merge($emails, $auth['google_checkout_emails']);
-        }
-
-        return array_unique(array_filter($emails));
     }
     
     /**
