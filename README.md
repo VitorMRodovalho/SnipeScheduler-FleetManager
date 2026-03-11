@@ -2,7 +2,7 @@
 
 A comprehensive fleet vehicle management system built on top of [Snipe-IT](https://snipeitapp.com/), designed for enterprise fleet operations with reservation scheduling, maintenance tracking, and compliance management.
 
-> **Current Version:** v1.4.0 · [Changelog](CHANGELOG.md) · [Releases](https://github.com/VitorMRodovalho/SnipeScheduler-FleetManager/releases)
+> **Current Version:** v1.4.3 · [Changelog](CHANGELOG.md) · [Releases](https://github.com/VitorMRodovalho/SnipeScheduler-FleetManager/releases) · [User Guide](docs/USER_GUIDE.md)
 
 ## Why This Project?
 
@@ -29,85 +29,93 @@ This project was born from a real need in **large-scale infrastructure programs*
 
 ### For Drivers
 
-- 📅 **Book Vehicles** — Reserve vehicles in advance with pickup/return times
-- 📱 **Mobile-Friendly** — Responsive design with QR code scanning
-- ✅ **Digital Inspections** — Complete checkout/checkin forms on any device
-- 📧 **Email & Teams Notifications** — Confirmation, reminders, and approvals via email and/or Microsoft Teams Adaptive Cards
-- 📆 **Smart Booking Calendar** — Business day enforcement with holiday awareness; weekends, holidays, and blackouts grayed out
+- **Book Vehicles** — Reserve vehicles in advance with pickup/return times
+- **Mobile-Friendly** — Responsive design with QR code scanning
+- **Digital Inspections** — Complete checkout/checkin forms on any device
+- **Email and Teams Notifications** — Confirmation, reminders, and approvals via email and/or Microsoft Teams Adaptive Cards
+- **Smart Booking Calendar** — Business day enforcement with holiday awareness; weekends, holidays, and blackouts grayed out
+- **Driver Training Gate** — Training completion required before booking (configurable validity period with auto-expiration)
 
 ### For Fleet Staff
 
-- 👥 **Approval Workflow** — Review and approve/reject reservations
-- 🚗 **Vehicle Management** — Track all fleet vehicles and their status
-- 🔧 **Maintenance Tracking** — Flag issues, track maintenance history
-- 📊 **Reports** — Utilization, compliance, and usage reports
+- **Approval Workflow** — Review and approve/reject reservations
+- **Vehicle Management** — Track all fleet vehicles and their status
+- **Maintenance Tracking** — Flag issues, track maintenance history
+- **Reports** — Utilization, compliance, and usage reports
+- **Training Management** — Toggle driver training status with date picker and expiration tracking
 
 ### For Administrators
 
-- ⚙️ **Full Configuration** — LDAP/OAuth authentication, SMTP, custom fields
-- 🔔 **Notification Controls** — Configure recipients, delivery channel (Email / Teams / Both / Off) per event type
-- 💬 **Microsoft Teams Integration** — Deliver Adaptive Cards to Teams channels via Power Automate webhooks; webhook URLs managed securely by Super Admin
-- 📢 **Announcements** — Display system-wide notices with scheduling and urgency levels
-- 🔒 **Security Dashboard** — Monitor backup status, config permissions, and security headers
-- 📋 **Reservation Controls** — Set booking rules (min notice, max duration, blackouts)
-- 🔗 **Clean URLs** — Professional URL structure without .php extensions
-- 📦 **Release Management** — Built-in version management with semantic versioning
-- 📆 **Booking Rules** — Configure business day buffer, working days, federal/custom holiday calendar
-- 🔄 **Overdue Auto-Redirect** — Automatically reassigns next reservation when a vehicle is overdue
-- ✉️ **Customizable Email Templates** — Override email subjects and bodies per notification event
+- **Full Configuration** — Microsoft OAuth / Google OAuth / LDAP authentication, SMTP, custom fields
+- **Notification Controls** — Configure recipients, delivery channel (Email / Teams / Both / Off) per event type
+- **Microsoft Teams Integration** — Deliver Adaptive Cards to Teams channels via Power Automate webhooks
+- **Announcements** — Display system-wide notices with scheduling and urgency levels
+- **Security Dashboard** — Monitor backup status, CRON sync health, config permissions, and security headers
+- **Booking Rules** — Configure business day buffer, working days, holiday calendar, and driver training requirements
+- **Reservation Controls** — Set min notice, max duration, concurrent booking limits, and blackout periods
+- **CRON Health Monitoring** — Real-time sync status with automatic alerting on CRON failures
+- **Configurable Snipe-IT Mapping** — Group IDs, status labels, and custom field mappings in config (no hardcoding)
+- **Startup Validation** — Script to verify all required Snipe-IT entities exist before deployment
+- **API Resilience** — Exponential backoff retry on rate limiting (429) and server errors (5xx)
+- **Release Management** — Built-in version management with semantic versioning and auto-announcements
+- **Clean URLs** — Professional URL structure without .php extensions
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    SnipeScheduler FleetManager               │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │   Drivers   │  │ Fleet Staff │  │   Fleet Admin       │  │
-│  │  (Group 2)  │  │  (Group 3)  │  │   (Group 4)         │  │
-│  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────┘  │
-│         │                │                     │             │
-│         └────────────────┼─────────────────────┘             │
-│                          │                                   │
-│         ┌────────────────▼────────────────┐                  │
-│         │      SnipeScheduler PHP App     │                  │
-│         │   - Reservation Management      │                  │
-│         │   - Inspection Forms            │                  │
-│         │   - Approval Workflow           │                  │
-│         │   - Email & Teams Notifications │                  │
-│         └────────────────┬────────────────┘                  │
-│                          │ API Calls                         │
-└──────────────────────────┼───────────────────────────────────┘
-                           │
-┌──────────────────────────▼───────────────────────────────────┐
-│                      Snipe-IT                                │
-│   - Asset Database (Source of Truth)                         │
-│   - User Management & Groups                                │
-│   - Custom Fields (Mileage, VIN, Maintenance)               │
-│   - Status Labels (Available, Reserved, In Service)          │
-│   - Locations (Pickup Points, Destinations)                  │
-└──────────────────────────────────────────────────────────────┘
++-------------------------------------------------------------+
+|                   SnipeScheduler FleetManager                |
+|  +-------------+  +-------------+  +---------------------+  |
+|  |   Drivers   |  | Fleet Staff |  |   Fleet Admin       |  |
+|  |  (Group 2)  |  |  (Group 3)  |  |   (Group 4)         |  |
+|  +------+------+  +------+------+  +----------+----------+  |
+|         |                |                     |             |
+|         +----------------+---------------------+             |
+|                          |                                   |
+|         +----------------v----------------+                  |
+|         |      SnipeScheduler PHP App     |                  |
+|         |   - Reservation Management      |                  |
+|         |   - Inspection Forms            |                  |
+|         |   - Approval Workflow           |                  |
+|         |   - Email & Teams Notifications |                  |
+|         |   - Training Compliance         |                  |
+|         |   - CRON Health Monitoring      |                  |
+|         +----------------+----------------+                  |
+|                          | API Calls (with retry/backoff)    |
++---------------------------+----------------------------------+
+                           |
++---------------------------v----------------------------------+
+|                      Snipe-IT                                |
+|   - Asset Database (Source of Truth)                         |
+|   - User Management & Groups                                |
+|   - Custom Fields (Mileage, VIN, Maintenance)               |
+|   - Status Labels (Available, Reserved, In Service)          |
+|   - Locations (Pickup Points, Destinations)                  |
++--------------------------------------------------------------+
 ```
 
 ## Permission Model
 
-Permissions are managed through **Snipe-IT Groups**:
+Permissions are managed through **Snipe-IT Groups**. Group IDs are configurable in `config.php`:
 
-| Group ID | Group Name | Capabilities |
-|----------|------------|--------------|
-| 1 | Admins | Full system access including Settings |
-| 2 | Drivers | Book vehicles, view own reservations |
-| 3 | Fleet Staff | Approve reservations, manage maintenance |
-| 4 | Fleet Admin | All staff permissions + user management |
+| Config Key | Default ID | Group Name | Capabilities |
+|------------|-----------|------------|--------------|
+| `admins` | 1 | Admins | Full system access including Settings and Security |
+| `drivers` | 2 | Drivers | Book vehicles, view own reservations |
+| `fleet_staff` | 3 | Fleet Staff | Approve reservations, manage maintenance, training |
+| `fleet_admin` | 4 | Fleet Admin | All staff permissions + user/vehicle/notification management |
+
+Users must belong to at least one authorized group to access the system. Users in Snipe-IT without an authorized group assignment are denied login with a clear message directing them to contact Fleet Staff.
 
 ## Screenshots
 
-### Home & Login
+### Login
 
-![Home & Login](docs/screenshots/login.png)
+![Login](docs/screenshots/login.png)
 
-*The landing page provides an overview of the Fleet Management System, including key features and a quick-access login section. Users authenticate via Microsoft OAuth (multi-tenant) or Google Sign-In. Upon successful login, users are automatically assigned permissions based on their Snipe-IT group membership.*
+*SSO authentication via Microsoft OAuth (multi-tenant) or Google Sign-In. Users are automatically assigned permissions based on their Snipe-IT group membership. Users without an authorized fleet group are denied access with a descriptive message.*
 
-**Access:** Public (unauthenticated)
+**Access:** Public
 
 ---
 
@@ -115,7 +123,7 @@ Permissions are managed through **Snipe-IT Groups**:
 
 ![Dashboard](docs/screenshots/dashboard.png)
 
-*The main dashboard displays today's schedule, quick statistics, and overdue vehicle alerts. Users see their upcoming reservations at a glance.*
+*Today's vehicle schedule, quick statistics (total bookings, active checkouts, overdue vehicles), and system announcements. Users see their upcoming reservations at a glance.*
 
 **Access:** All authenticated users
 
@@ -125,7 +133,7 @@ Permissions are managed through **Snipe-IT Groups**:
 
 ![Vehicle Catalogue](docs/screenshots/vehicle_catalogue.png)
 
-*Browse all available fleet vehicles with real-time availability pulled from Snipe-IT. Filter by type, status, or availability window.*
+*Browse all fleet vehicles with real-time availability pulled from Snipe-IT. Each vehicle shows status, mileage, and booking availability.*
 
 **Access:** All authenticated users
 
@@ -135,9 +143,9 @@ Permissions are managed through **Snipe-IT Groups**:
 
 ![Book Vehicle](docs/screenshots/vehicle_reserve.png)
 
-*Three-step booking flow: select location, choose dates (with business day calendar — weekends, holidays, and blackouts are grayed out), then pick from vehicles available for your date window. The vehicle list updates dynamically via AJAX, enforcing turnaround buffers and preventing double-booking.*
+*Three-step booking flow: select location, choose dates (business day calendar with weekends, holidays, and blackouts grayed out), then pick from available vehicles. Dynamic AJAX filtering enforces turnaround buffers and prevents double-booking. Drivers without completed training see a warning banner and cannot submit.*
 
-**Access:** All authenticated users
+**Access:** All authenticated users (training completion required when enabled)
 
 ---
 
@@ -145,7 +153,7 @@ Permissions are managed through **Snipe-IT Groups**:
 
 ![My Reservations](docs/screenshots/my_bookings.png)
 
-*View and manage your own reservations. Cancel pending bookings, see approval status, and access checkout forms when ready.*
+*View and manage your own reservations. Cancel pending bookings, see approval status, and access checkout/checkin forms.*
 
 **Access:** All authenticated users
 
@@ -155,7 +163,7 @@ Permissions are managed through **Snipe-IT Groups**:
 
 ![Approval Queue](docs/screenshots/approval.png)
 
-*Fleet Staff review pending reservation requests. Approve or reject with notes, view requester history and vehicle availability.*
+*Fleet Staff review pending reservation requests. Approve or reject with notes. VIP users bypass the queue with auto-approval.*
 
 **Access:** Fleet Staff and above
 
@@ -185,7 +193,7 @@ Permissions are managed through **Snipe-IT Groups**:
 
 ![Reports](docs/screenshots/reports.png)
 
-*Comprehensive reporting including utilization rates, compliance status, and usage history. Export to CSV for further analysis.*
+*Comprehensive reporting: utilization rates, compliance status (insurance/registration expiry), usage history, and mileage summaries. Export to CSV for external analysis.*
 
 **Access:** Fleet Staff and above
 
@@ -195,7 +203,7 @@ Permissions are managed through **Snipe-IT Groups**:
 
 ![Vehicle Management](docs/screenshots/vehicles.png)
 
-*Administrative vehicle management with guided vehicle creation. Vehicle Name and Asset Tag (FLEET-VEH-###) are auto-generated for consistency. The system enforces duplicate checks on VIN and License Plate, requires compliance fields (insurance, registration), and presents a confirmation summary before creating. All vehicles sync to Snipe-IT as requestable assets.*
+*Administrative vehicle management with guided creation. Auto-generated asset tags, VIN/plate duplicate checking, and compliance field enforcement. All vehicles sync to Snipe-IT as requestable assets.*
 
 **Access:** Fleet Admin
 
@@ -205,10 +213,9 @@ Permissions are managed through **Snipe-IT Groups**:
 
 ![Add Vehicle](docs/screenshots/vehicles_create.png)
 
-*Guided vehicle creation form with governance controls. Vehicle Name is auto-generated from Year, Manufacturer, Model, and License Plate. Asset Tags follow the FLEET-VEH-### format and are never reused. The system validates VIN (17-character) and License Plate for duplicates in real-time, enforces required compliance fields, and presents a confirmation summary modal before submitting to Snipe-IT.*
+*Guided vehicle creation with governance controls. Vehicle Name auto-generated from Year, Manufacturer, Model, and License Plate. Confirmation summary before submitting to Snipe-IT.*
 
 **Access:** Fleet Admin
-
 
 ---
 
@@ -216,7 +223,7 @@ Permissions are managed through **Snipe-IT Groups**:
 
 ![User Management](docs/screenshots/users.png)
 
-*View users and their Snipe-IT group assignments. Track VIP status for auto-approval workflows.*
+*View all users organized by Snipe-IT group (Drivers, Fleet Staff, Fleet Admin). Toggle VIP status for auto-approval workflows. Manage driver training completion with date picker, expiration tracking, and color-coded status indicators (green = valid, yellow = expiring within 15 days, red = expired). Confirmation dialogs on all actions with full audit trail.*
 
 **Access:** Fleet Admin
 
@@ -226,7 +233,7 @@ Permissions are managed through **Snipe-IT Groups**:
 
 ![Notifications](docs/screenshots/notifications.png)
 
-*Configure notification delivery per event type. Each event can be set to Email, Microsoft Teams, Both, or Off. Fleet Admins see SMTP and Teams channel status cards, a split queue counter (email pending / Teams pending), and a per-event channel selector. Message templates are shared between email and Teams Adaptive Cards — one edit updates both channels.*
+*Configure notification delivery per event type. Each event can be set to Email, Microsoft Teams, Both, or Off. Includes training expiry alerts, CRON health alerts, and all reservation lifecycle events. Message templates shared between email and Teams Adaptive Cards.*
 
 **Access:** Fleet Admin
 
@@ -236,7 +243,7 @@ Permissions are managed through **Snipe-IT Groups**:
 
 ![Announcements](docs/screenshots/announcements.png)
 
-*Create and manage system-wide announcements. Schedule display windows, set urgency levels, and make notices dismissible. Includes release announcement templates for system updates.*
+*Create and manage system-wide announcements with scheduling, urgency levels, and dismissible toggle. Release announcements auto-generated on version updates and auto-deactivated on new releases.*
 
 **Access:** Fleet Admin
 
@@ -246,7 +253,7 @@ Permissions are managed through **Snipe-IT Groups**:
 
 ![Booking Rules](docs/screenshots/booking_rules.png)
 
-*Configure fleet scheduling rules: vehicle turnaround buffer (business days between consecutive reservations), overdue redirect triggers, working day schedule, and a complete holiday calendar with pre-seeded US federal holidays (2025-2030). Admins can toggle individual holidays and add custom dates.*
+*Configure fleet scheduling rules: vehicle turnaround buffer, overdue redirect triggers, working day schedule, holiday calendar with pre-seeded federal holidays. Driver Training Requirements section with global enable/disable toggle and configurable validity period (6/12/24 months or no expiration). Disabling training preserves all records for re-enablement.*
 
 **Access:** Fleet Admin
 
@@ -256,7 +263,7 @@ Permissions are managed through **Snipe-IT Groups**:
 
 ![Security Dashboard](docs/screenshots/security.png)
 
-*Monitor system security status including config file permissions, security headers, and backup recency. View backup logs and access maintenance commands. Available exclusively to super administrators.*
+*Monitor system health: CRON sync status (healthy/stale/never run with last sync time and asset count), backup recency and schedule, config file permissions, and security headers. Maintenance command reference for common admin tasks.*
 
 **Access:** Super Admin only
 
@@ -266,9 +273,17 @@ Permissions are managed through **Snipe-IT Groups**:
 
 ![Settings](docs/screenshots/settings.png)
 
-*Full system configuration including authentication providers (Microsoft OAuth, Google OAuth), SMTP settings, Microsoft Teams webhook URLs (masked, reveal-on-demand), reservation controls, blackout period management, and system preferences. The Teams Integration card includes inline setup instructions for creating Power Automate HTTP trigger flows — Fleet Admins can enable/disable Teams and test delivery, but webhook URLs are only visible to Super Admins.*
+*Full system configuration: authentication providers (Microsoft OAuth, Google OAuth), SMTP settings, Teams webhook URLs (masked with reveal toggle), and system preferences. Teams Integration card with inline setup instructions for Power Automate HTTP trigger flows.*
 
 **Access:** Super Admin only
+
+## User Guide
+
+For detailed step-by-step procedures for each user role, see **[docs/USER_GUIDE.md](docs/USER_GUIDE.md)**:
+
+- **Procedure A: Driver** — Booking, checkout, inspection, checkin, incident reporting
+- **Procedure B: Fleet Staff** — Approval queue, maintenance, reports, training management
+- **Procedure C: Fleet Admin / Super Admin** — Configuration, user management, notifications, security
 
 ## Installation
 
@@ -283,96 +298,92 @@ See [docs/INSTALLATION.md](docs/INSTALLATION.md) for detailed installation instr
 5. Configure database, Snipe-IT API, and authentication
 6. Run database migrations
 7. Create user groups in Snipe-IT (Drivers, Fleet Staff, Fleet Admin)
+8. Run `php scripts/validate_snipeit.php` to verify configuration
+9. Set up CRON jobs (sync, health check, email queue, training alerts)
 
-## Snipe-IT Configuration Guide
+## Snipe-IT Configuration
 
-### Required Snipe-IT Setup
+### Required Setup
+
+All Snipe-IT entity IDs are **configurable** in `config.php` — no hardcoded values. Run `php scripts/validate_snipeit.php` after setup to verify everything is connected.
 
 #### 1. User Groups
 
-Create these groups in Snipe-IT → Settings → Groups:
+Create these groups in Snipe-IT (IDs are configured in `config.php['snipeit_groups']`):
 
-| Group Name | Group ID | Purpose |
-|------------|----------|---------|
-| Drivers | 2 | Basic vehicle booking access |
-| Fleet Staff | 3 | Approval and maintenance management |
-| Fleet Admin | 4 | Full fleet administration |
+| Group Name | Purpose |
+|------------|---------|
+| Drivers | Basic vehicle booking access |
+| Fleet Staff | Approval and maintenance management |
+| Fleet Admin | Full fleet administration |
 
 #### 2. Status Labels
 
-Create these status labels in Snipe-IT → Settings → Status Labels:
+Create these status labels (IDs configured in `config.php['snipeit_statuses']`):
 
 | Status Name | Type | Notes |
 |-------------|------|-------|
 | VEH-Available | Deployable | Default status for available vehicles |
-| VEH-Reserved | Pending | Vehicle has upcoming reservation |
+| VEH-Reserved | Pending | Vehicle has approved reservation |
 | VEH-In Service | Deployed | Vehicle currently checked out |
 | VEH-Out of Service | Undeployable | Under maintenance |
 
 #### 3. Custom Fields
 
-Create a **Fleet Vehicle Fields** fieldset with these custom fields:
+Create a fieldset with these fields (column names configured in `config.php['snipeit_fields']`):
 
-| Field Name | Element | Format | Unique | Used In |
-|------------|---------|--------|--------|---------|
-| VIN | Text | `regex:/^[A-HJ-NPR-Z0-9]{17}$/` | Yes | Checkout, Emails |
-| License Plate | Text | `regex:/^[A-Z0-9]{1,3}[- ]?[A-Z0-9]{1,4}$/` | Yes | Checkout, Emails |
-| Vehicle Year | Text | NUMERIC | No | Catalogue |
-| Current Mileage | Text | `regex:/^[0-9]{1,7}$/` | No | Checkout, Checkin |
-| Last Oil Change (Miles) | Text | `regex:/^[0-9]{1,7}$/` | No | Maintenance |
-| Last Tire Rotation (Miles) | Text | `regex:/^[0-9]{1,7}$/` | No | Maintenance |
-| Insurance Expiry | Text | DATE | No | Compliance Report |
-| Registration Expiry | Text | DATE | No | Compliance Report |
-| Holman Account # | Text | ANY | No | Maintenance Vendor |
-| Last Maintenance Date | Text | DATE | No | Maintenance Tracking |
-| Last Maintenance Mileage | Text | `regex:/^[0-9]{1,7}$/` | No | Maintenance Tracking |
-| Maintenance Interval Miles | Text | `regex:/^[0-9]{1,7}$/` | No | Maintenance Alerts |
-| Maintenance Interval Days | Text | NUMERIC | No | Maintenance Alerts |
+| Field Name | Element | Purpose |
+|------------|---------|---------|
+| VIN | Text | Vehicle identification (17-char validated) |
+| License Plate | Text | Vehicle plate number |
+| Current Mileage | Text | Odometer reading (updated at checkout/checkin) |
+| Last Oil Change (Miles) | Text | Oil change tracking |
+| Last Tire Rotation (Miles) | Text | Tire rotation tracking |
+| Insurance Expiry | Text/Date | Compliance tracking |
+| Registration Expiry | Text/Date | Compliance tracking |
+| Visual Inspection Complete? | Listbox | Checkout confirmation |
+| Checkout Time | Text | HH:MM format |
+| Return Time | Text | HH:MM format |
+| Last Maintenance Date | Text/Date | Service tracking |
+| Last Maintenance Mileage | Text | Mileage at last service |
 
-**Inspection Fields** (populated during checkout/checkin):
+#### 4. Categories, Manufacturers, Models, Locations
 
-| Field Name | Element | Format | Purpose |
-|------------|---------|--------|---------|
-| Visual Inspection Complete? | Listbox | ANY | Confirmation checkbox |
-| Vehicle Condition Issues | Checkbox | ANY | Multi-select issue types |
-| Exterior Issues Description | Textarea | ANY | Free text for exterior damage |
-| Tire Issues Description | Textarea | ANY | Free text for tire problems |
-| Undercarriage Issues | Textarea | ANY | Free text for undercarriage |
-| Interior Issues Description | Textarea | ANY | Free text for interior condition |
-| Checkout Time | Text | `regex:/^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/` | HH:MM format |
-| Return Time | Text | `regex:/^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/` | HH:MM format |
-| Expected Return Time | Text | `regex:/^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/` | HH:MM format |
+- Create a **Vehicles** category for fleet assets
+- Add manufacturers and models matching your fleet
+- Create **Pickup Locations** and **Field Destinations** as location entries
 
-#### 4. Categories
+### Configuration Validation
 
-Create a **Vehicles** category (or similar) for fleet assets.
+After setup, verify everything is connected:
 
-#### 5. Manufacturers & Models
+```bash
+php scripts/validate_snipeit.php
+```
 
-Create manufacturers (Ford, Chevrolet, etc.) and models (F-150, Silverado, etc.) for your fleet.
+For strict mode (fails on errors — useful in CI/deploy):
 
-#### 6. Locations
+```bash
+php scripts/validate_snipeit.php --strict
+```
 
-Create locations for:
+## CRON Jobs
 
-- **Pickup Points** — Where vehicles are collected
-- **Destinations** — Where vehicles will be used (field offices, job sites)
-
-### Asset Creation Template
-
-When creating a new fleet vehicle in Snipe-IT:
-
-1. **Asset Tag**: Use consistent format (e.g., `VEH-001`)
-2. **Model**: Select appropriate vehicle model
-3. **Status**: Set to `VEH-Available`
-4. **Category**: Select `Vehicles`
-5. **Location**: Set default/home location
-6. **Custom Fields**: Fill in VIN, mileage, license plate
-7. **Requestable**: Enable for booking availability
+| Schedule | Script | Purpose |
+|----------|--------|---------|
+| Every 1 min | `sync_checked_out_assets.php` | Sync vehicle checkout data from Snipe-IT |
+| Every 5 min | `cron_sync_health.php` | Monitor sync freshness, alert if stale |
+| Every 5 min | `cron/process_email_queue.php` | Process outbound email queue |
+| Every 15 min | `cron_mark_missed.php` | Mark uncollected reservations as missed |
+| Every 15 min | `cron/scheduled_tasks.php` | Overdue checks, pickup reminders, redirects |
+| Daily 8am | `email_overdue_staff.php` | Overdue vehicle alerts to staff |
+| Daily 8am | `email_overdue_users.php` | Overdue return reminders to drivers |
+| Weekly Mon 8am | `cron_training_expiry.php` | Training expiry digest + individual driver alerts |
+| Daily 2am | `backup-snipescheduler.sh` | Full system backup (DB + files) |
 
 ## API Integration
 
-SnipeScheduler uses the Snipe-IT API exclusively — no direct database access to Snipe-IT.
+SnipeScheduler uses the Snipe-IT API exclusively — no direct database access to Snipe-IT. API calls include retry with exponential backoff for rate limiting (HTTP 429) and server errors (5xx).
 
 Key API operations:
 
@@ -381,17 +392,22 @@ Key API operations:
 - `GET /users` — Validate users and group membership
 - `GET /statuslabels` — Get status options
 - `GET /locations` — Get pickup/destination options
+- `GET /groups` — Validate group configuration
+- `GET /fields` — Validate custom field configuration
 
 ## Database Schema
 
 See [docs/DATABASE_SCHEMA.md](docs/DATABASE_SCHEMA.md) for complete schema documentation.
 
-SnipeScheduler maintains its own database for:
+SnipeScheduler maintains its own MySQL database for:
 
 - Reservations and approval history
 - Inspection responses
-- Email queue and notifications
+- Email queue and notification settings
 - Announcements and blackout slots
+- System settings (training config, sync health, booking rules)
+- Activity log (audit trail)
+- User training records
 
 ## Security
 
@@ -401,11 +417,14 @@ Key security features:
 
 - CSRF protection on all forms
 - XSS prevention with output encoding
-- SQL injection prevention with PDO
-- Security headers (X-Frame-Options, CSP, etc.)
-- Config file permissions (640)
-- Automated daily backups
-- Built-in security scanner and remediation tools
+- SQL injection prevention with PDO prepared statements
+- Security headers (X-Frame-Options, CSP, X-Content-Type-Options)
+- Fleet group authorization gate (users must belong to an authorized Snipe-IT group)
+- Config file permissions (640, owned by www-data)
+- Automated daily backups with retention
+- CRON sync health monitoring with alerting
+- API retry with exponential backoff
+- Built-in security scanner and configuration validator
 
 ## Credits
 
@@ -421,27 +440,28 @@ This project is a derivative work based on [SnipeScheduler](https://github.com/J
 
 - **Author**: Vitor Rodovalho
 - **Repository**: https://github.com/VitorMRodovalho/SnipeScheduler-FleetManager
-- **Purpose**: Extended for enterprise fleet management with additional features
+- **Purpose**: Extended for enterprise fleet management
 
 ### Key Additions in FleetManager
 
 - Fleet-specific inspection forms (checkout/checkin)
 - Maintenance tracking with Snipe-IT custom field sync
-- VIP auto-approval workflow
+- VIP auto-approval workflow with confirmation dialogs
+- Driver training compliance gate with configurable expiration
+- Weekly training expiry alerts (staff digest + individual driver notifications)
+- Configurable Snipe-IT entity mapping (groups, statuses, custom fields)
+- Startup validation script for deployment verification
+- API retry with exponential backoff for resilience
+- CRON sync health monitoring with alerting
 - Reservation controls (blackouts, min notice, max duration)
-- Email notification engine with configurable SMTP
+- Email and Teams notification engine with per-event channel configuration
 - Announcements system with scheduling and urgency levels
-- Security dashboard with real-time checks
-- Clean URLs (no .php extensions)
-- Built-in release management with semantic versioning
-- Automated screenshot generation with anonymization
-- Security scanner and remediation tools
-- Mobile-optimized responsive interface
+- Security dashboard with CRON health, backup status, and config monitoring
 - Business day engine with federal holiday calendar
-- Booking rules administration (turnaround buffer, working days, holidays)
-- Date-aware vehicle availability with AJAX filtering
+- Booking rules administration (turnaround buffer, working days, holidays, training)
 - Overdue vehicle auto-redirect with alternate vehicle assignment
 - Customizable email templates via admin notifications page
+- Clean URLs, release management, and mobile-optimized interface
 
 ## License
 
