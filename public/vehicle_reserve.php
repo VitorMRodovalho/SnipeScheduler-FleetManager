@@ -35,7 +35,7 @@ $bdConfig = get_business_day_config($pdo);
 
 // Pre-fetch non-business dates for the calendar (current month + 3 months)
 $calendarFrom = date('Y-m-01');
-$calendarTo = date('Y-m-t', strtotime('+3 months'));
+$calendarTo = date('Y-m-t', strtotime('+12 months'));
 $nonBusinessData = get_non_business_dates($calendarFrom, $calendarTo, $pdo);
 $blackoutData = get_blackout_dates($calendarFrom, $calendarTo, $pdo);
 
