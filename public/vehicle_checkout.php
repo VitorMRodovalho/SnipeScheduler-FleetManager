@@ -91,7 +91,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $asset && empty($error)) {
     $inspectionData['pickup_location_id'] = $reservation['pickup_location_id'];
     $inspectionData['destination_id'] = $reservation['destination_id'];
     
-    // === SERVER-SIDE VALIDATION (backup for JS) ===
+    // Check maintenance flag FIRST (broken car doesn't need mileage/inspection)
+    $needsMaintenance = !empty($_POST['needs_maintenance']);
+    $maintenanceNotes = trim($_POST['maintenance_notes'] ?? '');
+    $inspectionData['needs_maintenance'] = $needsMaintenance ? 'Yes' : 'No';
+    $inspectionData['maintenance_notes'] = $maintenanceNotes;
+
+    if ($needsMaintenance) {
+        // === EPIC 1: VEHICLE UNUSABLE AT PICKUP ===
+        if (!empty($formData)) { update_asset_custom_fields($reservation['asset_id'], $formData); }
+        update_asset_status($reservation['asset_id'], STATUS_VEH_OUT_OF_SERVICE);
+        
+        $stmt = $pdo->prepare("UPDATE reservations SET status = 'maintenance_required', checkout_form_data = ?, maintenance_flag = 1, maintenance_notes = ? WHERE id = ?");
+        $stmt->execute([json_encode($inspectionData), $maintenanceNotes, $reservationId]);
+        
+        NotificationService::fire('maintenance_flagged', array_merge($reservation, [
+            'notes' => "Flagged during CHECKOUT by {$userName}: {$maintenanceNotes}",
+            'flagged_at' => 'checkout',
+        ]), $pdo);
+        
+        $redirectResult = attempt_vehicle_redirect($reservation, $reservation['asset_id'], "Flagged at checkout: {$maintenanceNotes}", $pdo);
+        
+        if ($redirectResult['success']) {
+            $newVehicle = $redirectResult['vehicle'];
+            $newAssetName = $newVehicle['name'] . ' [' . $newVehicle['asset_tag'] . ']';
+            NotificationService::fire('reservation_redirected', array_merge($reservation, [
+                'new_vehicle' => $newVehicle,
+                'reason' => "Original vehicle flagged for maintenance: {$maintenanceNotes}",
+            ]), $pdo);
+            header('Location: vehicle_checkout?reservation_id=' . $reservationId . '&redirected=1&new_vehicle=' . urlencode($newAssetName));
+            exit;
+        } else {
+            header('Location: my_bookings?error=' . urlencode("Vehicle flagged for maintenance. Fleet Staff notified. No alternate available. Please contact Fleet Staff."));
+            exit;
+        }
+    }
+
+    // === NORMAL CHECKOUT: Server-side validation ===
     $mileageVal = $formData[snipeit_field('current_mileage')] ?? '';
     $inspectionVal = $formData[snipeit_field('visual_inspection_complete')] ?? '';
     if (empty($mileageVal) || (int)$mileageVal <= 0) {
@@ -99,12 +135,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $asset && empty($error)) {
     } elseif ($inspectionVal !== 'Yes') {
         $formError = 'Visual Inspection must be marked as "Yes".';
     }
-    // === END SERVER VALIDATION ===
-    
+
     $snipeUser = get_snipeit_user_by_email($userEmail);
     $snipeUserId = $snipeUser ? ($snipeUser['id'] ?? 0) : 0;
 
-if (!$formError && !$snipeUserId) {
+    if (!$formError && !$snipeUserId) {
         $error = 'Your user account was not found in Snipe-IT.';
     } elseif (!$formError) {
         if (!empty($formData)) { update_asset_custom_fields($reservation['asset_id'], $formData); }
