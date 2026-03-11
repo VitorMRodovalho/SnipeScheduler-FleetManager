@@ -82,38 +82,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $asset && empty($error)) {
     $inspectionData['maintenance_notes'] = $maintenanceNotes;
     
     // === BUSINESS RULES VALIDATION ===
+    // Basic checks (empty mileage, visual inspection, return location) are enforced
+    // by HTML5 required attributes - browser catches them before POST.
+    // Server-side only handles smart business rules that JS cannot.
     
-    // 1. Current Mileage is mandatory
     $newMileage = (int)($formData[snipeit_field('current_mileage')] ?? 0);
     $previousMileage = (int)($customFields['Current Mileage']['value'] ?? 0);
     
-    if (empty($formData[snipeit_field('current_mileage')]) || $newMileage <= 0) {
-        $formError = 'Current Mileage is required. Please enter the odometer reading.';
-    }
     // Mileage cannot be less than previously recorded (checkout mileage)
-    elseif ($newMileage < $previousMileage) {
+    if ($newMileage > 0 && $previousMileage > 0 && $newMileage < $previousMileage) {
         $formError = "Current Mileage ({$newMileage}) cannot be less than the checkout mileage ({$previousMileage}).";
     }
     // Mileage plausibility: max 80 mph average over trip duration
-    elseif ($previousMileage > 0 && !empty($reservation['start_datetime'])) {
+    elseif ($newMileage > 0 && $previousMileage > 0 && !empty($reservation['start_datetime'])) {
         $checkoutTime = strtotime($reservation['start_datetime']);
-        $hoursElapsed = max(1, (time() - $checkoutTime) / 3600); // min 1 hour
+        $hoursElapsed = max(1, (time() - $checkoutTime) / 3600);
         $maxPlausibleMiles = ceil($hoursElapsed * 80);
         $mileageDiff = $newMileage - $previousMileage;
         if ($mileageDiff > $maxPlausibleMiles) {
             $formError = "Mileage increase of {$mileageDiff} miles over " . round($hoursElapsed, 1) . " hours exceeds the plausible maximum ({$maxPlausibleMiles} miles at 80 mph avg). Please verify the odometer reading.";
         }
-    }
-    
-    // 2. Visual Inspection must be "Yes"
-    $visualInspection = $formData[snipeit_field('visual_inspection_complete')] ?? '';
-    if (empty($error) && $visualInspection !== 'Yes') {
-        $formError = 'Visual Inspection must be marked as "Yes" before proceeding. You must complete the vehicle inspection.';
-    }
-    
-    // 3. Return location required
-    if (empty($error) && !$returnLocationId) {
-        $formError = 'Please select the return location.';
     }
     
     // === END VALIDATION ===
