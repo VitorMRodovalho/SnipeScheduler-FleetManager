@@ -226,7 +226,7 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
                        . ' value=""'
                        . ' placeholder="Checkout: ' . h(number_format((int)$currentValue)) . ' miles"'
                        . ' data-previous-mileage="' . h($currentValue) . '"'
-                       . ' inputmode="numeric" pattern="[0-9]*">';
+                       . ' inputmode="numeric" pattern="[0-9]*" required>';
             } else {
                 $html .= '<input type="' . $inputType . '" name="' . $inputName . '" class="form-control" value="' . h($currentValue) . '">';
             }
