@@ -10,7 +10,7 @@ require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/layout.php';
 require_once SRC_PATH . '/announcements.php';
 
-$active = 'dashboard.php';
+$active = 'dashboard';
 $isAdmin = !empty($currentUser['is_admin']);
 $isStaff = !empty($currentUser['is_staff']) || $isAdmin;
 

@@ -136,7 +136,7 @@ if (!function_exists('layout_render_nav')) {
     function layout_render_nav(string $active, bool $isStaff, bool $isAdmin = false): string
     {
         $links = [
-//            ['href' => 'index',             'label' => 'Dashboard',           'staff' => false],
+            ['href' => 'index',             'label' => 'Home',                'staff' => false],
 //            ['href' => 'catalogue',         'label' => 'Catalogue',           'staff' => false],
             
             ['href' => 'dashboard',         'label' => 'Dashboard',           'staff' => false],
