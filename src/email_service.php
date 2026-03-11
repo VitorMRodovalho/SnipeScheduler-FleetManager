@@ -55,13 +55,9 @@ class FleetEmailService
      */
     public function getStaffEmails(): array
     {
-        $emails = [];
-        $auth = $this->config['auth'] ?? [];
-
-        // Staff/checkout emails ONLY - NOT admin emails
-        if (!empty($auth['microsoft_checkout_emails'])) {
-            $emails = array_merge($emails, $auth['microsoft_checkout_emails']);
-        }
+        // Dynamic: resolve from Snipe-IT group membership (no hardcoded emails)
+        return get_emails_by_snipeit_groups([SNIPEIT_GROUP_FLEET_STAFF, SNIPEIT_GROUP_FLEET_ADMIN]);
+    }
         if (!empty($auth['google_checkout_emails'])) {
             $emails = array_merge($emails, $auth['google_checkout_emails']);
         }
