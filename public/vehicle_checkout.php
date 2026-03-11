@@ -395,6 +395,24 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
                         </div>
                     </div>
 
+                    <!-- Epic 1: Vehicle Issue at Pickup -->
+                    <div class="card mb-4 border-warning">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Vehicle Issue at Pickup?</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small mb-2">If the vehicle is damaged, unsafe, or otherwise unusable, flag it here. The system will attempt to assign you an alternate vehicle.</p>
+                            <div class="form-check form-switch mb-3">
+                                <input type="checkbox" class="form-check-input" id="needs_maintenance" name="needs_maintenance" value="1" style="transform: scale(1.5);">
+                                <label class="form-check-label ms-2" for="needs_maintenance"><strong>Yes, this vehicle needs maintenance / is unusable</strong></label>
+                            </div>
+                            <div id="checkout_maintenance_details" style="display: none;">
+                                <label class="form-label"><strong>Describe the issue:</strong></label>
+                                <textarea name="maintenance_notes" class="form-control" rows="3" placeholder="e.g., Flat tire, warning lights on, body damage..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Confirm & Submit -->
                     <div class="card mb-4">
                         <div class="card-body">
