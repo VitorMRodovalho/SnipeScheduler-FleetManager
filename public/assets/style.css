@@ -1787,3 +1787,41 @@ form .form-select {
 .bg-success:not(.badge):not(.alert) {
     background-color: #0F5132 !important;
 }
+
+/* =====================================================================
+   ENTERPRISE UI/UX POLISH - Form Focus & Tables
+   ===================================================================== */
+
+/* 1. Form Inputs & Selects Focus Ring (Match Navy) */
+.form-control:focus, 
+.form-select:focus,
+.page-link:focus,
+.btn-close:focus {
+    border-color: #002D5D !important;
+    box-shadow: 0 0 0 0.25rem rgba(0, 45, 93, 0.25) !important;
+}
+
+/* 2. Enterprise Table Headers */
+.table thead th,
+.table-light th {
+    background-color: #E2E8F0 !important;
+    color: #475569 !important;
+    font-size: 0.75rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    border-bottom: 2px solid #CBD5E1 !important;
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+}
+
+/* 3. Subtle hover effect for table rows */
+.table-hover tbody tr:hover td {
+    background-color: rgba(0, 45, 93, 0.03) !important;
+}
+
+/* 4. Checkbox/Radio focus rings */
+.form-check-input:focus {
+    border-color: #002D5D !important;
+    box-shadow: 0 0 0 0.25rem rgba(0, 45, 93, 0.25) !important;
+}
