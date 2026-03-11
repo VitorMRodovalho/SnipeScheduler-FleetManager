@@ -74,12 +74,8 @@ class FleetEmailService
      */
     public function getAdminEmails(): array
     {
-        $auth = $this->config['auth'] ?? [];
-        $emails = array_merge(
-            $auth['microsoft_admin_emails'] ?? [],
-            $auth['google_admin_emails'] ?? []
-        );
-        return array_unique(array_filter($emails));
+        // Dynamic: resolve from Snipe-IT group membership (no hardcoded emails)
+        return get_emails_by_snipeit_groups([SNIPEIT_GROUP_FLEET_ADMIN, SNIPEIT_GROUP_ADMINS]);
     }
 
     /**

@@ -2602,3 +2602,47 @@ function check_license_plate_exists(string $plate): bool
 
     return false;
 }
+
+/**
+ * Get email addresses of all active users belonging to specified Snipe-IT groups.
+ * Used by NotificationService to resolve recipients dynamically.
+ *
+ * @param array $groupIds Array of group IDs, e.g. [SNIPEIT_GROUP_FLEET_STAFF]
+ * @return array List of email addresses
+ */
+function get_emails_by_snipeit_groups(array $groupIds): array
+{
+    static $cache = [];
+    $cacheKey = implode(',', $groupIds);
+    if (isset($cache[$cacheKey])) {
+        return $cache[$cacheKey];
+    }
+
+    $emails = [];
+    try {
+        $allUsers = get_snipeit_users(500);
+        foreach ($allUsers as $user) {
+            // Skip inactive users
+            if (empty($user['activated'])) continue;
+            // Skip users without email
+            if (empty($user['email'])) continue;
+
+            $userGroupIds = [];
+            if (isset($user['groups']['rows'])) {
+                $userGroupIds = array_map('intval', array_column($user['groups']['rows'], 'id'));
+            }
+
+            // Check if user belongs to any of the requested groups
+            if (!empty(array_intersect($groupIds, $userGroupIds))) {
+                $emails[] = strtolower(trim($user['email']));
+            }
+        }
+    } catch (Exception $e) {
+        error_log('get_emails_by_snipeit_groups error: ' . $e->getMessage());
+    }
+
+    $emails = array_unique(array_filter($emails));
+    $cache[$cacheKey] = $emails;
+    return $emails;
+}
+
