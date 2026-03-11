@@ -4,45 +4,41 @@
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap');
 
 :root {
-    --bg: #f2f6ff;
+    --bg: #F4F5F7;
     --panel: #ffffff;
-    --border: #dbe6ff;
-    --text: #0f172a;
-    --muted: #5b6477;
-    --primary: #YOURHEX;
-    --primary-strong: #DARKER_HEX;
-    --primary-soft: #LIGHTER_HEX;
-    --primary-rgb: R, G, B;
-    --primary-strong-rgb: R, G, B;
-    --primary-soft-rgb: R, G, B;
-    --accent: var(--primary-strong);
-    --accent-2: var(--primary-soft);
-    --accent-warm: #f97316;
-    --shadow-soft: 0 14px 45px rgba(15, 23, 42, 0.12);
+    --border: #D1D5DB;
+    --text: #1E293B;
+    --muted: #6B7280;
+    --primary: #002D5D;
+    --primary-strong: #001F40;
+    --primary-soft: #003D7A;
+    --primary-rgb: 0, 45, 93;
+    --primary-strong-rgb: 0, 31, 64;
+    --primary-soft-rgb: 0, 61, 122;
+    --accent: #002D5D;
+    --accent-2: #003D7A;
+    --accent-warm: #CE1126;
+    --shadow-soft: 0 4px 16px rgba(0, 0, 0, 0.06);
 }
 
 body {
     min-height: 100vh;
-    background:
-        radial-gradient(circle at 15% 20%, rgba(var(--primary-rgb), 0.18), transparent 28%),
-        radial-gradient(circle at 80% 0%, rgba(var(--primary-soft-rgb), 0.14), transparent 26%),
-        radial-gradient(circle at 85% 60%, rgba(var(--primary-rgb), 0.08), transparent 24%),
-        linear-gradient(180deg, #f8fbff 0%, #eef3fb 50%, #f7fbff 100%);
+    background: #F4F5F7;
     font-family: 'Manrope', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     color: var(--text);
 }
 
 a {
-    color: var(--primary-strong);
+    color: #002D5D;
 }
 
 a:hover,
 a:focus {
-    color: var(--primary);
+    color: #003D7A;
 }
 
 a:visited {
-    color: var(--primary-strong);
+    color: #002D5D;
 }
 
 .btn.btn-link:visited,
@@ -51,12 +47,12 @@ a.btn.btn-link:visited {
 }
 
 .btn-link {
-    color: var(--primary-strong);
+    color: #002D5D;
 }
 
 .btn-link:hover,
 .btn-link:focus {
-    color: var(--primary);
+    color: #003D7A;
 }
 
 /* Checkbox styling moved to .form-check-input section below */
@@ -64,7 +60,7 @@ a.btn.btn-link:visited {
 
 
 .page-shell {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(244, 249, 255, 0.96));
+    background: #ffffff;
     border-radius: 1.1rem;
     padding: 1.8rem;
     box-shadow: var(--shadow-soft);
@@ -78,9 +74,8 @@ a.btn.btn-link:visited {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.08), rgba(var(--primary-soft-rgb), 0.06));
-    opacity: 0.6;
-    mix-blend-mode: screen;
+    background: transparent;
+    opacity: 0;
 }
 
 .page-shell > * {
@@ -127,7 +122,7 @@ a.btn.btn-link:visited {
     margin-bottom: 1rem;
     padding: 0.65rem 0.75rem;
     justify-content: center;
-    background: linear-gradient(120deg, rgba(var(--primary-rgb), 0.08), rgba(var(--primary-soft-rgb), 0.12));
+    background: rgba(0, 45, 93, 0.05);
     border: 1px solid var(--border);
     border-radius: 999px;
     box-shadow: 0 10px 25px rgba(var(--primary-rgb), 0.12);
@@ -157,10 +152,10 @@ a.btn.btn-link:visited {
 }
 
 .app-nav-link.active {
-    background: linear-gradient(120deg, var(--accent), var(--accent-2));
-    border-color: rgba(var(--primary-rgb), 0.4);
-    color: #fff;
-    box-shadow: 0 10px 20px rgba(var(--primary-rgb), 0.25);
+    background: #002D5D;
+    border-color: #002D5D;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 45, 93, 0.25);
 }
 
 .app-nav-toggle {
@@ -326,7 +321,7 @@ a.btn.btn-link:visited {
     padding: 0.35rem 0.75rem;
     border-radius: 999px;
     font-weight: 700;
-    color: var(--primary-strong);
+    color: #002D5D;
     background: #fff;
     border: 1px solid rgba(var(--primary-rgb), 0.15);
     box-shadow: 0 6px 14px rgba(var(--primary-rgb), 0.15);
@@ -589,7 +584,7 @@ a.btn.btn-link:visited {
 
 .model-calendar-nav-btn {
     border: 1px solid rgba(255, 255, 255, 0.78);
-    color: var(--primary-strong);
+    color: #002D5D;
     font-weight: 700;
 }
 
@@ -597,7 +592,7 @@ a.btn.btn-link:visited {
 .model-calendar-nav-btn:focus-visible {
     background: #ffffff;
     border-color: #ffffff;
-    color: var(--primary-strong);
+    color: #002D5D;
 }
 
 .model-calendar-toolbar {
@@ -721,7 +716,7 @@ a.btn.btn-link:visited {
 .status-confirmed {
     background: rgba(var(--primary-rgb), 0.13);
     border-color: rgba(var(--primary-rgb), 0.35);
-    color: var(--primary-strong);
+    color: #002D5D;
 }
 
 .status-completed {
@@ -845,7 +840,7 @@ form .form-select {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    color: var(--primary-strong);
+    color: #002D5D;
 }
 
 .items-section summary::-webkit-details-marker {
@@ -855,7 +850,7 @@ form .form-select {
 .items-section summary::after {
     content: ">";
     font-weight: 700;
-    color: var(--primary-strong);
+    color: #002D5D;
 }
 
 .items-section[open] summary::after {
@@ -1217,8 +1212,8 @@ form .form-select {
 
 .btn-primary,
 .btn-success {
-    border-radius: 0.6rem;
-    box-shadow: 0 10px 20px rgba(var(--primary-rgb), 0.18);
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     color: #ffffff;
 }
 
@@ -1227,7 +1222,7 @@ form .form-select {
 .btn-success:hover,
 .btn-outline-primary:hover {
     transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
 /* --------------------------------------------------
@@ -1236,13 +1231,13 @@ form .form-select {
 
 .pagination .page-link {
     font-size: 0.9rem;
-    color: var(--primary-strong);
+    color: #002D5D;
     border-color: rgba(var(--primary-rgb), 0.25);
 }
 
 .pagination .page-link:hover,
 .pagination .page-link:focus {
-    color: var(--primary-strong);
+    color: #002D5D;
     background: rgba(var(--primary-rgb), 0.12);
     border-color: rgba(var(--primary-rgb), 0.4);
     box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0.18);
@@ -1250,8 +1245,8 @@ form .form-select {
 
 .pagination .page-item.active .page-link {
     color: #ffffff;
-    background: linear-gradient(120deg, var(--primary-strong), var(--primary-soft));
-    border-color: rgba(var(--primary-rgb), 0.55);
+    background: #002D5D;
+    border-color: #002D5D;
 }
 
 .pagination .page-item.disabled .page-link {
@@ -1270,25 +1265,25 @@ form .form-select {
 
 .reservations-subtabs .nav-link {
     border: 1px solid transparent;
-    color: #000000;
+    color: #1E293B;
     font-weight: 600;
     padding: 0.8rem 1.1rem;
     border-radius: 0.5rem 0.5rem 0 0;
-    background: linear-gradient(180deg, rgba(var(--primary-soft-rgb),0.18), rgba(255,255,255,0));
+    background: #F4F5F7;
     transition: all 120ms ease;
 }
 
 .reservations-subtabs .nav-link:hover {
-    color: #000000;
-    background: linear-gradient(180deg, rgba(var(--primary-soft-rgb),0.36), rgba(255,255,255,0.08));
-    border-color: rgba(var(--primary-rgb),0.25);
+    color: #002D5D;
+    background: #E2E8F0;
+    border-color: #D1D5DB;
 }
 
 .reservations-subtabs .nav-link.active {
     color: #ffffff;
-    background: linear-gradient(135deg, var(--primary), var(--primary-strong));
-    border-color: var(--primary-strong) var(--primary-strong) #fff;
-    box-shadow: 0 8px 18px rgba(var(--primary-rgb), 0.2);
+    background: #002D5D;
+    border-color: #002D5D #002D5D #fff;
+    box-shadow: 0 2px 8px rgba(0, 45, 93, 0.2);
 }
 
 /* --------------------------------------------------
@@ -1384,9 +1379,11 @@ form .form-select {
 }
 
 .btn-primary {
-    background: linear-gradient(120deg, var(--accent), var(--accent-2));
-    border: 1px solid rgba(var(--primary-rgb), 0.5);
+    background: #002D5D;
+    border: 1px solid #002D5D;
     color: #ffffff;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .btn-primary:link,
@@ -1397,8 +1394,8 @@ form .form-select {
 .btn-primary:hover,
 .btn-primary:active,
 .btn-primary:focus-visible {
-    background: linear-gradient(120deg, var(--primary-strong), var(--primary-soft));
-    border-color: rgba(var(--primary-rgb), 0.55);
+    background: #001F40;
+    border-color: #001F40;
     color: #ffffff;
 }
 
@@ -1408,17 +1405,19 @@ form .form-select {
 }
 
 .btn-success {
-    background: linear-gradient(120deg, var(--accent), var(--accent-2));
-    border: 1px solid rgba(var(--primary-rgb), 0.5);
+    background: #0F5132;
+    border: 1px solid #0F5132;
     color: #ffffff;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .btn-outline-primary:hover,
 .btn-outline-primary:active,
 .btn-outline-primary:focus-visible {
-    background: rgba(var(--primary-rgb), 0.12);
-    border-color: rgba(var(--primary-rgb), 0.65);
-    color: var(--accent);
+    background: rgba(0, 45, 93, 0.08);
+    border-color: #002D5D;
+    color: #002D5D;
 }
 
 /* Keep reservation history edit button consistent with other action buttons */
@@ -1436,23 +1435,23 @@ form .form-select {
 .btn-success:hover,
 .btn-success:active,
 .btn-success:focus-visible {
-    background: linear-gradient(120deg, var(--primary-strong), var(--primary-soft));
-    border-color: rgba(var(--primary-rgb), 0.55);
+    background: #0A3622;
+    border-color: #0A3622;
     color: #ffffff;
 }
 
 .filter-panel .btn-primary {
-    background: linear-gradient(120deg, var(--accent), var(--accent-2));
-    border-color: rgba(var(--primary-rgb), 0.5);
-    box-shadow: 0 12px 22px rgba(var(--primary-rgb), 0.2);
+    background: #002D5D;
+    border-color: #002D5D;
     color: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 45, 93, 0.2);
 }
 
 .filter-panel .btn-primary:hover,
 .filter-panel .btn-primary:active,
 .filter-panel .btn-primary:focus-visible {
-    background: linear-gradient(120deg, var(--primary-strong), var(--primary-soft));
-    border-color: rgba(var(--primary-rgb), 0.55);
+    background: #001F40;
+    border-color: #001F40;
     color: #ffffff;
 }
 
@@ -1720,162 +1719,71 @@ form .form-select {
 }
 
 /* =====================================================================
-   SYSTEMIC UX FIX: Force White Text on Elements with Dark Backgrounds
-   Added by patch_08 - ensures contrast regardless of CSS specificity
+   CORPORATE THEME - SnipeScheduler FleetManager
+   Navy: #002D5D | Dark: #001F40 | Green: #0F5132 | Red: #CE1126
    ===================================================================== */
 
-/* Active Tabs (My Reservations, etc) */
+/* Nav Pills (Admin: All Users / Add User / Inactive) */
+.nav-pills .nav-link.active,
+.nav-pills .show > .nav-link {
+    background: #002D5D;
+    color: #ffffff;
+    border-color: #002D5D;
+    box-shadow: 0 2px 8px rgba(0, 45, 93, 0.2);
+}
+
+.nav-pills .nav-link:not(.active) {
+    color: #1E293B;
+    background: #F4F5F7;
+    border: 1px solid #E2E8F0;
+}
+
+.nav-pills .nav-link:not(.active):hover {
+    background: #E2E8F0;
+    color: #002D5D;
+}
+
+/* Ensure all active tabs and dark-bg buttons always have white text */
 .reservations-subtabs .nav-link.active,
 .app-nav-link.active,
-/* Pagination Active state */
+.nav-pills .nav-link.active,
 .pagination .page-item.active .page-link,
-/* Primary and Success buttons on hover/active */
+.btn-primary,
 .btn-primary:hover,
 .btn-primary:active,
+.btn-primary:focus,
 .btn-primary:focus-visible,
+.btn-primary:link,
+.btn-primary:visited,
+.btn-success,
 .btn-success:hover,
 .btn-success:active,
+.btn-success:focus,
 .btn-success:focus-visible,
-/* Filter panel buttons on hover */
-.filter-panel .btn-primary:hover,
-.filter-panel .btn-primary:active,
-.filter-panel .btn-primary:focus-visible {
-    color: #ffffff !important;
-}
-
-/* Ensure default pagination link text is visible before clicking */
-.pagination .page-link {
-    color: var(--primary-strong) !important;
-}
-
-/* Nav Pills active state (Admin subtabs: All Users, Add User, Inactive) */
-.nav-pills .nav-link.active,
-.nav-pills .show > .nav-link {
-    background: linear-gradient(120deg, var(--accent), var(--accent-2)) !important;
-    color: #ffffff !important;
-    border-color: rgba(var(--primary-rgb), 0.4) !important;
-    box-shadow: 0 8px 18px rgba(var(--primary-rgb), 0.2);
-}
-
-/* Nav Pills inactive state - ensure readable dark text */
-.nav-pills .nav-link:not(.active) {
-    color: var(--text, #1e293b) !important;
-    background: rgba(var(--primary-rgb), 0.06);
-    border: 1px solid rgba(var(--primary-rgb), 0.12);
-}
-
-.nav-pills .nav-link:not(.active):hover {
-    background: rgba(var(--primary-rgb), 0.12);
-    color: var(--text, #1e293b) !important;
-}
-
-/* Nav Pills active state (Admin subtabs: All Users, Add User, Inactive) */
-.nav-pills .nav-link.active,
-.nav-pills .show > .nav-link {
-    background: linear-gradient(120deg, var(--accent), var(--accent-2)) !important;
-    color: #ffffff !important;
-    border-color: rgba(var(--primary-rgb), 0.4) !important;
-    box-shadow: 0 8px 18px rgba(var(--primary-rgb), 0.2);
-}
-
-/* Nav Pills inactive state - ensure readable dark text */
-.nav-pills .nav-link:not(.active) {
-    color: var(--text, #1e293b) !important;
-    background: rgba(var(--primary-rgb), 0.06);
-    border: 1px solid rgba(var(--primary-rgb), 0.12);
-}
-
-.nav-pills .nav-link:not(.active):hover {
-    background: rgba(var(--primary-rgb), 0.12);
-    color: var(--text, #1e293b) !important;
-}
-
-/* =====================================================================
-   DEFINITIVE TAB CONTRAST FIX
-   Uses explicit colors instead of unreliable CSS variables
-   ===================================================================== */
-
-/* Admin subtabs (Vehicles, Users, Security, etc.) - active state */
-.reservations-subtabs .nav-link.active {
-    background: #1e293b !important;
-    color: #ffffff !important;
-    border-color: #1e293b !important;
-    box-shadow: 0 4px 12px rgba(30, 41, 59, 0.3) !important;
-}
-
-/* Admin subtabs - inactive */
-.reservations-subtabs .nav-link:not(.active) {
-    background: #f1f5f9 !important;
-    color: #1e293b !important;
-    border: 1px solid #e2e8f0 !important;
-}
-
-.reservations-subtabs .nav-link:not(.active):hover {
-    background: #e2e8f0 !important;
-    color: #0f172a !important;
-}
-
-/* Nav pills (All Users, Add User, Inactive) - override previous */
-.nav-pills .nav-link.active,
-.nav-pills .show > .nav-link {
-    background: #1e293b !important;
-    color: #ffffff !important;
-    border-color: #1e293b !important;
-}
-
-.nav-pills .nav-link:not(.active) {
-    background: #f1f5f9 !important;
-    color: #1e293b !important;
-}
-
-.nav-pills .nav-link:not(.active):hover {
-    background: #e2e8f0 !important;
-}
-
-/* Primary/Success buttons - explicit colors for all states */
-.btn-primary {
-    background: #1e40af !important;
-    border-color: #1e40af !important;
-    color: #ffffff !important;
-}
-
-.btn-primary:hover,
-.btn-primary:active,
-.btn-primary:focus-visible {
-    background: #1e3a8a !important;
-    border-color: #1e3a8a !important;
-    color: #ffffff !important;
-}
-
-.btn-success {
-    background: #166534 !important;
-    border-color: #166534 !important;
-    color: #ffffff !important;
-}
-
-.btn-success:hover,
-.btn-success:active,
-.btn-success:focus-visible {
-    background: #14532d !important;
-    border-color: #14532d !important;
-    color: #ffffff !important;
-}
-
-/* Pagination active */
-.pagination .page-item.active .page-link {
-    background: #1e293b !important;
-    color: #ffffff !important;
-    border-color: #1e293b !important;
-}
-
-/* Filter panel button */
-.filter-panel .btn-primary {
-    background: #1e40af !important;
-    border-color: #1e40af !important;
-    color: #ffffff !important;
-}
-
+.filter-panel .btn-primary,
 .filter-panel .btn-primary:hover {
-    background: #1e3a8a !important;
     color: #ffffff !important;
+}
+
+/* Danger button override */
+.btn-danger {
+    background: #CE1126;
+    border-color: #CE1126;
+    color: #ffffff;
+}
+.btn-danger:hover {
+    background: #A80E1F;
+    border-color: #A80E1F;
+    color: #ffffff;
+}
+
+/* Card headers using Bootstrap bg-primary should inherit navy */
+.card-header.bg-primary,
+.bg-primary {
+    background-color: #002D5D !important;
+}
+
+.card-header.bg-success,
+.bg-success:not(.badge):not(.alert) {
+    background-color: #0F5132 !important;
 }
