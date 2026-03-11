@@ -1789,3 +1789,93 @@ form .form-select {
     background: rgba(var(--primary-rgb), 0.12);
     color: var(--text, #1e293b) !important;
 }
+
+/* =====================================================================
+   DEFINITIVE TAB CONTRAST FIX
+   Uses explicit colors instead of unreliable CSS variables
+   ===================================================================== */
+
+/* Admin subtabs (Vehicles, Users, Security, etc.) - active state */
+.reservations-subtabs .nav-link.active {
+    background: #1e293b !important;
+    color: #ffffff !important;
+    border-color: #1e293b !important;
+    box-shadow: 0 4px 12px rgba(30, 41, 59, 0.3) !important;
+}
+
+/* Admin subtabs - inactive */
+.reservations-subtabs .nav-link:not(.active) {
+    background: #f1f5f9 !important;
+    color: #1e293b !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+.reservations-subtabs .nav-link:not(.active):hover {
+    background: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+/* Nav pills (All Users, Add User, Inactive) - override previous */
+.nav-pills .nav-link.active,
+.nav-pills .show > .nav-link {
+    background: #1e293b !important;
+    color: #ffffff !important;
+    border-color: #1e293b !important;
+}
+
+.nav-pills .nav-link:not(.active) {
+    background: #f1f5f9 !important;
+    color: #1e293b !important;
+}
+
+.nav-pills .nav-link:not(.active):hover {
+    background: #e2e8f0 !important;
+}
+
+/* Primary/Success buttons - explicit colors for all states */
+.btn-primary {
+    background: #1e40af !important;
+    border-color: #1e40af !important;
+    color: #ffffff !important;
+}
+
+.btn-primary:hover,
+.btn-primary:active,
+.btn-primary:focus-visible {
+    background: #1e3a8a !important;
+    border-color: #1e3a8a !important;
+    color: #ffffff !important;
+}
+
+.btn-success {
+    background: #166534 !important;
+    border-color: #166534 !important;
+    color: #ffffff !important;
+}
+
+.btn-success:hover,
+.btn-success:active,
+.btn-success:focus-visible {
+    background: #14532d !important;
+    border-color: #14532d !important;
+    color: #ffffff !important;
+}
+
+/* Pagination active */
+.pagination .page-item.active .page-link {
+    background: #1e293b !important;
+    color: #ffffff !important;
+    border-color: #1e293b !important;
+}
+
+/* Filter panel button */
+.filter-panel .btn-primary {
+    background: #1e40af !important;
+    border-color: #1e40af !important;
+    color: #ffffff !important;
+}
+
+.filter-panel .btn-primary:hover {
+    background: #1e3a8a !important;
+    color: #ffffff !important;
+}
