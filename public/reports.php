@@ -722,6 +722,9 @@ if ($report === 'summary') {
                                         <th>Status</th>
                                         <th>Checkout</th>
                                         <th>Checkin</th>
+                                        <th class="text-end">Mi Out</th>
+                                        <th class="text-end">Mi In</th>
+                                        <th class="text-end">Trip Mi</th>
                                         <th class="text-center">Hours</th>
                                     </tr>
                                 </thead>
@@ -746,9 +749,12 @@ if ($report === 'summary') {
                                             ?>
                                             <span class="badge bg-<?= $statusClass ?>"><?= ucfirst($row['status']) ?></span>
                                         </td>
-                                        <td><?= date('M j, g:i A', strtotime($row['start_datetime'])) ?></td>
-                                        <td><?= $row['end_datetime'] ? date('M j, g:i A', strtotime($row['end_datetime'])) : '-' ?></td>
-                                        <td class="text-center"><?= $row['duration_hours'] ?></td>
+                                        <td><?= $row['actual_checkout'] ? date('M j, g:i A', strtotime($row['actual_checkout'])) : '-' ?></td>
+                                        <td><?= $row['actual_checkin'] ? date('M j, g:i A', strtotime($row['actual_checkin'])) : '-' ?></td>
+                                        <td class="text-end"><?= $row['checkout_mileage'] !== null ? number_format($row['checkout_mileage']) : '-' ?></td>
+                                        <td class="text-end"><?= $row['checkin_mileage'] !== null ? number_format($row['checkin_mileage']) : '-' ?></td>
+                                        <td class="text-end fw-bold"><?= $row['trip_miles'] !== null ? number_format($row['trip_miles']) : '-' ?></td>
+                                        <td class="text-center"><?= $row['actual_hours'] ?></td>
                                     </tr>
                                     <?php endforeach; ?>
                                 </tbody>
