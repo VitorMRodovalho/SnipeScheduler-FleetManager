@@ -179,16 +179,3 @@ function attempt_vehicle_redirect(array $reservation, int $unavailableAssetId, s
         'message' => "No alternate vehicle is available at this location. Please contact Fleet Staff for assistance.",
     ];
 }
-
-/**
- * Attempt to redirect a reservation to an alternate available vehicle.
- *
- * Used when:
- * - A vehicle is found damaged during checkout (driver can't use it)
- * - A vehicle is overdue and the next reservation needs rerouting (cron)
- *
- * @param array $reservation The reservation row from DB
- * @param int $unavailableAssetId The asset that can't be used
- * @param string $reason Human-readable reason for the redirect
- * @param PDO $pdo Database connection
- * @return array ['success' => bool, 'action' => string, 'vehicle' => array|null, 'message' => string]
