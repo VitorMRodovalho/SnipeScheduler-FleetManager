@@ -271,6 +271,16 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
                 </div>
                 <?php endif; ?>
                 
+                <?php if (!empty($_GET['redirected'])): ?>
+                <div class="alert alert-warning">
+                    <h5 class="alert-heading"><i class="bi bi-arrow-repeat me-2"></i>Vehicle Reassigned</h5>
+                    <p class="mb-1">The original vehicle has been flagged for maintenance and Fleet Staff has been notified.</p>
+                    <p class="mb-0"><strong>You have been assigned:</strong> <?= h($_GET['new_vehicle'] ?? '') ?></p>
+                    <hr>
+                    <p class="mb-0 small">Please complete the checkout inspection for this replacement vehicle below.</p>
+                </div>
+                <?php endif; ?>
+
                 <!-- Auto Timestamp Notice -->
                 <div class="alert alert-info">
                     <i class="bi bi-clock me-2"></i>
