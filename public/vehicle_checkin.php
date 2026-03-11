@@ -443,7 +443,7 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
                             </div>
                             <div class="d-flex justify-content-between">
                                 <a href="my_bookings" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Cancel</a>
-                                <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-box-arrow-in-left me-1"></i>Complete Return</button>
+                                <button type="submit" class="btn btn-primary btn-lg" disabled><i class="bi bi-box-arrow-in-left me-1"></i>Complete Return</button>
                             </div>
                         </div>
                     </div>
