@@ -179,6 +179,12 @@ async function takeScreenshots(sessionId) {
     
     for (const pageInfo of PAGES) {
         try {
+            // For non-auth pages (login), clear session to show real SSO screen
+            if (!pageInfo.auth && sessionId) {
+                await page.deleteCookie({ name: "PHPSESSID", domain: "inventory.amtrakfdt.com" });
+            } else if (pageInfo.auth && sessionId) {
+                await page.setCookie({ name: "PHPSESSID", value: sessionId, domain: "inventory.amtrakfdt.com", path: "/", httpOnly: true, secure: true });
+            }
             const url = BASE_URL + pageInfo.path;
             console.log(`Capturing: ${pageInfo.name}`);
             
