@@ -193,7 +193,7 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
         case 'listbox':
             // FIX #4: For inspection fields, always force default to unselected
             $forceEmpty = $isInspectionField;
-            $html .= '<select name="' . $inputName . '" class="form-select">';
+            $html .= '<select name="' . $inputName . '" class="form-select" required>';
             $html .= '<option value=""' . (($forceEmpty || empty($currentValue)) ? ' selected' : '') . ' disabled>-- Select --</option>';
             $html .= '<option value="Yes"' . (!$forceEmpty && $currentValue === 'Yes' ? ' selected' : '') . '>Yes</option>';
             $html .= '<option value="No"' . (!$forceEmpty && $currentValue === 'No' ? ' selected' : '') . '>No</option></select>';
