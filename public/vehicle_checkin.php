@@ -226,7 +226,7 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
                        . ' value=""'
                        . ' placeholder="Checkout: ' . h(number_format((int)$currentValue)) . ' miles"'
                        . ' data-previous-mileage="' . h($currentValue) . '"'
-                       . ' inputmode="numeric" pattern="[0-9]*" required>';
+                       . ' inputmode="numeric" pattern="[0-9]*" required min="1">';
             } else {
                 $html .= '<input type="' . $inputType . '" name="' . $inputName . '" class="form-control" value="' . h($currentValue) . '">';
             }
@@ -601,7 +601,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('checkinConfirmBtn').addEventListener('click', function() {
         formConfirmed = true;
         bootstrap.Modal.getInstance(document.getElementById('checkinConfirmModal')).hide();
-        form.submit();
+        form.requestSubmit();
     });
     
     // FIX #6: Show why button is disabled when user tries to click
