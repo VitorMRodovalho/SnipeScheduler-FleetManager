@@ -255,6 +255,7 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
             <p class="text-muted">Complete the return inspection</p>
         </div>
         <?= layout_render_nav($active, $isStaff, $isAdmin) ?>
+        <?= render_top_bar($currentUser, $isStaff, $isAdmin) ?>
         <div class="row justify-content-center">
             <div class="col-lg-10">
 
@@ -265,7 +266,23 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
                 </div>
             <?php elseif ($asset && $reservation): ?>
             
-                <?php if (!empty($formError)): ?>
+                <?php
+                // Preserve user input on validation failure
+                if (!empty($formError) && $_SERVER['REQUEST_METHOD'] === 'POST') {
+                    foreach ($_POST as $key => $value) {
+                        if (strpos($key, 'field_') === 0) {
+                            $fieldDbColumn = substr($key, 6);
+                            foreach ($customFields as $cfName => &$cfData) {
+                                if (($cfData['field'] ?? '') === $fieldDbColumn) {
+                                    $cfData['value'] = is_array($value) ? implode(', ', $value) : trim($value);
+                                }
+                            }
+                            unset($cfData);
+                        }
+                    }
+                }
+            ?>
+            <?php if (!empty($formError)): ?>
                 <div class="alert alert-warning alert-dismissible fade show" role="alert">
                     <i class="bi bi-exclamation-triangle me-2"></i><strong>Please correct:</strong> <?= h($formError) ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
