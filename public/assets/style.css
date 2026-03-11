@@ -1825,3 +1825,122 @@ form .form-select {
     border-color: #002D5D !important;
     box-shadow: 0 0 0 0.25rem rgba(0, 45, 93, 0.25) !important;
 }
+
+/* =====================================================================
+   CONTRAST & DEPTH ENHANCEMENT
+   Fixes washed-out appearance: stronger borders, darker text, visible depth
+   ===================================================================== */
+
+/* Stronger page shell - visible separation from background */
+.page-shell {
+    border: 1px solid #C5CBD3 !important;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.10), 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Nav bar - subtle navy border and slightly darker background */
+.app-nav {
+    background: rgba(0, 45, 93, 0.07) !important;
+    border: 1px solid #C5CBD3 !important;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Inactive nav links - higher contrast text and visible pill background */
+.app-nav-link {
+    color: #1E293B !important;
+    background: #ffffff !important;
+    border: 1px solid #D1D5DB !important;
+    font-weight: 600 !important;
+}
+
+.app-nav-link:hover {
+    color: #002D5D !important;
+    background: #E8EDF3 !important;
+    border-color: #002D5D !important;
+}
+
+/* Active nav link - already navy, just ensure no wash-out */
+.app-nav-link.active {
+    background: #002D5D !important;
+    color: #ffffff !important;
+    border-color: #001F40 !important;
+    box-shadow: 0 2px 8px rgba(0, 45, 93, 0.3) !important;
+}
+
+/* Cards - visible edges */
+.card {
+    border: 1px solid #C5CBD3 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Card headers with bg-primary/bg-success - solid navy with clear bottom edge */
+.card-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Subtabs (admin: Vehicles, Users, Security...) - visible inactive state */
+.reservations-subtabs .nav-link:not(.active) {
+    color: #1E293B !important;
+    background: #EDF0F4 !important;
+    border: 1px solid #C5CBD3 !important;
+    border-bottom-color: transparent !important;
+}
+
+/* Nav pills (All Users / Add User / Inactive) */
+.nav-pills .nav-link:not(.active) {
+    color: #1E293B !important;
+    background: #EDF0F4 !important;
+    border: 1px solid #C5CBD3 !important;
+}
+
+/* Darken muted/secondary text for readability */
+.text-muted {
+    color: #4B5563 !important;
+}
+
+/* Stronger alert borders */
+.alert {
+    border-width: 1px !important;
+    border-style: solid !important;
+}
+
+.alert-info {
+    border-color: #93C5FD !important;
+}
+
+.alert-success {
+    border-color: #86EFAC !important;
+}
+
+.alert-warning {
+    border-color: #FCD34D !important;
+}
+
+.alert-danger {
+    border-color: #FCA5A5 !important;
+}
+
+/* Form inputs - visible borders at rest */
+.form-control,
+.form-select {
+    border-color: #B0B8C4 !important;
+}
+
+/* Mobile nav toggle - visible */
+.app-nav-toggle {
+    border: 1px solid #C5CBD3 !important;
+    color: #1E293B !important;
+    background: #ffffff !important;
+}
+
+/* Top bar (logged in as...) - slight background for separation */
+.top-bar, [class*="logged-in"], .d-flex.justify-content-between.align-items-center.mb-3 {
+    background: #EDF0F4;
+    border: 1px solid #D1D5DB;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+}
+
+/* Footer - slightly darker text */
+footer, footer a {
+    color: #6B7280 !important;
+}
