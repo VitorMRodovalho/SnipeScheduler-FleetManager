@@ -172,7 +172,8 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
             $html .= '<textarea name="' . $inputName . '" class="form-control" rows="2">' . h($currentValue) . '</textarea>';
             break;
         case 'listbox':
-            $html .= '<select name="' . $inputName . '" class="form-select"><option value="">-- Select --</option>';
+            $html .= '<select name="' . $inputName . '" class="form-select">';
+            $html .= '<option value=""' . (empty($currentValue) ? ' selected' : '') . ' disabled>-- Select --</option>';
             $html .= '<option value="Yes"' . ($currentValue === 'Yes' ? ' selected' : '') . '>Yes</option>';
             $html .= '<option value="No"' . ($currentValue === 'No' ? ' selected' : '') . '>No</option></select>';
             break;
@@ -384,7 +385,28 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
                             </div>
                         </div>
                     </div>
-                </form>
+                
+<!-- Checkin confirmation modal -->
+<div class="modal fade" id="checkinConfirmModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="bi bi-box-arrow-in-left me-2"></i>Confirm Vehicle Return</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-1">You are about to <strong>return this vehicle</strong>.</p>
+        <p class="text-muted small">This will mark the vehicle as available and record your return inspection. This action cannot be undone.</p>
+        <p class="mb-0">Are you sure you want to proceed?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="checkinConfirmBtn"><i class="bi bi-box-arrow-in-left me-1"></i>Yes, Return Vehicle</button>
+      </div>
+    </div>
+  </div>
+</div>
+</form>
             <?php endif; ?>
         </div>
     </div>
@@ -473,10 +495,21 @@ document.addEventListener('DOMContentLoaded', function() {
         el.parentNode.appendChild(div);
     }
     
+    let formConfirmed = false;
     form.addEventListener('submit', function(e) {
         const val = parseInt(mileageInput.value) || 0;
         if (val <= 0) { e.preventDefault(); mileageInput.focus(); return; }
         if (visualSelect.value !== 'Yes') { e.preventDefault(); visualSelect.focus(); return; }
+        if (!formConfirmed) {
+            e.preventDefault();
+            const modal = new bootstrap.Modal(document.getElementById('checkinConfirmModal'));
+            modal.show();
+        }
+    });
+    document.getElementById('checkinConfirmBtn').addEventListener('click', function() {
+        formConfirmed = true;
+        bootstrap.Modal.getInstance(document.getElementById('checkinConfirmModal')).hide();
+        form.submit();
     });
     
     updateSubmitState();

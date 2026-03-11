@@ -143,7 +143,8 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
             $html .= '<textarea name="' . $inputName . '" class="form-control" rows="2" placeholder="Enter details if applicable...">' . h($currentValue) . '</textarea>';
             break;
         case 'listbox':
-            $html .= '<select name="' . $inputName . '" class="form-select"><option value="">-- Select --</option>';
+            $html .= '<select name="' . $inputName . '" class="form-select">';
+            $html .= '<option value=""' . (empty($currentValue) ? ' selected' : '') . ' disabled>-- Select --</option>';
             $html .= '<option value="Yes"' . ($currentValue === 'Yes' ? ' selected' : '') . '>Yes</option>';
             $html .= '<option value="No"' . ($currentValue === 'No' ? ' selected' : '') . '>No</option></select>';
             break;
@@ -324,7 +325,28 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
                             </div>
                         </div>
                     </div>
-                </form>
+                
+<!-- Checkout confirmation modal -->
+<div class="modal fade" id="checkoutConfirmModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title"><i class="bi bi-check-circle me-2"></i>Confirm Vehicle Checkout</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-1">You are about to <strong>check out this vehicle</strong>.</p>
+        <p class="text-muted small">This will mark the vehicle as in use and record your inspection. This action cannot be undone.</p>
+        <p class="mb-0">Are you sure you want to proceed?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-success" id="checkoutConfirmBtn"><i class="bi bi-check-circle me-1"></i>Yes, Check Out</button>
+      </div>
+    </div>
+  </div>
+</div>
+</form>
             <?php endif; ?>
         </div>
     </div>
@@ -420,11 +442,22 @@ document.addEventListener('DOMContentLoaded', function() {
         el.parentNode.appendChild(div);
     }
     
-    // Form submit - final check
+    // Form submit - show confirmation modal
+    let formConfirmed = false;
     form.addEventListener('submit', function(e) {
         const val = parseInt(mileageInput.value) || 0;
         if (val <= 0) { e.preventDefault(); mileageInput.focus(); return; }
         if (visualSelect.value !== 'Yes') { e.preventDefault(); visualSelect.focus(); return; }
+        if (!formConfirmed) {
+            e.preventDefault();
+            const modal = new bootstrap.Modal(document.getElementById('checkoutConfirmModal'));
+            modal.show();
+        }
+    });
+    document.getElementById('checkoutConfirmBtn').addEventListener('click', function() {
+        formConfirmed = true;
+        bootstrap.Modal.getInstance(document.getElementById('checkoutConfirmModal')).hide();
+        form.submit();
     });
     
     // Initial state
