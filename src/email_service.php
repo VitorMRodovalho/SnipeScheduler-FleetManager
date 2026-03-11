@@ -58,7 +58,6 @@ class FleetEmailService
         // Dynamic: resolve from Snipe-IT group membership (no hardcoded emails)
         return get_emails_by_snipeit_groups([SNIPEIT_GROUP_FLEET_STAFF, SNIPEIT_GROUP_FLEET_ADMIN]);
     }
-    }
     
     /**
      * Get admin emails only (for critical alerts)
