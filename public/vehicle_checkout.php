@@ -90,13 +90,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $asset && empty($error)) {
     $inspectionData['pickup_location_id'] = $reservation['pickup_location_id'];
     $inspectionData['destination_id'] = $reservation['destination_id'];
     
+    // === SERVER-SIDE VALIDATION (backup for JS) ===
+    $mileageVal = $formData[snipeit_field('current_mileage')] ?? '';
+    $inspectionVal = $formData[snipeit_field('visual_inspection_complete')] ?? '';
+    if (empty($mileageVal) || (int)$mileageVal <= 0) {
+        $formError = 'Current Mileage is required.';
+    } elseif ($inspectionVal !== 'Yes') {
+        $formError = 'Visual Inspection must be marked as "Yes".';
+    }
+    // === END SERVER VALIDATION ===
+    
     $snipeUser = get_snipeit_user_by_email($userEmail);
     $snipeUserId = $snipeUser ? ($snipeUser['id'] ?? 0) : 0;
-    
 
-if (!$snipeUserId) {
+if (!$formError && !$snipeUserId) {
         $error = 'Your user account was not found in Snipe-IT.';
-    } else {
+    } elseif (!$formError) {
         if (!empty($formData)) { update_asset_custom_fields($reservation['asset_id'], $formData); }
         
         // First set to VEH-Available so Snipe-IT allows checkout (must be Deployable)
@@ -396,7 +405,7 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
                             </div>
                             <div class="d-flex justify-content-between">
                                 <a href="my_bookings" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Cancel</a>
-                                <button type="submit" class="btn btn-success btn-lg"><i class="bi bi-check-circle me-1"></i>Complete Checkout</button>
+                                <button type="submit" class="btn btn-success btn-lg" disabled><i class="bi bi-check-circle me-1"></i>Complete Checkout</button>
                             </div>
                         </div>
                     </div>
@@ -552,52 +561,6 @@ document.addEventListener('DOMContentLoaded', function() {
         bootstrap.Modal.getInstance(document.getElementById('checkoutConfirmModal')).hide();
         form.requestSubmit();
     });
-    
-    // FIX #6: Show why button is disabled when user tries to click
-    const submitWrapper = submitBtn?.parentNode;
-    if (submitWrapper) {
-        submitWrapper.addEventListener('click', function(e) {
-            if (submitBtn.disabled) {
-                const reasons = [];
-                if (!mileageInput.classList.contains('is-valid')) reasons.push('Enter current odometer reading');
-                if (visualSelect.value !== 'Yes') reasons.push('Complete visual inspection (select "Yes")');
-                if (!agreement?.checked) reasons.push('Check the confirmation agreement');
-                
-                // Show a temporary tooltip-style message
-                let hint = submitWrapper.querySelector('.submit-hint');
-                if (!hint) {
-                    hint = document.createElement('div');
-                    hint.className = 'submit-hint text-danger small mt-2';
-                    submitWrapper.appendChild(hint);
-                }
-                hint.innerHTML = '<strong>Cannot submit yet:</strong><br>' + reasons.map(r => '&bull; ' + r).join('<br>');
-                setTimeout(() => { if (hint) hint.remove(); }, 5000);
-            }
-        });
-    }
-    
-    // FIX #6: Show why button is disabled when user tries to click
-    const submitWrapper = submitBtn?.parentNode;
-    if (submitWrapper) {
-        submitWrapper.addEventListener('click', function(e) {
-            if (submitBtn.disabled) {
-                const reasons = [];
-                if (!mileageInput.classList.contains('is-valid')) reasons.push('Enter current odometer reading');
-                if (visualSelect.value !== 'Yes') reasons.push('Complete visual inspection (select "Yes")');
-                if (!agreement?.checked) reasons.push('Check the confirmation agreement');
-                
-                // Show a temporary tooltip-style message
-                let hint = submitWrapper.querySelector('.submit-hint');
-                if (!hint) {
-                    hint = document.createElement('div');
-                    hint.className = 'submit-hint text-danger small mt-2';
-                    submitWrapper.appendChild(hint);
-                }
-                hint.innerHTML = '<strong>Cannot submit yet:</strong><br>' + reasons.map(r => '&bull; ' + r).join('<br>');
-                setTimeout(() => { if (hint) hint.remove(); }, 5000);
-            }
-        });
-    }
     
     // FIX #6: Show why button is disabled when user tries to click
     const submitWrapper = submitBtn?.parentNode;
