@@ -1718,3 +1718,32 @@ form .form-select {
     box-shadow: 0 6px 16px rgba(var(--primary-rgb), 0.25) !important;
     transform: translateY(-3px) !important;
 }
+
+/* =====================================================================
+   SYSTEMIC UX FIX: Force White Text on Elements with Dark Backgrounds
+   Added by patch_08 - ensures contrast regardless of CSS specificity
+   ===================================================================== */
+
+/* Active Tabs (My Reservations, etc) */
+.reservations-subtabs .nav-link.active,
+.app-nav-link.active,
+/* Pagination Active state */
+.pagination .page-item.active .page-link,
+/* Primary and Success buttons on hover/active */
+.btn-primary:hover,
+.btn-primary:active,
+.btn-primary:focus-visible,
+.btn-success:hover,
+.btn-success:active,
+.btn-success:focus-visible,
+/* Filter panel buttons on hover */
+.filter-panel .btn-primary:hover,
+.filter-panel .btn-primary:active,
+.filter-panel .btn-primary:focus-visible {
+    color: #ffffff !important;
+}
+
+/* Ensure default pagination link text is visible before clicking */
+.pagination .page-link {
+    color: var(--primary-strong) !important;
+}
