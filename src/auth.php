@@ -24,15 +24,32 @@ if (empty($_SESSION['user'])) {
 $currentUser = $_SESSION['user'];
 
 // ==========================================
-// ADDED: Sync Logic (Runs ONLY once per session)
+// Periodic group re-validation (every 15 minutes)
+// Catches group changes made in Snipe-IT mid-session
 // ==========================================
-if (empty($_SESSION['user_synced_to_snipeit'])) {
-    
-    // TODO: Insert your Snipe-IT sync logic here.
-    // Example: SnipeITService::syncUser($currentUser);
-    
-    // Mark as synced so this block never runs again for this session
-    $_SESSION['user_synced_to_snipeit'] = true;
+$revalidateInterval = 15 * 60; // 15 minutes
+$lastCheck = $_SESSION['group_revalidated_at'] ?? 0;
+
+if ((time() - $lastCheck) > $revalidateInterval) {
+    require_once __DIR__ . '/snipeit_client.php';
+    $perms = get_user_permissions_from_snipeit($currentUser['email'] ?? '');
+
+    if (!$perms['exists'] || empty($perms['has_fleet_access'])) {
+        session_destroy();
+        $loginPath = defined('AUTH_LOGIN_PATH') ? AUTH_LOGIN_PATH : 'login';
+        header('Location: ' . $loginPath . '?error=' . urlencode('Your fleet access has been removed. Please contact the Fleet Administrator.'));
+        exit;
+    }
+
+    // Update session with latest permissions from Snipe-IT
+    $_SESSION['user']['is_super_admin'] = $perms['is_super_admin'];
+    $_SESSION['user']['is_admin']       = $perms['is_admin'];
+    $_SESSION['user']['is_staff']       = $perms['is_staff'];
+    $_SESSION['user']['is_vip']         = $perms['is_vip'];
+    $_SESSION['group_revalidated_at']   = time();
+
+    // Refresh $currentUser for this request
+    $currentUser = $_SESSION['user'];
 }
 // ==========================================
 
