@@ -632,6 +632,12 @@ document.addEventListener('DOMContentLoaded', function() {
     updateTextareaState();
 });
 </script>
+
+<script>
+document.getElementById('needs_maintenance')?.addEventListener('change', function() {
+    document.getElementById('checkout_maintenance_details').style.display = this.checked ? 'block' : 'none';
+});
+</script>
 <?php layout_footer(); ?>
 </body>
 </html>
