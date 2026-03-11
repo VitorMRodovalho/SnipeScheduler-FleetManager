@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 // Append new groups (union of existing + requested)
                 $mergedGroupIds = array_values(array_unique(array_merge($existingGroupIds, $requestedGroupIds)));
-                $mergedGroupsCsv = implode(',', $mergedGroupIds);
+                $mergedGroupsCsv = $mergedGroupIds; // Array for JSON API
                 
                 $updateData = ['groups' => $mergedGroupsCsv];
                 if ($isVip) { $updateData['vip'] = true; }
