@@ -344,7 +344,14 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
                         </div>
                     </div>
                 
-<!-- Checkout confirmation modal -->
+</form>
+            <?php endif; ?>
+        </div>
+    </div>
+</div><!-- page-shell -->
+</div>
+
+<!-- Checkout confirmation modal (outside page-shell to avoid z-index conflict with Bootstrap backdrop) -->
 <div class="modal fade" id="checkoutConfirmModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -364,12 +371,7 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
     </div>
   </div>
 </div>
-</form>
-            <?php endif; ?>
-        </div>
-    </div>
-</div><!-- page-shell -->
-</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
