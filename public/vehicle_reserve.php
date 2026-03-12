@@ -123,7 +123,11 @@ if ($isStaff && $_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['behalf_e
     $behalfEmail = trim($_POST['behalf_email']);
     $behalfUser = get_snipeit_user_by_email($behalfEmail);
     if ($behalfUser) {
-        $bookingUserId = $behalfUser['id'];
+        // Use local DB user_id (not Snipe-IT ID) so my_bookings can find the reservation
+        $localUserStmt = $pdo->prepare("SELECT user_id FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1");
+        $localUserStmt->execute([$behalfEmail]);
+        $localUserId = $localUserStmt->fetchColumn();
+        $bookingUserId = $localUserId ?: $behalfUser['id']; // fallback to Snipe-IT ID if not in local DB
         $userName = $behalfUser['name'] ?? $behalfUser['first_name'] . ' ' . ($behalfUser['last_name'] ?? '');
         $userEmail = $behalfUser['email'];
         $bookingForOther = true;
@@ -422,9 +426,14 @@ function get_location_name($locations, $id) {
                         <div class="row align-items-end">
                             <div class="col-md-8">
                                 <label class="form-label small mb-1">Driver Email</label>
-                                <input type="email" name="behalf_email" class="form-control form-control-sm" 
-                                       placeholder="Enter driver email (leave empty to book for yourself)"
-                                       value="<?= h($_POST['behalf_email'] ?? $_GET['behalf_email'] ?? '') ?>">
+                                <div class="position-relative" id="driverSearchWrapper">
+                                    <input type="text" name="behalf_email" id="behalfEmailInput"
+                                           class="form-control form-control-sm"
+                                           placeholder="Search by name or email..."
+                                           value="<?= h($_POST['behalf_email'] ?? $_GET['behalf_email'] ?? '') ?>"
+                                           autocomplete="off">
+                                    <div id="driverDropdown" class="dropdown-menu w-100 shadow-sm" style="display:none; max-height: 240px; overflow-y: auto;"></div>
+                                </div>
                             </div>
                             <div class="col-md-4">
                                 <small class="text-muted">Leave empty = booking for yourself</small>
@@ -768,6 +777,139 @@ function selectVehicle(assetId, card) {
     document.getElementById('asset_' + assetId).checked = true;
 }
 </script>
+
+<!-- Driver typeahead for "Book on Behalf" -->
+<?php if ($isStaff): ?>
+<script>
+(function() {
+    const input = document.getElementById('behalfEmailInput');
+    const dropdown = document.getElementById('driverDropdown');
+    if (!input || !dropdown) return;
+
+    let debounceTimer = null;
+    let selectedIndex = -1;
+    let results = [];
+
+    input.addEventListener('input', function() {
+        const q = this.value.trim();
+        clearTimeout(debounceTimer);
+        selectedIndex = -1;
+
+        if (q.length < 2) {
+            dropdown.style.display = 'none';
+            return;
+        }
+
+        debounceTimer = setTimeout(function() {
+            fetch('api/search_drivers.php?q=' + encodeURIComponent(q))
+                .then(r => r.json())
+                .then(data => {
+                    results = data;
+                    if (!data.length) {
+                        dropdown.innerHTML = '<div class="dropdown-item text-muted small py-2"><i class="bi bi-search me-1"></i>No matching drivers found</div>';
+                        dropdown.style.display = 'block';
+                        return;
+                    }
+
+                    dropdown.innerHTML = data.map(function(d, i) {
+                        const nameHtml = highlightMatch(d.name || '', q);
+                        const emailHtml = highlightMatch(d.email || '', q);
+                        return '<a href="#" class="dropdown-item py-2 driver-option" data-index="' + i + '" data-email="' + escAttr(d.email) + '">'
+                            + '<div class="fw-bold small">' + nameHtml + '</div>'
+                            + '<div class="text-muted" style="font-size:0.78rem;">' + emailHtml + '</div>'
+                            + '</a>';
+                    }).join('');
+
+                    dropdown.style.display = 'block';
+
+                    // Attach click handlers
+                    dropdown.querySelectorAll('.driver-option').forEach(function(el) {
+                        el.addEventListener('mousedown', function(e) {
+                            e.preventDefault();
+                            selectDriver(this.dataset.email);
+                        });
+                    });
+                })
+                .catch(function() {
+                    dropdown.style.display = 'none';
+                });
+        }, 250);
+    });
+
+    // Keyboard navigation
+    input.addEventListener('keydown', function(e) {
+        const items = dropdown.querySelectorAll('.driver-option');
+        if (!items.length || dropdown.style.display === 'none') return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+            updateHighlight(items);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            selectedIndex = Math.max(selectedIndex - 1, 0);
+            updateHighlight(items);
+        } else if (e.key === 'Enter' && selectedIndex >= 0) {
+            e.preventDefault();
+            selectDriver(items[selectedIndex].dataset.email);
+        } else if (e.key === 'Escape') {
+            dropdown.style.display = 'none';
+            selectedIndex = -1;
+        }
+    });
+
+    // Close on outside click
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#driverSearchWrapper')) {
+            dropdown.style.display = 'none';
+            selectedIndex = -1;
+        }
+    });
+
+    // Reopen on focus if value exists
+    input.addEventListener('focus', function() {
+        if (this.value.trim().length >= 2 && dropdown.innerHTML) {
+            dropdown.style.display = 'block';
+        }
+    });
+
+    function selectDriver(email) {
+        input.value = email;
+        dropdown.style.display = 'none';
+        selectedIndex = -1;
+        // Brief visual confirmation
+        input.classList.add('is-valid');
+        setTimeout(function() { input.classList.remove('is-valid'); }, 2000);
+    }
+
+    function updateHighlight(items) {
+        items.forEach(function(el, i) {
+            el.classList.toggle('active', i === selectedIndex);
+            if (i === selectedIndex) el.scrollIntoView({ block: 'nearest' });
+        });
+    }
+
+    function highlightMatch(text, query) {
+        if (!text || !query) return escHtmlLocal(text);
+        const escaped = escHtmlLocal(text);
+        const regex = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+        return escaped.replace(regex, '<mark style="padding:0;background:#fff3cd;">$1</mark>');
+    }
+
+    function escAttr(str) {
+        return (str || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;');
+    }
+
+    function escHtmlLocal(str) {
+        if (!str) return '';
+        const d = document.createElement('div');
+        d.textContent = str;
+        return d.innerHTML;
+    }
+})();
+</script>
+<?php endif; ?>
+
 <?php layout_footer(); ?>
 </body>
 </html>

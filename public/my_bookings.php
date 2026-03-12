@@ -19,21 +19,22 @@ $active        = basename($_SERVER['PHP_SELF']);
 $isAdmin       = !empty($currentUser['is_admin']);
 $isStaff       = !empty($currentUser['is_staff']) || $isAdmin;
 $currentUserId = (string)($currentUser['id'] ?? '');
+$currentUserEmail = strtolower(trim($currentUser['email'] ?? ''));
 
 $userName = trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''));
 $tabRaw = $_GET['tab'] ?? 'reservations';
 $tab = $tabRaw === 'checked_out' ? 'checked_out' : 'reservations';
 
-// Load this user's reservations
+// Load this user's reservations (match by user_id OR user_email for reliability)
 try {
     $sql = "
         SELECT *
         FROM reservations
-        WHERE user_id = :user_id
+        WHERE user_id = :user_id OR LOWER(user_email) = :user_email
         ORDER BY id DESC
     ";
     $stmt = $pdo->prepare($sql);
-    $stmt->execute([':user_id' => $currentUserId]);
+    $stmt->execute([':user_id' => $currentUserId, ':user_email' => $currentUserEmail]);
     $reservations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
     $reservations = [];
@@ -85,7 +86,7 @@ if (!empty($_GET['deleted'])) {
 
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="assets/style.css?v=1.5.0">
+    <link rel="stylesheet" href="assets/style.css?v=1.5.1">
     <link rel="stylesheet" href="/booking/css/mobile.css">
     <?= layout_theme_styles() ?>
 </head>

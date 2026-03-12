@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.5.1 (2026-03-12)
+
+Epic 2-3: Fleet Health Dashboard, Reports CXO overhaul, driver typeahead, behalf booking fix
+
 ## v1.5.0 (2026-03-11)
 
 Corporate UI rebrand, dynamic group-based notifications, driver sync merge, checkout/checkin UX improvements, modal z-index fix, CSP security headers
