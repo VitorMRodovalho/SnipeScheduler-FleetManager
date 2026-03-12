@@ -115,6 +115,23 @@ if ($selectedPickupId > 0 && $selectedStartDate && $selectedEndDate) {
 // Get current user info
 $userName = trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''));
 $userEmail = $currentUser['email'] ?? '';
+$bookingUserId = $currentUser['id'] ?? 0;
+
+// Staff: Book on behalf of another user
+$bookingForOther = false;
+if ($isStaff && $_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['behalf_email'])) {
+    $behalfEmail = trim($_POST['behalf_email']);
+    $behalfUser = get_snipeit_user_by_email($behalfEmail);
+    if ($behalfUser) {
+        $bookingUserId = $behalfUser['id'];
+        $userName = $behalfUser['name'] ?? $behalfUser['first_name'] . ' ' . ($behalfUser['last_name'] ?? '');
+        $userEmail = $behalfUser['email'];
+        $bookingForOther = true;
+    }
+} elseif ($isStaff && !empty($_GET['behalf_email'])) {
+    // Preserve selection on page reload
+    $bookingForOther = true;
+}
 
 // Check if user is VIP (from session, set during login)
 $isVip = !empty($currentUser['is_vip']);
@@ -261,14 +278,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_reservation'])
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
                     ");
                     $stmt->execute([
-                        $currentUser['id'] ?? 0, $userName, $userEmail, $assetId, $assetName, $pickupLocationId, $destinationId,
+                        $bookingUserId, $userName, $userEmail, $assetId, $assetName, $pickupLocationId, $destinationId,
                         $startDatetime, $endDatetime, $status, $approvalStatus, $purpose
                     ]);
 
                     $reservationId = $pdo->lastInsertId();
 
+                    $actorName = trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''));
+                    $actorEmail = $currentUser['email'] ?? '';
+                    $submitNote = $bookingForOther 
+                        ? "Booked by {$actorName} on behalf of {$userName}" 
+                        : 'Reservation submitted';
                     $stmt = $pdo->prepare("INSERT INTO approval_history (reservation_id, action, actor_name, actor_email, notes) VALUES (?, 'submitted', ?, ?, ?)");
-                    $stmt->execute([$reservationId, $userName, $userEmail, 'Reservation submitted']);
+                    $stmt->execute([$reservationId, $actorName, $actorEmail, $submitNote]);
 
                     if ($isVip) {
                         $stmt = $pdo->prepare("INSERT INTO approval_history (reservation_id, action, actor_name, actor_email, notes) VALUES (?, 'auto_approved', 'System', '', 'VIP user - auto approved')");
@@ -391,6 +413,31 @@ function get_location_name($locations, $id) {
             <?php endif; ?>
 
             <form method="post" id="reservationForm">
+                <?php if ($isStaff): ?>
+                <div class="card mb-3 border-info">
+                    <div class="card-header bg-info text-white py-2">
+                        <small class="fw-bold"><i class="bi bi-people me-1"></i>Staff: Book on Behalf of a Driver</small>
+                    </div>
+                    <div class="card-body py-2">
+                        <div class="row align-items-end">
+                            <div class="col-md-8">
+                                <label class="form-label small mb-1">Driver Email</label>
+                                <input type="email" name="behalf_email" class="form-control form-control-sm" 
+                                       placeholder="Enter driver email (leave empty to book for yourself)"
+                                       value="<?= h($_POST['behalf_email'] ?? $_GET['behalf_email'] ?? '') ?>">
+                            </div>
+                            <div class="col-md-4">
+                                <small class="text-muted">Leave empty = booking for yourself</small>
+                            </div>
+                        </div>
+                        <?php if (!empty($_POST['behalf_email']) && !$bookingForOther): ?>
+                        <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>User not found in Snipe-IT. Booking as yourself.</div>
+                        <?php elseif ($bookingForOther): ?>
+                        <div class="text-success small mt-1"><i class="bi bi-check-circle me-1"></i>Booking on behalf of: <strong><?= h($userName) ?></strong> (<?= h($userEmail) ?>)</div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
                 <!-- Step 1: Select Locations -->
                 <div class="card mb-4">
                     <div class="card-header bg-primary text-white">
