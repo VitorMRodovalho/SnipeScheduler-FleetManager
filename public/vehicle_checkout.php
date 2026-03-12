@@ -481,6 +481,33 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
 </div><!-- page-shell -->
 </div>
 
+
+<!-- Maintenance confirmation modal -->
+<div class="modal fade" id="maintenanceConfirmModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title"><i class="bi bi-exclamation-triangle me-2"></i>Report Vehicle Issue</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-2">Are you sure this vehicle is <strong>unusable</strong>?</p>
+        <p class="mb-0">This will:</p>
+        <ul class="mb-2">
+          <li>Flag the vehicle for maintenance</li>
+          <li>Notify Fleet Staff immediately</li>
+          <li>Attempt to assign you an alternate vehicle</li>
+        </ul>
+        <p class="text-muted small mb-0">If no alternate is available, Fleet Staff will coordinate with you directly.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-warning" id="maintenanceConfirmYes"><i class="bi bi-exclamation-triangle me-1"></i>Yes, Report Issue</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Checkout confirmation modal (outside page-shell to avoid z-index conflict with Bootstrap backdrop) -->
 <div class="modal fade" id="checkoutConfirmModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
@@ -697,48 +724,57 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <script>
+// Maintenance toggle with Bootstrap modal confirmation
 document.getElementById('needs_maintenance')?.addEventListener('change', function() {
+    const cb = this;
     const details = document.getElementById('checkout_maintenance_details');
-    if (this.checked) {
-        // Show confirmation before proceeding
-        if (confirm('Are you sure this vehicle is unusable?\n\nThis will:\n- Flag the vehicle for maintenance\n- Notify Fleet Staff\n- Attempt to assign you an alternate vehicle\n\nClick OK to proceed or Cancel to go back.')) {
-            details.style.display = 'block';
-            // Change submit button to maintenance mode
-            const submitBtn = document.querySelector('button[type="submit"]');
-            if (submitBtn) {
-                submitBtn.className = 'btn btn-warning btn-lg';
-                submitBtn.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>Report Issue & Request Alternate';
-                submitBtn.disabled = false; // Enable directly - no mileage/inspection needed
-            }
-            // Disable mileage/inspection requirements
-            const mileage = document.querySelector('input[name*="current_mileage"]');
-            const visual = document.querySelector('select[name*="visual_inspection"]');
-            const agreement = document.getElementById('agreement');
-            if (mileage) { mileage.removeAttribute('required'); mileage.classList.remove('is-invalid'); }
-            if (visual) { visual.removeAttribute('required'); }
-            if (agreement) { agreement.required = false; }
-        } else {
-            this.checked = false;
-        }
+    
+    if (cb.checked) {
+        // Uncheck immediately, wait for modal confirmation
+        cb.checked = false;
+        const modal = new bootstrap.Modal(document.getElementById('maintenanceConfirmModal'));
+        modal.show();
     } else {
+        // Unchecking: restore normal checkout mode
         details.style.display = 'none';
-        // Restore normal checkout mode
         const submitBtn = document.querySelector('button[type="submit"]');
         if (submitBtn) {
             submitBtn.className = 'btn btn-success btn-lg';
             submitBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Complete Checkout';
-            submitBtn.disabled = true; // Re-enable validation
+            submitBtn.disabled = true;
         }
-        // Re-enable validation
         const mileage = document.querySelector('input[name*="current_mileage"]');
         const visual = document.querySelector('select[name*="visual_inspection"]');
         const agreement = document.getElementById('agreement');
         if (mileage) { mileage.setAttribute('required', 'required'); }
         if (visual) { visual.setAttribute('required', 'required'); }
         if (agreement) { agreement.required = true; }
-        // Re-run validation state
         if (typeof updateSubmitState === 'function') updateSubmitState();
     }
+});
+
+// Modal confirm button: activate maintenance mode
+document.getElementById('maintenanceConfirmYes')?.addEventListener('click', function() {
+    const cb = document.getElementById('needs_maintenance');
+    const details = document.getElementById('checkout_maintenance_details');
+    cb.checked = true;
+    details.style.display = 'block';
+    
+    // Switch to maintenance mode
+    const submitBtn = document.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.className = 'btn btn-warning btn-lg';
+        submitBtn.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>Report Issue & Request Alternate';
+        submitBtn.disabled = false;
+    }
+    const mileage = document.querySelector('input[name*="current_mileage"]');
+    const visual = document.querySelector('select[name*="visual_inspection"]');
+    const agreement = document.getElementById('agreement');
+    if (mileage) { mileage.removeAttribute('required'); mileage.classList.remove('is-invalid'); }
+    if (visual) { visual.removeAttribute('required'); }
+    if (agreement) { agreement.required = false; }
+    
+    bootstrap.Modal.getInstance(document.getElementById('maintenanceConfirmModal')).hide();
 });
 </script>
 <?php layout_footer(); ?>
