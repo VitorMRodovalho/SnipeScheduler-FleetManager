@@ -9,14 +9,24 @@ require_once SRC_PATH . '/snipeit_client.php';
 require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/layout.php';
 require_once SRC_PATH . '/announcements.php';
+require_once SRC_PATH . '/company_filter.php';
 
 $active = 'dashboard';
 $isAdmin = !empty($currentUser['is_admin']);
 $isStaff = !empty($currentUser['is_staff']) || $isAdmin;
 
+// Multi-entity fleet filtering
+$multiCompany = is_multi_company_enabled($pdo);
+$userCompanyIds = $multiCompany ? get_user_company_ids($currentUser) : [];
+
 // Get all fleet vehicles
 $allAssets = get_requestable_assets(100, null);
 $assetList = is_array($allAssets) ? $allAssets : [];
+
+// Apply company filtering
+if (!empty($userCompanyIds)) {
+    $assetList = filter_assets_by_company($assetList, $userCompanyIds);
+}
 
 // Count by status
 $statusCounts = [

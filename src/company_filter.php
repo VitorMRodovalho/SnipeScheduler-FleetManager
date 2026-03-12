@@ -1,0 +1,166 @@
+<?php
+/**
+ * Multi-Entity Fleet Partitioning
+ * Filters vehicles by company assignment when multiple companies exist.
+ *
+ * When disabled or single-company: zero changes to behavior.
+ * Fleet Admin / Super Admin always see all companies.
+ * Users with no company assigned see all vehicles (backward compatible).
+ */
+
+require_once __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/snipeit_client.php';
+
+/**
+ * Check if multi-company mode is active.
+ *
+ * system_settings key: 'multi_company_mode'
+ *   'auto' (default) — enabled when Snipe-IT has >1 company
+ *   'on'             — always enabled
+ *   'off'            — always disabled
+ *
+ * @param PDO $pdo Database connection
+ * @return bool
+ */
+function is_multi_company_enabled(PDO $pdo): bool
+{
+    $stmt = $pdo->prepare("SELECT setting_value FROM system_settings WHERE setting_key = ?");
+    $stmt->execute(['multi_company_mode']);
+    $mode = $stmt->fetchColumn() ?: 'auto';
+
+    if ($mode === 'off') {
+        return false;
+    }
+
+    if ($mode === 'on') {
+        return true;
+    }
+
+    // Auto mode: check how many companies exist in Snipe-IT
+    $companies = get_all_companies();
+    return count($companies) > 1;
+}
+
+/**
+ * Return the user's company array from session data.
+ *
+ * @param array $sessionUser $_SESSION['user']
+ * @return array|null Company array {id, name} or null
+ */
+function get_user_company(array $sessionUser): ?array
+{
+    return $sessionUser['company'] ?? null;
+}
+
+/**
+ * Return array of company IDs the user can access.
+ *
+ * - Fleet Admin / Super Admin: all companies (full fleet visibility)
+ * - Regular users: their assigned company only
+ * - Users with no company: empty array (means "see all" — backward compatible)
+ *
+ * @param array $sessionUser $_SESSION['user']
+ * @return int[] Company IDs, or empty array for "no filtering"
+ */
+function get_user_company_ids(array $sessionUser): array
+{
+    // Admins always see all companies
+    if (!empty($sessionUser['is_admin']) || !empty($sessionUser['is_super_admin'])) {
+        return []; // empty = no filtering = full fleet
+    }
+
+    $companyId = $sessionUser['company_id'] ?? null;
+
+    // No company assigned — don't lock them out
+    if (!$companyId) {
+        return [];
+    }
+
+    return [(int)$companyId];
+}
+
+/**
+ * Filter an array of Snipe-IT assets by company ID.
+ *
+ * @param array $assets   Array of asset rows from Snipe-IT API
+ * @param int[] $companyIds Allowed company IDs. Empty = return all (no filtering).
+ * @return array Filtered assets
+ */
+function filter_assets_by_company(array $assets, array $companyIds): array
+{
+    if (empty($companyIds)) {
+        return $assets;
+    }
+
+    return array_values(array_filter($assets, function ($asset) use ($companyIds) {
+        $assetCompanyId = $asset['company']['id'] ?? null;
+        // Assets with no company are visible to everyone
+        if ($assetCompanyId === null) {
+            return true;
+        }
+        return in_array((int)$assetCompanyId, $companyIds, true);
+    }));
+}
+
+/**
+ * Fetch all companies from Snipe-IT with 5-minute cache.
+ *
+ * @return array Array of ['id' => int, 'name' => string]
+ */
+function get_all_companies(): array
+{
+    static $cached = null;
+    static $cachedAt = 0;
+
+    $ttl = 300; // 5 minutes
+
+    if ($cached !== null && (time() - $cachedAt) < $ttl) {
+        return $cached;
+    }
+
+    // Also check filesystem cache
+    $cacheFile = (defined('CONFIG_PATH') ? CONFIG_PATH : __DIR__ . '/../config') . '/cache/companies_list.json';
+    if (is_file($cacheFile) && (time() - filemtime($cacheFile)) < $ttl) {
+        $data = json_decode(file_get_contents($cacheFile), true);
+        if (is_array($data)) {
+            $cached = $data;
+            $cachedAt = time();
+            return $cached;
+        }
+    }
+
+    $rows = get_companies();
+    $result = [];
+    foreach ($rows as $row) {
+        $result[] = [
+            'id'   => (int)($row['id'] ?? 0),
+            'name' => (string)($row['name'] ?? ''),
+        ];
+    }
+
+    // Write cache
+    $cacheDir = dirname($cacheFile);
+    if (!is_dir($cacheDir)) {
+        @mkdir($cacheDir, 0755, true);
+    }
+    @file_put_contents($cacheFile, json_encode($result), LOCK_EX);
+
+    $cached = $result;
+    $cachedAt = time();
+
+    return $result;
+}
+
+/**
+ * Get the multi-company mode setting value.
+ *
+ * @param PDO $pdo
+ * @return string 'auto', 'on', or 'off'
+ */
+function get_multi_company_mode(PDO $pdo): string
+{
+    $stmt = $pdo->prepare("SELECT setting_value FROM system_settings WHERE setting_key = ?");
+    $stmt->execute(['multi_company_mode']);
+    $mode = $stmt->fetchColumn();
+    return in_array($mode, ['auto', 'on', 'off'], true) ? $mode : 'auto';
+}

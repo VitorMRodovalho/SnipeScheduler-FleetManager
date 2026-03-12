@@ -277,6 +277,8 @@ if ($provider === 'google') {
         'is_staff'     => $isStaff,
         'is_vip'       => $isVip ?? false,
         'snipeit_id'   => $snipeitId ?? null,
+        'company'      => $snipePerms['company'] ?? null,
+        'company_id'   => $snipePerms['company']['id'] ?? null,
     ];
 
 
@@ -514,6 +516,8 @@ if ($provider === 'microsoft') {
         'is_staff'     => $isStaff,
         'is_vip'       => $isVip,
         'snipeit_id'   => $snipeitId,
+        'company'      => $snipePerms['company'] ?? null,
+        'company_id'   => $snipePerms['company']['id'] ?? null,
     ];
 
     activity_log_event('user_login', 'User logged in', [
@@ -756,6 +760,8 @@ $_SESSION['user'] = [
         'is_staff'     => $isStaff,
         'is_vip'       => $isVip,
         'snipeit_id'   => $snipeitId,
+        'company'      => $snipePerms['company'] ?? null,
+        'company_id'   => $snipePerms['company']['id'] ?? null,
     ];
 
 activity_log_event('user_login', 'User logged in', [

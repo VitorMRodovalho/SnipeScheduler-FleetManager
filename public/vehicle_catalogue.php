@@ -3,10 +3,16 @@ require_once __DIR__ . '/../src/bootstrap.php';
 require_once SRC_PATH . '/auth.php';
 require_once SRC_PATH . '/snipeit_client.php';
 require_once SRC_PATH . '/layout.php';
+require_once SRC_PATH . '/db.php';
+require_once SRC_PATH . '/company_filter.php';
 
 $active = basename($_SERVER['PHP_SELF']);
 $isAdmin = !empty($currentUser['is_admin']);
 $isStaff = !empty($currentUser['is_staff']) || $isAdmin;
+
+// Multi-entity fleet filtering
+$multiCompany = is_multi_company_enabled($pdo);
+$userCompanyIds = $multiCompany ? get_user_company_ids($currentUser) : [];
 
 // Get filter parameters
 $categoryFilter = isset($_GET['category']) ? (int)$_GET['category'] : null;
@@ -22,6 +28,11 @@ if (!empty($searchQuery)) {
     $assets = get_requestable_assets(100, $categoryFilter);
 } else {
     $assets = get_requestable_assets(100);
+}
+
+// Apply company filtering
+if (!empty($userCompanyIds)) {
+    $assets = filter_assets_by_company($assets, $userCompanyIds);
 }
 
 // Filter out already checked out assets

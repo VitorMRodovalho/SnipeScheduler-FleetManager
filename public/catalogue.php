@@ -4,6 +4,7 @@ require_once SRC_PATH . '/auth.php';
 require_once SRC_PATH . '/snipeit_client.php';
 require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/layout.php';
+require_once SRC_PATH . '/company_filter.php';
 
 $config   = load_config();
 $authCfg  = $config['auth'] ?? [];
@@ -891,6 +892,14 @@ if (($_GET['ajax'] ?? '') === 'model_details') {
                 : 0;
             $assetLookupLimit = min(5000, max(500, $assetsCount + 25));
             $assets = list_assets_by_model($modelId, $assetLookupLimit);
+
+            // Apply multi-entity company filtering
+            $mcEnabled = is_multi_company_enabled($pdo);
+            $mcCompanyIds = $mcEnabled ? get_user_company_ids($currentUser) : [];
+            if (!empty($mcCompanyIds)) {
+                $assets = filter_assets_by_company($assets, $mcCompanyIds);
+            }
+
             foreach ($assets as $asset) {
                 $assetId = (int)($asset['id'] ?? 0);
                 if ($assetId > 0) {

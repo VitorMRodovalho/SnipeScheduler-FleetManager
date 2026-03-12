@@ -519,6 +519,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($newAdmin     !== '') $teamsUrlAdmin    = $newAdmin;
         }
     } else {
+        // Save multi-entity fleet mode to system_settings
+        $mcModeInput = $_POST['multi_company_mode'] ?? '';
+        if (in_array($mcModeInput, ['auto', 'on', 'off'], true)) {
+            $mcStmt = $pdo->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES (?,?) ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value)");
+            $mcStmt->execute(['multi_company_mode', $mcModeInput]);
+        }
+
         $content = layout_build_config_file($newConfig, [
             'SNIPEIT_API_PAGE_LIMIT'   => $pageLimit,
             'CATALOGUE_ITEMS_PER_PAGE' => $cataloguePP,
@@ -1253,6 +1260,56 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
                                 </div>
                                 <div class="form-text mt-1">
                                     When enabled, users with overdue assets cannot access the catalogue until items are returned.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Multi-Entity Fleet -->
+            <div class="col-12">
+                <div class="card" id="multi-entity-fleet">
+                    <div class="card-body">
+                        <h5 class="card-title mb-1">Multi-Entity Fleet</h5>
+                        <p class="text-muted small mb-3">When enabled, vehicles are filtered by company assignment. Users see only vehicles belonging to their company. Admins always see the full fleet.</p>
+                        <?php
+                            require_once SRC_PATH . '/company_filter.php';
+                            $mcMode = get_multi_company_mode($pdo);
+                            $mcCompanies = get_all_companies();
+                            $mcCompanyCount = count($mcCompanies);
+                            $mcActive = is_multi_company_enabled($pdo);
+                        ?>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Company Filtering Mode</label>
+                                <select name="multi_company_mode" class="form-select">
+                                    <option value="auto" <?= $mcMode === 'auto' ? 'selected' : '' ?>>Auto-detect</option>
+                                    <option value="on" <?= $mcMode === 'on' ? 'selected' : '' ?>>Always On</option>
+                                    <option value="off" <?= $mcMode === 'off' ? 'selected' : '' ?>>Always Off</option>
+                                </select>
+                                <div class="form-text">Auto-detect enables filtering when multiple companies exist in Snipe-IT.</div>
+                            </div>
+                            <div class="col-md-8 d-flex align-items-center">
+                                <div>
+                                    <?php if ($mcActive): ?>
+                                        <span class="badge bg-success me-2">Active</span>
+                                        <span class="text-muted"><?= $mcCompanyCount ?> <?= $mcCompanyCount === 1 ? 'company' : 'companies' ?> found — filtering active</span>
+                                        <ul class="list-unstyled mt-2 mb-0 small text-muted">
+                                            <?php foreach ($mcCompanies as $co): ?>
+                                                <li><i class="bi bi-building me-1"></i><?= h($co['name']) ?></li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    <?php else: ?>
+                                        <span class="badge bg-secondary me-2">Inactive</span>
+                                        <span class="text-muted">
+                                            <?php if ($mcMode === 'off'): ?>
+                                                Filtering disabled — all users see the full fleet
+                                            <?php else: ?>
+                                                <?= $mcCompanyCount ?> <?= $mcCompanyCount === 1 ? 'company' : 'companies' ?> found — filtering inactive
+                                            <?php endif; ?>
+                                        </span>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>

@@ -272,6 +272,12 @@ function render_top_bar(array $currentUser, bool $isStaff = false, bool $isAdmin
     } elseif ($isStaff) {
         $badges .= '<span class="badge bg-primary ms-2">Staff</span>';
     }
+
+    // Company badge when multi-entity fleet is active
+    $companyName = $currentUser['company']['name'] ?? null;
+    if ($companyName) {
+        $badges .= '<span class="badge bg-secondary ms-2" title="Company">' . htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8') . '</span>';
+    }
     
     return '
         <div class="top-bar mb-3">

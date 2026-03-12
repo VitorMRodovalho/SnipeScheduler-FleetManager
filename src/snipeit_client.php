@@ -1737,7 +1737,10 @@ function get_user_permissions_from_snipeit(string $email): array
     
     // Drivers (group 2) = basic user (can book vehicles)
     // No special permissions needed, just needs to exist
-    
+
+    // Include company assignment for multi-entity fleet partitioning
+    $result['company'] = $user['company'] ?? null;
+
     return $result;
 }
 

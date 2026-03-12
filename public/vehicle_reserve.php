@@ -15,10 +15,15 @@ require_once SRC_PATH . '/email_service.php';
 require_once SRC_PATH . '/notification_service.php';
 require_once SRC_PATH . '/reservation_validator.php';
 require_once SRC_PATH . '/business_days.php';
+require_once SRC_PATH . '/company_filter.php';
 
 $active = basename($_SERVER['PHP_SELF']);
 $isAdmin = !empty($currentUser['is_admin']);
 $isStaff = !empty($currentUser['is_staff']) || $isAdmin;
+
+// Multi-entity fleet filtering
+$multiCompany = is_multi_company_enabled($pdo);
+$userCompanyIds = $multiCompany ? get_user_company_ids($currentUser) : [];
 
 $error = '';
 $success = '';
@@ -68,6 +73,11 @@ if ($selectedPickupId > 0 && $selectedStartDate && $selectedEndDate) {
     // Get all fleet vehicles (any status)
     $allAssets = get_fleet_vehicles(500);
     $assetList = is_array($allAssets) ? $allAssets : [];
+
+    // Apply company filtering
+    if (!empty($userCompanyIds)) {
+        $assetList = filter_assets_by_company($assetList, $userCompanyIds);
+    }
 
     foreach ($assetList as $asset) {
         // Get location IDs

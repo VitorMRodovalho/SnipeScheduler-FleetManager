@@ -46,6 +46,8 @@ if ((time() - $lastCheck) > $revalidateInterval) {
     $_SESSION['user']['is_admin']       = $perms['is_admin'];
     $_SESSION['user']['is_staff']       = $perms['is_staff'];
     $_SESSION['user']['is_vip']         = $perms['is_vip'];
+    $_SESSION['user']['company']        = $perms['company'] ?? null;
+    $_SESSION['user']['company_id']     = $perms['company']['id'] ?? null;
     $_SESSION['group_revalidated_at']   = time();
 
     // Refresh $currentUser for this request

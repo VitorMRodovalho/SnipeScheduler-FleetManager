@@ -13,11 +13,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 }
 require_once SRC_PATH . '/snipeit_client.php';
 require_once SRC_PATH . '/layout.php';
+require_once SRC_PATH . '/db.php';
+require_once SRC_PATH . '/company_filter.php';
 
 $active = 'activity_log.php';
 $isAdmin = !empty($currentUser['is_admin']);
 $isStaff = !empty($currentUser['is_staff']) || $isAdmin;
 $isSuperAdmin = !empty($currentUser['is_super_admin']);
+
+// Multi-entity fleet: admins see all companies, detect if active for UI column
+$multiCompany = is_multi_company_enabled($pdo);
 
 if (!$isAdmin) {
     header('Location: dashboard');
@@ -282,7 +287,7 @@ $vehicles = get_fleet_vehicles(200);
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
-                            <tr><th>Asset Tag</th><th>Name</th><th>Model</th><th>Status</th><th>Assigned To</th><th>Actions</th></tr>
+                            <tr><th>Asset Tag</th><th>Name</th><th>Model</th><?php if ($multiCompany): ?><th>Company</th><?php endif; ?><th>Status</th><th>Assigned To</th><th>Actions</th></tr>
                         </thead>
                         <tbody>
                             <?php foreach ($vehicles as $v): ?>
@@ -296,6 +301,9 @@ $vehicles = get_fleet_vehicles(200);
                                 <td><code><?= h($v['asset_tag'] ?? '-') ?></code></td>
                                 <td><strong><?= h($v['name'] ?? '-') ?></strong></td>
                                 <td><?= h($v['model']['name'] ?? '-') ?></td>
+                                <?php if ($multiCompany): ?>
+                                <td><?= h($v['company']['name'] ?? '-') ?></td>
+                                <?php endif; ?>
                                 <td><span class="badge bg-<?= $statusClass ?>"><?= h($statusName) ?></span></td>
                                 <td><?= $isCheckedOut ? h($v['assigned_to']['name'] ?? '-') : '<span class="text-muted">-</span>' ?></td>
                                 <td>

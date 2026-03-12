@@ -18,6 +18,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 require_once SRC_PATH . '/snipeit_client.php';
 require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/layout.php';
+require_once SRC_PATH . '/company_filter.php';
 
 $active = 'maintenance.php';
 $isAdmin = !empty($currentUser['is_admin']);
@@ -210,11 +211,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Lazy data loading — only fetch what the active tab needs
 // =========================================================================
 
+// Multi-entity fleet filtering
+$multiCompany = is_multi_company_enabled($pdo);
+$userCompanyIds = $multiCompany ? get_user_company_ids($currentUser) : [];
+
 $needsAssetList = in_array($tab, ['overview', 'alerts', 'in_service', 'log']);
 $assetList = [];
 if ($needsAssetList) {
     $allAssets = get_requestable_assets(100, null);
     $assetList = is_array($allAssets) ? $allAssets : [];
+
+    // Apply company filtering
+    if (!empty($userCompanyIds)) {
+        $assetList = filter_assets_by_company($assetList, $userCompanyIds);
+    }
 }
 
 // ---- Fleet Overview & Alerts: compute health data from asset list --------
