@@ -1,6 +1,23 @@
 # Installation Guide
 
-## Prerequisites
+## Security Prerequisites
+
+Before installing, ensure the following infrastructure-level security measures are in place:
+
+### Disk Encryption (MANDATORY)
+
+The application does **not** encrypt data at rest at the application level. Disk-level encryption **MUST** be enabled on the server hosting this system to protect database contents, uploaded files, and configuration secrets.
+
+| Platform | Method | Verification |
+|----------|--------|-------------|
+| AWS EC2 | Enable EBS encryption on all attached volumes | AWS Console > EC2 > Volumes > Encrypted column |
+| Azure VM | Enable Azure Disk Encryption (ADE) | `az vm encryption show --name <vm>` |
+| Bare metal / VM | LUKS / dm-crypt on all data partitions | `lsblk` — look for `crypt` type |
+| Docker | Encrypt the host's data volume | Verify host disk encryption |
+
+> **Warning:** Running this system on an unencrypted disk exposes personal data (driver names, emails, reservations, inspection photos) to physical access attacks. See `docs/SECURITY_AUDIT.md` section 9 for details.
+
+## Software Prerequisites
 
 - Ubuntu 22.04/24.04 LTS
 - PHP 8.1+ with extensions: pdo, pdo_mysql, curl, json, mbstring

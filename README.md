@@ -311,6 +311,8 @@ Group IDs, status IDs, custom field names, and location parent IDs are all confi
 
 See [docs/INSTALLATION.md](docs/INSTALLATION.md) for detailed installation instructions.
 
+> **Security Requirement:** Disk-level encryption (EBS encryption, LUKS, or equivalent) **must** be enabled before deploying. The application does not encrypt data at rest. See [Security Prerequisites](docs/INSTALLATION.md#security-prerequisites) and [SECURITY_AUDIT.md](docs/SECURITY_AUDIT.md).
+
 ### Quick Start
 
 1. Install Snipe-IT (if not already running)
