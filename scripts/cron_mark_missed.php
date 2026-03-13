@@ -74,6 +74,22 @@ $missedIds = array_column($missedReservations, 'id');
 $placeholders = implode(',', array_fill(0, count($missedIds), '?'));
 $updateStmt = $pdo->prepare("UPDATE reservations SET status = 'missed' WHERE id IN ({$placeholders})");
 $updateStmt->execute($missedIds);
+// Checkin assets in Snipe-IT for missed reservations
+    foreach ($missedReservations as $mr) {
+        $assetId = (int)($mr['asset_id'] ?? 0);
+        if ($assetId > 0) {
+            try {
+                snipeit_request('POST', '/hardware/' . $assetId . '/checkin', [
+                    'note' => 'Auto checkin: reservation #' . $mr['id'] . ' missed (no checkout)',
+                ]);
+                update_asset_status($assetId, SNIPEIT_STATUS_AVAILABLE);
+                echo sprintf("[%s] Asset %d checked in and set to Available\n", date('Y-m-d H:i:s'), $assetId);
+            } catch (Throwable $e) {
+                echo sprintf("[%s] Failed to checkin asset %d: %s\n", date('Y-m-d H:i:s'), $assetId, $e->getMessage());
+            }
+        }
+    }
+
 $affected = $updateStmt->rowCount();
 
 // Build asset summaries per reservation for logging.
