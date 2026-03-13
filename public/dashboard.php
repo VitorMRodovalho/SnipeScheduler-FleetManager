@@ -137,6 +137,22 @@ $stmt = $pdo->prepare("
 $stmt->execute($companyParams);
 $maintenanceList = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Get missed reservations (last 7 days, unresolved) — staff/admin only
+$missedActionList = [];
+if ($isStaff) {
+    $stmt = $pdo->prepare("
+        SELECT r.*
+        FROM reservations r
+        WHERE r.status = 'missed'
+        AND r.missed_resolved = 0
+        AND r.updated_at > DATE_SUB(NOW(), INTERVAL 7 DAY)
+        {$companyClause}
+        ORDER BY r.start_datetime DESC
+    ");
+    $stmt->execute($companyParams);
+    $missedActionList = $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
 // Get recent activity (last 7 days)
 $stmt = $pdo->prepare("
     SELECT ah.*, r.asset_name_cache, r.company_abbr, r.company_color, r.company_name, r.user_name as requester_name
@@ -345,7 +361,7 @@ foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         </div>
 
         <!-- Alerts Row -->
-        <?php if (count($overdueList) > 0 || count($pendingApprovals) > 0 || count($maintenanceList) > 0): ?>
+        <?php if (count($overdueList) > 0 || count($pendingApprovals) > 0 || count($maintenanceList) > 0 || count($missedActionList) > 0): ?>
         <div class="row g-3 mb-4">
             <?php if (count($overdueList) > 0): ?>
             <div class="col-md-4">
@@ -378,6 +394,18 @@ foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
                         <h6 class="text-orange"><i class="bi bi-wrench me-2"></i>Needs Maintenance</h6>
                         <div class="stat-number" style="color: #fd7e14;"><?= count($maintenanceList) ?></div>
                         <a href="#maintenance-section" class="btn btn-sm btn-outline-secondary mt-2">View Details</a>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <?php if (count($missedActionList) > 0): ?>
+            <div class="col-md-4">
+                <div class="card alert-card h-100" style="border-left-color: #6f42c1; background: #f8f0ff;">
+                    <div class="card-body">
+                        <h6 style="color: #6f42c1;"><i class="bi bi-exclamation-diamond me-2"></i>Missed — Action Required</h6>
+                        <div class="stat-number" style="color: #6f42c1;"><?= count($missedActionList) ?></div>
+                        <a href="#missed-section" class="btn btn-sm btn-outline-secondary mt-2">View Details</a>
                     </div>
                 </div>
             </div>
@@ -497,6 +525,59 @@ foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
                                     <td><?= h($maint['user_name']) ?></td>
                                     <td><small><?= h(substr($maint['maintenance_notes'] ?? 'No details', 0, 50)) ?>...</small></td>
                                     <td><?= date('M j', strtotime($maint['updated_at'] ?? $maint['created_at'])) ?></td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <!-- Missed Reservations — Action Required -->
+                <?php if (count($missedActionList) > 0): ?>
+                <div class="card mb-4" id="missed-section">
+                    <div class="card-header" style="background: #6f42c1; color: white;">
+                        <h5 class="mb-0"><i class="bi bi-exclamation-diamond me-2"></i>Missed Reservations — Action Required</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Vehicle</th>
+                                    <th>Driver</th>
+                                    <th>Scheduled</th>
+                                    <th>Key</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($missedActionList as $missed): ?>
+                                <tr<?= !empty($missed['key_collected']) ? ' class="table-danger"' : '' ?>>
+                                    <td><strong><?= h($missed['asset_name_cache'] ?: 'Vehicle #' . $missed['asset_id']) ?><?= get_company_badge_from_row($missed) ?></strong></td>
+                                    <td><?= h($missed['user_name']) ?></td>
+                                    <td><?= date('M j, g:i A', strtotime($missed['start_datetime'])) ?></td>
+                                    <td>
+                                        <?php if (!empty($missed['key_collected'])): ?>
+                                            <span class="badge bg-danger">Key Out</span>
+                                        <?php else: ?>
+                                            <span class="badge bg-secondary">No</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><span class="badge bg-warning text-dark">Missed</span></td>
+                                    <td>
+                                        <a href="mailto:<?= h($missed['user_email']) ?>" class="btn btn-sm btn-outline-primary" title="Contact Driver">
+                                            <i class="bi bi-envelope"></i>
+                                        </a>
+                                        <form method="post" action="api/dismiss_missed" class="d-inline">
+                                            <?= csrf_field() ?>
+                                            <input type="hidden" name="reservation_id" value="<?= (int)$missed['id'] ?>">
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary" title="Dismiss"
+                                                onclick="return confirm('Mark this missed reservation as resolved?')">
+                                                <i class="bi bi-check-lg"></i>
+                                            </button>
+                                        </form>
+                                    </td>
                                 </tr>
                                 <?php endforeach; ?>
                             </tbody>

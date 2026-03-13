@@ -265,6 +265,7 @@ if ($provider === 'google') {
     $isStaff = $isAdmin || $isCheckout;
 
    
+	session_regenerate_id(true); // Prevent session fixation
 	$_SESSION['user'] = [
         'id'           => $userId,
         'email'        => $email,
@@ -509,6 +510,7 @@ if ($provider === 'microsoft') {
    
     }
     
+    session_regenerate_id(true); // Prevent session fixation
     $_SESSION['user'] = [
         'id'           => $userId,
         'email'        => $email,
@@ -753,6 +755,7 @@ try {
 
 
 
+session_regenerate_id(true); // Prevent session fixation
 $_SESSION['user'] = [
         'id'           => $userId,
         'email'        => $email,

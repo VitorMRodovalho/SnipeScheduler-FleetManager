@@ -50,6 +50,16 @@ CREATE TABLE IF NOT EXISTS reservations (
     company_abbr VARCHAR(10) DEFAULT NULL,
     company_color VARCHAR(10) DEFAULT NULL,
 
+    -- Missed reservation resolution
+    missed_resolved TINYINT(1) NOT NULL DEFAULT 0,
+    missed_resolved_by VARCHAR(255) DEFAULT NULL,
+    missed_resolved_at DATETIME DEFAULT NULL,
+
+    -- Key handover tracking
+    key_collected TINYINT(1) NOT NULL DEFAULT 0,
+    key_collected_by VARCHAR(255) DEFAULT NULL,
+    key_collected_at DATETIME DEFAULT NULL,
+
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id),

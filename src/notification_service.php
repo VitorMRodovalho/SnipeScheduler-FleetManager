@@ -142,6 +142,18 @@ class NotificationService
             'teams_ch'     => 'fleet_ops',
             'action_param' => '/checked_out_assets',
         ],
+        'reservation_missed_driver'   => [
+            'label'        => 'Reservation Missed (Driver)',
+            'audience'     => 'requester',
+            'teams_ch'     => 'fleet_ops',
+            'action_param' => '/reservations/detail/{reservation_id}',
+        ],
+        'reservation_missed_staff'    => [
+            'label'        => 'Reservation Missed (Staff Alert)',
+            'audience'     => 'admin',
+            'teams_ch'     => 'fleet_ops',
+            'action_param' => '/reservations/detail/{reservation_id}',
+        ],
     ];
 
     // ------------------------------------------------------------------
@@ -293,6 +305,12 @@ class NotificationService
                 break;
             case 'force_checkin':
                 $svc->notifyForceCheckin($context);
+                break;
+            case 'reservation_missed_driver':
+                $svc->notifyMissedDriver($context);
+                break;
+            case 'reservation_missed_staff':
+                $svc->notifyMissedStaff($context);
                 break;
             default:
                 error_log("[NotificationService] No email dispatch for '{$event_key}'");

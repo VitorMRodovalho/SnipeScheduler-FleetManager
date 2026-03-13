@@ -144,6 +144,8 @@ $eventDescriptions = [
     'overdue_redirect_staff'      => 'Sent to staff/admin when an overdue vehicle triggers a reservation redirect.',
     'training_expiring'           => 'Weekly digest of drivers whose training certifications are expiring or expired.',
     'force_checkin'               => 'Sent when staff force-checks-in a vehicle (e.g. overdue driver unavailable).',
+    'reservation_missed_driver'   => 'Sent to the driver when their reservation is marked as missed (no-show). Includes key urgency if key was collected.',
+    'reservation_missed_staff'    => 'Sent to staff/admin when a reservation is marked as missed. Highlights key recovery urgency.',
 ];
 
 $defaultSubjects = [
@@ -163,6 +165,8 @@ $defaultSubjects = [
     'overdue_redirect_staff'      => 'Overdue Vehicle Redirect Alert - {vehicle}',
     'training_expiring'           => 'Driver Training Alert - {count} driver(s) need attention',
     'force_checkin'               => 'Force Check-In - {vehicle}',
+    'reservation_missed_driver'   => 'Missed Pickup - {vehicle}',
+    'reservation_missed_staff'    => 'Missed Reservation Alert - {vehicle}',
 ];
 
 $defaultBodies = [
@@ -346,6 +350,30 @@ Fleet Management System',
 Vehicle: {vehicle}
 
 Please review the vehicle status and any outstanding reservations.
+
+Fleet Management System',
+
+    'reservation_missed_driver' => 'Hi {user},
+
+Your scheduled vehicle pickup has been marked as missed.
+
+Vehicle: {vehicle}
+Scheduled Pickup: {date} at {time}
+
+If you still need the vehicle, please contact the Fleet office immediately.
+
+If a vehicle key was already collected, please return it as soon as possible.
+
+Thank you,
+Fleet Management Team',
+
+    'reservation_missed_staff' => 'A reservation has been marked as missed (no-show).
+
+Vehicle: {vehicle}
+Driver: {user}
+Scheduled Pickup: {date} at {time}
+
+Please verify whether the driver collected a key and follow up accordingly. The vehicle has been released back to the available pool.
 
 Fleet Management System',
 ];

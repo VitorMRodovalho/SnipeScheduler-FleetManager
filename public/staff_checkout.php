@@ -444,6 +444,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Handle key_collected toggle (AJAX or POST)
+    if ($mode === 'toggle_key_collected') {
+        $keyResId = (int)($_POST['reservation_id'] ?? 0);
+        if ($keyResId > 0) {
+            $keyVal = (int)($_POST['key_collected'] ?? 0);
+            $keyBy  = trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''));
+            if ($keyVal) {
+                $pdo->prepare("
+                    UPDATE reservations
+                    SET key_collected = 1, key_collected_by = ?, key_collected_at = NOW()
+                    WHERE id = ?
+                ")->execute([$keyBy, $keyResId]);
+            } else {
+                $pdo->prepare("
+                    UPDATE reservations
+                    SET key_collected = 0, key_collected_by = NULL, key_collected_at = NULL
+                    WHERE id = ?
+                ")->execute([$keyResId]);
+            }
+            activity_log_event('key_handover', $keyVal ? 'Key handed to driver' : 'Key handover reversed', [
+                'subject_type' => 'reservation',
+                'subject_id'   => $keyResId,
+            ]);
+            $checkoutMessages[] = $keyVal ? 'Key marked as handed to driver.' : 'Key handover status cleared.';
+        }
+    }
+
     if ($mode === 'add_asset') {
         $tag = trim($_POST['asset_tag'] ?? '');
         if (!$selectedReservation) {
@@ -1051,9 +1078,46 @@ $active  = 'staff_checkout';
                             </div>
 <?php endforeach; ?>
 
+                        <!-- Key Handover -->
+                        <div class="card bg-light mb-3">
+                            <div class="card-body py-2">
+                                <?php $keyCollected = !empty($selectedReservation['key_collected']); ?>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input" type="checkbox" id="keyCollectedToggle"
+                                               <?= $keyCollected ? 'checked' : '' ?>
+                                               onchange="toggleKeyCollected(this)">
+                                        <label class="form-check-label fw-bold" for="keyCollectedToggle">
+                                            Key Given to Driver
+                                        </label>
+                                    </div>
+                                    <?php if ($keyCollected): ?>
+                                        <span class="badge bg-warning text-dark">
+                                            Key Out — <?= h($selectedReservation['key_collected_by'] ?? '') ?>
+                                            <?php if (!empty($selectedReservation['key_collected_at'])): ?>
+                                                at <?= h(display_datetime($selectedReservation['key_collected_at'])) ?>
+                                            <?php endif; ?>
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
+                                <small class="text-muted">Toggle when you physically hand over (or receive back) the vehicle key.</small>
+                            </div>
+                        </div>
+
                         <button type="submit" name="mode" value="reservation_checkout" class="btn btn-primary">
                             Check out selected assets for this reservation
                         </button>
+                    </form>
+
+                    <!-- Hidden form for key toggle -->
+                    <form method="post" id="keyToggleForm" action="<?= h($selfUrl) ?>">
+                        <?= csrf_field() ?>
+                        <?php foreach ($baseQuery as $k => $v): ?>
+                            <input type="hidden" name="<?= h($k) ?>" value="<?= h($v) ?>">
+                        <?php endforeach; ?>
+                        <input type="hidden" name="mode" value="toggle_key_collected">
+                        <input type="hidden" name="reservation_id" value="<?= (int)$selectedReservation['id'] ?>">
+                        <input type="hidden" name="key_collected" id="keyCollectedValue" value="0">
                     </form>
                 </div>
             </div>
@@ -1224,6 +1288,11 @@ $active  = 'staff_checkout';
 
     Object.keys(groups).forEach(syncGroup);
 })();
+
+function toggleKeyCollected(cb) {
+    document.getElementById('keyCollectedValue').value = cb.checked ? '1' : '0';
+    document.getElementById('keyToggleForm').submit();
+}
 </script>
 <?php if (!$embedded): ?>
 <?php layout_footer(); ?>

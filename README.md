@@ -449,7 +449,15 @@ SnipeScheduler maintains its own MySQL database for:
 
 ## Security
 
-See [SECURITY.md](SECURITY.md) for security documentation.
+See [SECURITY.md](SECURITY.md) for security checklist and hardening procedures.
+
+### Additional Security & Operations Documentation
+
+| Document | Description |
+|----------|------------|
+| [Security Audit Summary](docs/SECURITY_AUDIT.md) | Authentication, authorization, input protection, session security, known limitations |
+| [Incident Response Plan](docs/INCIDENT_RESPONSE.md) | Detection, containment, notification timeline (72hr CCPA), credential rotation |
+| [Disaster Recovery Runbook](docs/DISASTER_RECOVERY.md) | RTO/RPO targets, backup strategy, step-by-step restoration, validation checklist |
 
 Key security features:
 

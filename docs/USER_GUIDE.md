@@ -335,6 +335,36 @@ Multi-entity fleet partitioning allows different user groups to see only vehicle
 
 In **Settings**, locate the App Preferences section. Use the **Primary Color** picker to set your organization's brand color. The entire UI adapts automatically — navigation, buttons, badges, and accent colors are all derived from the primary color using CSS custom properties. Changes take effect immediately after saving.
 
+### C12. Employee Offboarding
+
+When an employee leaves the organization, follow these steps to ensure proper access removal and data handling:
+
+1. **Check for active reservations:** Navigate to Admin > Reservations, filter by the employee's name. Cancel any pending or approved reservations to release the vehicles back to the available pool.
+
+2. **Force-checkin if needed:** If the employee has a vehicle currently checked out, use the **Force Check-In** feature on the Checked Out Assets page. This returns the vehicle to Available status in Snipe-IT and logs the action.
+
+3. **Verify key return:** Confirm all physical vehicle keys have been returned to the fleet office. Check the Dashboard for any "Key Out" indicators associated with the departing employee.
+
+4. **Deactivate in Snipe-IT:** Go to Snipe-IT > People > find the employee > Edit > set **Activated** to **No**. This immediately prevents login to both Snipe-IT and SnipeScheduler. The system re-validates group membership every 2 minutes, so active sessions will be terminated within that window.
+
+5. **Optional data export:** Before deactivation, you may export the employee's data for HR records. Either log in as the employee (if still active) and use **My Reservations > Download My Data**, or access the data via the Activity Log and Reports pages using admin access.
+
+6. **Data retention:** The employee's historical data (reservations, activity logs, inspection photos) will be automatically purged per the configured retention policy (Admin > Booking Rules > Data Retention). No manual cleanup is required. Default retention: activity logs 365 days, inspection photos 730 days.
+
+---
+
+## Security Requirements
+
+### Multi-Factor Authentication (MFA)
+
+Multi-factor authentication must be enforced at the identity provider level. The fleet management application authenticates via SSO and inherits the MFA enforcement configured at the IdP. The application does not provide its own MFA layer.
+
+- **Microsoft OAuth:** Enable Conditional Access policies in Azure AD / Entra ID requiring MFA for all users accessing this application. Configure under Azure Portal > Security > Conditional Access > New Policy.
+- **Google OAuth:** Enable 2-Step Verification in Google Workspace admin console. Enforce for the organizational unit containing fleet users under Admin Console > Security > 2-Step Verification.
+- **LDAP:** Implement MFA at the network or VPN level before LDAP access is available, or migrate to OAuth with IdP-level MFA enforcement.
+
+For full security documentation, see [SECURITY_AUDIT.md](SECURITY_AUDIT.md).
+
 ---
 
 ## Critical Reminders for All Users

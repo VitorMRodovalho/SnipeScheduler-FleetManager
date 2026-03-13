@@ -1151,6 +1151,111 @@ class FleetEmailService
     }
 
     /**
+     * MISSED RESERVATION - Driver notification
+     * @since v2.1.0
+     */
+    public function notifyMissedDriver(array $reservation): bool
+    {
+        $settings = $this->getNotificationSettings('reservation_missed_driver');
+        if (!$settings || !$settings['enabled']) return true;
+
+        $assetName = $this->vehicleDisplay($reservation);
+        $pickup = date('M j, Y g:i A', strtotime($reservation['start_datetime']));
+        $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
+        $keyCollected = !empty($reservation['key_collected']);
+
+        $urgencyNote = $keyCollected
+            ? "<div style='background:#f8d7da;padding:12px;border-radius:6px;margin:12px 0;border-left:4px solid #dc3545;'>
+                <strong>URGENT:</strong> Our records show the vehicle key was collected. If you have the key, please return it to the fleet office immediately.
+               </div>"
+            : "<p>If you no longer need the vehicle, no action is needed.</p>";
+
+        try {
+            $mail = $this->createMailer();
+            $mail->addAddress($reservation['user_email'], $reservation['user_name']);
+            $tv = ['vehicle' => $assetName, 'date' => $pickup, 'user' => $reservation['user_name']];
+            $mail->Subject = $this->resolveSubject('reservation_missed_driver', 'Reservation Missed - {vehicle}', $tv);
+            $mail->Body = $this->resolveBody('reservation_missed_driver', $tv) ?: "
+                <div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>
+                    <div style='background:#ffc107;color:#000;padding:12px 20px;border-radius:8px 8px 0 0;'>
+                        <h2 style='margin:0;font-size:18px;'>Reservation Missed</h2>
+                    </div>
+                    <div style='padding:20px;border:1px solid #dee2e6;border-top:none;border-radius:0 0 8px 8px;'>
+                        <p>Hi " . htmlspecialchars($reservation['user_name']) . ",</p>
+                        <p>Your reservation for <strong>" . htmlspecialchars($assetName) . "</strong> on <strong>{$pickup}</strong> was missed because checkout was not completed.</p>
+                        {$urgencyNote}
+                        <p>If you collected the vehicle key, please return it to the fleet office immediately.</p>
+                        <a href='" . htmlspecialchars($baseUrl) . "/my_bookings'
+                           style='display:inline-block;background:#ffc107;color:#000;padding:10px 20px;border-radius:6px;text-decoration:none;margin-top:10px;'>
+                            View My Reservations
+                        </a>
+                    </div>
+                </div>";
+            $this->queueEmail($mail);
+            return true;
+        } catch (Exception $e) {
+            error_log("Missed driver email failed: " . $e->getMessage());
+        }
+        return true;
+    }
+
+    /**
+     * MISSED RESERVATION - Staff/Admin alert
+     * @since v2.1.0
+     */
+    public function notifyMissedStaff(array $reservation): bool
+    {
+        $settings = $this->getNotificationSettings('reservation_missed_staff');
+        if (!$settings || !$settings['enabled']) return true;
+
+        $assetName = $this->vehicleDisplay($reservation);
+        $pickup = date('M j, Y g:i A', strtotime($reservation['start_datetime']));
+        $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
+        $keyCollected = !empty($reservation['key_collected']);
+        $notifyEmails = $this->getSettingsBasedRecipients($settings);
+        if (empty($notifyEmails)) return true;
+
+        $keyWarning = $keyCollected
+            ? "<div style='background:#f8d7da;padding:12px;border-radius:6px;margin:12px 0;border-left:4px solid #dc3545;'>
+                <strong>KEY ALERT:</strong> Vehicle key was collected by driver but checkout was never completed. Contact driver immediately to retrieve the key.
+               </div>"
+            : "<p>Vehicle key was <strong>not</strong> collected. Vehicle has been released to Available status.</p>";
+
+        try {
+            $mail = $this->createMailer();
+            foreach ($notifyEmails as $email) {
+                $mail->addAddress($email);
+            }
+            $tv = ['vehicle' => $assetName, 'user' => $reservation['user_name'], 'date' => $pickup, 'reservation_id' => $reservation['id']];
+            $mail->Subject = $this->resolveSubject('reservation_missed_staff', ($keyCollected ? '[URGENT] ' : '') . 'Reservation Missed - {vehicle}', $tv);
+            $mail->Body = $this->resolveBody('reservation_missed_staff', $tv) ?: "
+                <div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>
+                    <div style='background:" . ($keyCollected ? '#dc3545' : '#ffc107') . ";color:" . ($keyCollected ? '#fff' : '#000') . ";padding:12px 20px;border-radius:8px 8px 0 0;'>
+                        <h2 style='margin:0;font-size:18px;'>" . ($keyCollected ? 'URGENT: ' : '') . "Reservation Missed — Staff Alert</h2>
+                    </div>
+                    <div style='padding:20px;border:1px solid #dee2e6;border-top:none;border-radius:0 0 8px 8px;'>
+                        <p>Reservation <strong>#" . (int)$reservation['id'] . "</strong> by <strong>" . htmlspecialchars($reservation['user_name']) . "</strong> was missed (no checkout).</p>
+                        <div style='background:#f8f9fa;padding:12px;border-radius:6px;margin:12px 0;'>
+                            <strong>Vehicle:</strong> " . htmlspecialchars($assetName) . "<br>
+                            <strong>Scheduled:</strong> {$pickup}<br>
+                            <strong>Driver:</strong> " . htmlspecialchars($reservation['user_name']) . " (" . htmlspecialchars($reservation['user_email']) . ")
+                        </div>
+                        {$keyWarning}
+                        <a href='" . htmlspecialchars($baseUrl) . "/reservation_detail?id=" . (int)$reservation['id'] . "'
+                           style='display:inline-block;background:#0d6efd;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;margin-top:10px;'>
+                            View Reservation
+                        </a>
+                    </div>
+                </div>";
+            $this->queueEmail($mail);
+            return true;
+        } catch (Exception $e) {
+            error_log("Missed staff email failed: " . $e->getMessage());
+        }
+        return true;
+    }
+
+    /**
      * TRAINING EXPIRING - Weekly digest to staff/admin
      * @since v1.4.x
      */

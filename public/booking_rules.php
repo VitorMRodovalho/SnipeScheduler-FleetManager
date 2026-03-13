@@ -132,6 +132,22 @@ if ($action === 'save_inspection_settings') {
             $messages[] = 'Data retention settings saved.';
         }
 
+        if ($action === 'save_missed_settings') {
+            $bufferHours = (int)($_POST['missed_release_buffer_hours'] ?? 0);
+            $cutoffMinutes = (int)($_POST['missed_cutoff_minutes'] ?? 60);
+            if (!in_array($bufferHours, [0, 1, 2, 4, 24])) $bufferHours = 0;
+            if (!in_array($cutoffMinutes, [30, 60, 90, 120, 240])) $cutoffMinutes = 60;
+
+            $stmtSave = $pdo->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
+            $stmtSave->execute(['missed_release_buffer_hours', (string)$bufferHours]);
+            $stmtSave->execute(['missed_cutoff_minutes', (string)$cutoffMinutes]);
+
+            activity_log_event('missed_settings', 'Missed reservation settings updated', [
+                'metadata' => ['buffer_hours' => $bufferHours, 'cutoff_minutes' => $cutoffMinutes],
+            ]);
+            $messages[] = 'Missed reservation settings saved.';
+        }
+
         if ($action === 'save_training_settings') {
             $trainingRequired = isset($_POST['training_required']) ? '1' : '0';
             $validityMonths = (int)($_POST['training_validity_months'] ?? 12);
@@ -595,6 +611,62 @@ $customHolidays = array_filter($allHolidays, fn($h) => $h['holiday_type'] === 'c
                         </div>
                         <button type="submit" name="action" value="save_retention_settings" class="btn btn-primary">
                             <i class="bi bi-save me-1"></i>Save Retention Settings
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <!-- Missed Reservation Settings -->
+        <?php
+        $missedStmt = $pdo->prepare("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('missed_release_buffer_hours','missed_cutoff_minutes')");
+        $missedStmt->execute();
+        $missedSettings = [];
+        while ($row = $missedStmt->fetch()) {
+            $missedSettings[$row['setting_key']] = $row['setting_value'];
+        }
+        $missedBufferHours = (int)($missedSettings['missed_release_buffer_hours'] ?? 0);
+        $missedCutoffMinutes = (int)($missedSettings['missed_cutoff_minutes'] ?? 60);
+        ?>
+        <form method="post" class="mt-4">
+            <?= csrf_field() ?>
+            <div class="card mb-4">
+                <div class="card-header bg-warning bg-opacity-10">
+                    <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Missed Reservation Settings</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">
+                        Control when reservations are marked as missed and how quickly vehicles are released back to the pool.
+                    </p>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Missed Cutoff Window</label>
+                            <select name="missed_cutoff_minutes" class="form-select">
+                                <option value="30" <?= $missedCutoffMinutes === 30 ? 'selected' : '' ?>>30 minutes after start</option>
+                                <option value="60" <?= $missedCutoffMinutes === 60 ? 'selected' : '' ?>>1 hour after start</option>
+                                <option value="90" <?= $missedCutoffMinutes === 90 ? 'selected' : '' ?>>90 minutes after start</option>
+                                <option value="120" <?= $missedCutoffMinutes === 120 ? 'selected' : '' ?>>2 hours after start</option>
+                                <option value="240" <?= $missedCutoffMinutes === 240 ? 'selected' : '' ?>>4 hours after start</option>
+                            </select>
+                            <div class="form-text">How long after the scheduled pickup before a no-show is marked as missed.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Vehicle Release Buffer</label>
+                            <select name="missed_release_buffer_hours" class="form-select">
+                                <option value="0" <?= $missedBufferHours === 0 ? 'selected' : '' ?>>Immediately (no buffer)</option>
+                                <option value="1" <?= $missedBufferHours === 1 ? 'selected' : '' ?>>1 hour after marked missed</option>
+                                <option value="2" <?= $missedBufferHours === 2 ? 'selected' : '' ?>>2 hours after marked missed</option>
+                                <option value="4" <?= $missedBufferHours === 4 ? 'selected' : '' ?>>4 hours after marked missed</option>
+                                <option value="24" <?= $missedBufferHours === 24 ? 'selected' : '' ?>>24 hours (next day)</option>
+                            </select>
+                            <div class="form-text">Grace period before releasing the vehicle in Snipe-IT. Allows drivers to still show up late.</div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end mt-3">
+                        <button type="submit" name="action" value="save_missed_settings" class="btn btn-primary">
+                            <i class="bi bi-save me-1"></i>Save Missed Settings
                         </button>
                     </div>
                 </div>
