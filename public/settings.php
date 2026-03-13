@@ -707,6 +707,121 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
             </li>
         </ul>
 
+        <!-- System Configuration Status -->
+        <div class="card mb-4 border-info">
+            <div class="card-header bg-info bg-opacity-10 d-flex justify-content-between align-items-center" role="button" data-bs-toggle="collapse" data-bs-target="#configStatus">
+                <h5 class="mb-0"><i class="bi bi-clipboard-check me-2"></i>System Configuration Status</h5>
+                <i class="bi bi-chevron-down"></i>
+            </div>
+            <div class="collapse show" id="configStatus">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <?php
+                        $configChecks = [];
+
+                        // 1. Snipe-IT API
+                        $snipeOk = false;
+                        try {
+                            $testUrl = rtrim($config['snipeit']['base_url'] ?? '', '/') . '/api/v1/statuslabels?limit=1';
+                            $ch = curl_init($testUrl);
+                            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                            curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+                            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . ($config['snipeit']['api_token'] ?? ''), 'Accept: application/json']);
+                            $resp = curl_exec($ch);
+                            $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                            curl_close($ch);
+                            $snipeOk = ($code >= 200 && $code < 300);
+                        } catch (Throwable $e) {}
+                        $configChecks[] = ['label' => 'Snipe-IT API', 'ok' => $snipeOk, 'icon' => $snipeOk ? 'check-circle-fill' : 'x-circle-fill', 'color' => $snipeOk ? 'success' : 'danger', 'hint' => $snipeOk ? 'Connected' : 'Not connected'];
+
+                        // 2. SMTP Email
+                        $smtpOk = !empty($config['smtp']['host'] ?? '');
+                        $configChecks[] = ['label' => 'SMTP Email', 'ok' => $smtpOk, 'icon' => $smtpOk ? 'check-circle-fill' : 'exclamation-triangle-fill', 'color' => $smtpOk ? 'success' : 'warning', 'hint' => $smtpOk ? 'Configured' : 'Not configured'];
+
+                        // 3. Microsoft OAuth
+                        $msOk = !empty($config['auth']['microsoft']['client_id'] ?? '');
+                        $configChecks[] = ['label' => 'Microsoft OAuth', 'ok' => $msOk, 'icon' => $msOk ? 'check-circle-fill' : 'exclamation-triangle-fill', 'color' => $msOk ? 'success' : 'warning', 'hint' => $msOk ? 'Configured' : 'Not configured'];
+
+                        // 4. Google OAuth
+                        $gOk = !empty($config['auth']['google']['client_id'] ?? '');
+                        $configChecks[] = ['label' => 'Google OAuth', 'ok' => $gOk, 'icon' => $gOk ? 'check-circle-fill' : 'dash-circle', 'color' => $gOk ? 'success' : 'secondary', 'hint' => $gOk ? 'Configured' : 'Optional'];
+
+                        // 5. Teams Integration
+                        $teamsOk = false;
+                        try {
+                            $teamsStmt = $pdo->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'teams_webhook_url' LIMIT 1");
+                            $teamsStmt->execute();
+                            $teamsVal = $teamsStmt->fetchColumn();
+                            $teamsOk = !empty($teamsVal) && str_starts_with($teamsVal, 'http');
+                        } catch (Throwable $e) {}
+                        $configChecks[] = ['label' => 'Teams Integration', 'ok' => $teamsOk, 'icon' => $teamsOk ? 'check-circle-fill' : 'dash-circle', 'color' => $teamsOk ? 'success' : 'secondary', 'hint' => $teamsOk ? 'Configured' : 'Optional'];
+
+                        // 6. CRON Jobs
+                        $cronOk = false;
+                        try {
+                            $cronStmt = $pdo->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'last_sync_at' LIMIT 1");
+                            $cronStmt->execute();
+                            $lastSync = $cronStmt->fetchColumn();
+                            $cronOk = $lastSync && (time() - strtotime($lastSync)) < 900; // 15 min
+                        } catch (Throwable $e) {}
+                        $configChecks[] = ['label' => 'CRON Jobs', 'ok' => $cronOk, 'icon' => $cronOk ? 'check-circle-fill' : 'x-circle-fill', 'color' => $cronOk ? 'success' : 'danger', 'hint' => $cronOk ? 'Running' : 'Stale or not configured'];
+
+                        // 7. Backup Schedule
+                        $backupOk = false;
+                        $backupDir = '/var/backups/snipescheduler/';
+                        if (is_dir($backupDir)) {
+                            foreach (glob($backupDir . 'backup_*.tar.gz') as $f) {
+                                if (filemtime($f) > time() - 172800) { $backupOk = true; break; }
+                            }
+                        }
+                        $configChecks[] = ['label' => 'Backup Schedule', 'ok' => $backupOk, 'icon' => $backupOk ? 'check-circle-fill' : 'x-circle-fill', 'color' => $backupOk ? 'success' : 'danger', 'hint' => $backupOk ? 'Recent backup found' : 'No recent backup'];
+
+                        // 8. User Groups
+                        $groupsOk = false;
+                        try {
+                            $groupsOk = defined('SNIPEIT_GROUP_DRIVERS') && defined('SNIPEIT_GROUP_FLEET_STAFF') && defined('SNIPEIT_GROUP_FLEET_ADMIN');
+                        } catch (Throwable $e) {}
+                        $configChecks[] = ['label' => 'User Groups', 'ok' => $groupsOk, 'icon' => $groupsOk ? 'check-circle-fill' : 'exclamation-triangle-fill', 'color' => $groupsOk ? 'success' : 'warning', 'hint' => $groupsOk ? 'Defined' : 'Run validate script'];
+
+                        // 9. Business Days
+                        $bizOk = false;
+                        try {
+                            $bizStmt = $pdo->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'working_days' LIMIT 1");
+                            $bizStmt->execute();
+                            $bizVal = $bizStmt->fetchColumn();
+                            $bizOk = !empty($bizVal);
+                        } catch (Throwable $e) {}
+                        $configChecks[] = ['label' => 'Business Days', 'ok' => $bizOk, 'icon' => $bizOk ? 'check-circle-fill' : 'exclamation-triangle-fill', 'color' => $bizOk ? 'success' : 'warning', 'hint' => $bizOk ? 'Configured' : 'Not set'];
+
+                        // 10. Holiday Calendar
+                        $holOk = false;
+                        try {
+                            $holStmt = $pdo->query("SELECT COUNT(*) FROM holidays WHERE is_active = 1");
+                            $holCount = (int)$holStmt->fetchColumn();
+                            $holOk = $holCount > 0;
+                        } catch (Throwable $e) {}
+                        $configChecks[] = ['label' => 'Holiday Calendar', 'ok' => $holOk, 'icon' => $holOk ? 'check-circle-fill' : 'exclamation-triangle-fill', 'color' => $holOk ? 'success' : 'warning', 'hint' => $holOk ? "{$holCount} holidays" : 'No holidays configured'];
+
+                        foreach ($configChecks as $chk):
+                        ?>
+                        <div class="col-md-6 col-lg-4">
+                            <div class="d-flex align-items-center p-2 rounded border">
+                                <i class="bi bi-<?= $chk['icon'] ?> text-<?= $chk['color'] ?> me-2" style="font-size:1.3rem;"></i>
+                                <div>
+                                    <div class="fw-semibold small"><?= h($chk['label']) ?></div>
+                                    <div class="text-muted" style="font-size:0.75rem;"><?= h($chk['hint']) ?></div>
+                                </div>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <div class="mt-3 text-muted small">
+                        <i class="bi bi-terminal me-1"></i>Run full validation: <code>php scripts/validate_snipeit.php --strict</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+
 <form method="post" action="<?= h($active) ?>" class="row g-3 settings-form" id="settings-form">
             <?= csrf_field() ?>
 
@@ -1288,6 +1403,7 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
                             $mcCompanyCount = count($mcCompanies);
                             $mcActive = is_multi_company_enabled($pdo);
                         ?>
+                        <div class="alert alert-secondary small mb-3"><i class="bi bi-geo-alt me-1"></i><strong>Location Scoping:</strong> Pickup locations are shared across all entities. Vehicles are filtered by company assignment — users only see their company's vehicles at any location.</div>
                         <div class="row g-3">
                             <div class="col-md-4">
                                 <label class="form-label">Company Filtering Mode</label>
@@ -1391,9 +1507,12 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
                                 </select>
                                 <div class="form-text">Users are automatically logged out after this period of inactivity.</div>
                             </div>
-                            <div class="col-md-4 d-flex align-items-end">
+                            <div class="col-md-4 d-flex align-items-end gap-2">
                                 <a href="privacy" class="btn btn-outline-secondary btn-sm" target="_blank">
                                     <i class="bi bi-shield-lock me-1"></i>View Privacy Notice
+                                </a>
+                                <a href="admin_data_delete" class="btn btn-outline-danger btn-sm">
+                                    <i class="bi bi-trash3 me-1"></i>Data Deletion Tool
                                 </a>
                             </div>
                         </div>

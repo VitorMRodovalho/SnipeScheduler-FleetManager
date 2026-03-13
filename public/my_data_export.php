@@ -106,6 +106,16 @@ activity_log_event('data_export', 'User exported their personal data', [
     'metadata' => ['format' => $format],
 ]);
 
+// Track as DSAR access request
+try {
+    $pdo->prepare("
+        INSERT INTO data_requests (request_type, requester_email, processed_at, processed_by, status, notes)
+        VALUES ('access', ?, NOW(), ?, 'completed', ?)
+    ")->execute([$userEmail, $userEmail, "Self-service data export ({$format})"]);
+} catch (Throwable $e) {
+    // Table may not exist yet — skip
+}
+
 // 1. User profile
 $profile = [
     'name' => trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? '')),
