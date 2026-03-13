@@ -196,6 +196,23 @@ After restoration, verify each item before declaring the system operational:
 
 ---
 
+## 7. Infrastructure Requirements
+
+### Disk Encryption
+
+Data at rest is **not** encrypted at the application level. Disk-level encryption **MUST** be enabled on all servers hosting this system:
+
+| Platform | Method | Verification |
+|----------|--------|-------------|
+| **AWS EC2** | Enable EBS encryption on all volumes (gp3, io2, etc.) | AWS Console > EC2 > Volumes > Encrypted column |
+| **Bare metal / VM** | LUKS/dm-crypt on Linux, BitLocker on Windows | `lsblk` — look for `crypt` type in the output |
+| **Database server** | Same as above — the MySQL data directory volume must be encrypted | Verify the volume containing `/var/lib/mysql` |
+| **Backup storage** | Encrypt backup archives with GPG before storage, or use an encrypted volume | `gpg --encrypt backup.tar.gz` or verify volume encryption |
+
+This is an infrastructure requirement, not an application feature. The application does not implement its own encryption layer for data at rest.
+
+---
+
 ## Document History
 
 | Date | Version | Change |

@@ -160,7 +160,7 @@ Communication with Snipe-IT API:
 |-----------|------|------------|
 | No application-level MFA | Medium — relies on IdP enforcement | Enforce MFA at Azure AD / Google Workspace level (see Section 1) |
 | No malware scanning on uploads | Medium — crafted images could pass MIME validation | Recommend installing ClamAV on server; scan `/uploads/inspections/` directory |
-| No database column encryption | Low — data at rest in plaintext | Enable disk-level encryption (LUKS/dm-crypt) on the database server |
+| No application-level data-at-rest encryption | Medium — all database and file data stored in plaintext on disk | **Disk-level encryption MUST be enabled.** AWS EC2: enable EBS encryption on all volumes. Bare metal: use LUKS/dm-crypt. Verify with `lsblk` or AWS console. This is an infrastructure requirement, not an application feature. |
 | No automated CCPA deletion | Low — deletion requires manual admin intervention | Self-service export available; deletion requests handled by Fleet Admin |
 | LDAP password transmitted to server | Low — encrypted via HTTPS | Consider migrating LDAP users to OAuth for improved security posture |
 
@@ -170,7 +170,7 @@ Communication with Snipe-IT API:
 
 These measures should be implemented at the server/infrastructure level:
 
-1. **Disk encryption** — Enable LUKS (Linux) or BitLocker (Windows) on all volumes storing application data, database files, and backups
+1. **Disk encryption (MANDATORY)** — Data at rest is not encrypted at the application level. Disk-level encryption **MUST** be enabled on the server hosting this system. For AWS EC2: enable EBS encryption on all volumes. For bare metal: use LUKS/dm-crypt. For all deployments: verify encryption status with `lsblk` (look for `crypt` type) or the AWS console (EBS > Volumes > Encrypted column). This is an infrastructure requirement, not an application feature
 2. **Firewall** — Configure `ufw` to allow only ports 80, 443, and SSH. Block direct database access from external networks
 3. **Fail2ban** — Install and configure for Apache to auto-block IPs with repeated failed login attempts
 4. **OS updates** — Schedule regular security updates: `sudo unattended-upgrades` or equivalent
