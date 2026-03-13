@@ -351,6 +351,22 @@ class FleetEmailService
         return array_merge($vars, $extra);
     }
 
+    /**
+     * Build vehicle display name with optional company abbreviation.
+     * Works with reservation rows (company_abbr from DB) or asset arrays.
+     */
+    private function vehicleDisplay(array $data): string
+    {
+        $name = $data['asset_name_cache'] ?? '';
+        if (empty($name)) {
+            $name = 'Vehicle #' . ($data['asset_id'] ?? '?');
+        }
+        $abbr = trim($data['company_abbr'] ?? '');
+        if ($abbr !== '') {
+            $name .= ' (' . $abbr . ')';
+        }
+        return $name;
+    }
 
     /**
      * NEW RESERVATION - Notify requester + staff
@@ -361,7 +377,7 @@ class FleetEmailService
         if (!$settings || !$settings['enabled']) return true;
 
         $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
-        $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
+        $assetName = $this->vehicleDisplay($reservation);
         $pickup = date('M j, Y g:i A', strtotime($reservation['start_datetime']));
         $return = date('M j, Y g:i A', strtotime($reservation['end_datetime']));
 
@@ -432,7 +448,7 @@ class FleetEmailService
         if (!$settings || !$settings['enabled']) return true;
 
         $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
-        $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
+        $assetName = $this->vehicleDisplay($reservation);
         
         try {
             $mail = $this->createMailer();
@@ -473,7 +489,7 @@ class FleetEmailService
         if (!$settings || !$settings['enabled']) return true;
 
         $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
-        $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
+        $assetName = $this->vehicleDisplay($reservation);
         
         try {
             $mail = $this->createMailer();
@@ -514,7 +530,7 @@ class FleetEmailService
         if (!$settings || !$settings['enabled']) return true;
 
         $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
-        $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
+        $assetName = $this->vehicleDisplay($reservation);
         
         try {
             $mail = $this->createMailer();
@@ -555,7 +571,7 @@ class FleetEmailService
         $settings = $this->getNotificationSettings('vehicle_checked_out');
         if (!$settings || !$settings['enabled']) return true;
 
-        $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
+        $assetName = $this->vehicleDisplay($reservation);
         
         try {
             $mail = $this->createMailer();
@@ -595,7 +611,7 @@ class FleetEmailService
         $settings = $this->getNotificationSettings('vehicle_checked_in');
         if (!$settings || !$settings['enabled']) return true;
 
-        $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
+        $assetName = $this->vehicleDisplay($reservation);
         
         try {
             $mail = $this->createMailer();
@@ -636,7 +652,7 @@ class FleetEmailService
         if (!$settings || !$settings['enabled']) return true;
 
         $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
-        $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
+        $assetName = $this->vehicleDisplay($reservation);
         $staffEmails = $this->getSettingsBasedRecipients($settings);
         
         if (empty($staffEmails)) return true;
@@ -682,7 +698,7 @@ class FleetEmailService
         if (!$settings || !$settings['enabled']) return true;
 
         $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
-        $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
+        $assetName = $this->vehicleDisplay($reservation);
         
         try {
             $mail = $this->createMailer();
@@ -722,7 +738,7 @@ class FleetEmailService
         if (!$settings || !$settings['enabled']) return true;
 
         $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
-        $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
+        $assetName = $this->vehicleDisplay($reservation);
         
         // Email to requester
         try {
@@ -789,7 +805,7 @@ class FleetEmailService
         if (!$settings || !$settings['enabled']) return true;
 
         $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
-        $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
+        $assetName = $this->vehicleDisplay($reservation);
 
         if ($settings['notify_requester']) {
             try {
@@ -850,7 +866,7 @@ class FleetEmailService
         $settings = $this->getNotificationSettings('mileage_anomaly');
         if (!$settings || !$settings['enabled']) return true;
 
-        $assetName = $reservation['asset_name_cache'] ?: 'Vehicle #' . $reservation['asset_id'];
+        $assetName = $this->vehicleDisplay($reservation);
         $notifyEmails = $this->getSettingsBasedRecipients($settings);
         if (empty($notifyEmails)) return true;
 
@@ -894,6 +910,10 @@ class FleetEmailService
         if (!$settings || !$settings['enabled']) return true;
 
         $assetName = ($asset['name'] ?? 'Vehicle') . ' [' . ($asset['asset_tag'] ?? '') . ']';
+        $companyName = trim($asset['company']['name'] ?? '');
+        if ($companyName !== '') {
+            $assetName .= ' (' . $companyName . ')';
+        }
         $notifyEmails = $this->getSettingsBasedRecipients($settings);
         if (empty($notifyEmails)) return true;
 
@@ -938,8 +958,10 @@ class FleetEmailService
     {
         if (!$this->isNotificationEnabled('reservation_redirected')) return true;
 
-        $assetName = $reservation['asset_name_cache'] ?? 'Unknown Vehicle';
+        $assetName = $this->vehicleDisplay($reservation);
         $newAssetName = $newVehicle['name'] ?? 'Unknown Vehicle';
+        $newCompany = trim($newVehicle['company']['name'] ?? '');
+        if ($newCompany !== '') $newAssetName .= ' (' . $newCompany . ')';
         $userName = $reservation['user_name'] ?? 'User';
         $start = date('M j, Y g:i A', strtotime($reservation['start_datetime']));
         $end = date('M j, Y g:i A', strtotime($reservation['end_datetime']));
@@ -992,7 +1014,7 @@ class FleetEmailService
     {
         if (!$this->isNotificationEnabled('reservation_redirect_failed')) return true;
 
-        $assetName = $reservation['asset_name_cache'] ?? 'Unknown Vehicle';
+        $assetName = $this->vehicleDisplay($reservation);
         $userName = $reservation['user_name'] ?? 'User';
         $start = date('M j, Y g:i A', strtotime($reservation['start_datetime']));
         $end = date('M j, Y g:i A', strtotime($reservation['end_datetime']));
@@ -1042,7 +1064,7 @@ class FleetEmailService
     {
         if (!$this->isNotificationEnabled('overdue_redirect_staff')) return true;
 
-        $assetName = $reservation['asset_name_cache'] ?? 'Unknown Vehicle';
+        $assetName = $this->vehicleDisplay($reservation);
         $userName = $reservation['user_name'] ?? 'User';
         $expected = date('M j, Y g:i A', strtotime($reservation['end_datetime']));
         $actionDesc = $action === 'redirected'
@@ -1079,6 +1101,53 @@ class FleetEmailService
         }
         return true;
 
+    }
+
+    /**
+     * FORCE CHECK-IN - Admin/staff alert
+     * @since v2.1.0
+     */
+    public function notifyForceCheckin(array $context): bool
+    {
+        $settings = $this->getNotificationSettings('force_checkin');
+        if (!$settings || !$settings['enabled']) return true;
+        $notifyEmails = $this->getSettingsBasedRecipients($settings);
+        if (empty($notifyEmails)) return true;
+
+        $assetLabel = $context['asset_label'] ?? ('Asset #' . ($context['asset_id'] ?? '?'));
+        $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
+
+        try {
+            $mail = $this->createMailer();
+            foreach ($notifyEmails as $email) {
+                $mail->addAddress($email);
+            }
+
+            $tv = ['vehicle' => $assetLabel];
+            $mail->Subject = $this->resolveSubject('force_checkin', 'Force Check-In - {vehicle}', $tv);
+            $mail->Body = $this->resolveBody('force_checkin', $tv) ?: "
+                <div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>
+                    <div style='background:#dc3545;color:#fff;padding:12px 20px;border-radius:8px 8px 0 0;'>
+                        <h2 style='margin:0;font-size:18px;'>Force Check-In</h2>
+                    </div>
+                    <div style='padding:20px;border:1px solid #dee2e6;border-top:none;border-radius:0 0 8px 8px;'>
+                        <p>A vehicle has been force-checked-in by staff.</p>
+                        <div style='background:#f8d7da;padding:12px;border-radius:6px;margin:12px 0;'>
+                            <strong>Vehicle:</strong> " . htmlspecialchars($assetLabel) . "
+                        </div>
+                        <p style='color:#666;font-size:13px;'>Please review the vehicle status and any outstanding reservations.</p>
+                        <a href='" . htmlspecialchars($baseUrl) . "/checked_out_assets'
+                           style='display:inline-block;background:#dc3545;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;margin-top:10px;'>
+                            View Checked-Out Assets
+                        </a>
+                    </div>
+                </div>";
+            $this->queueEmail($mail);
+            return true;
+        } catch (Exception $e) {
+            error_log("Force check-in email failed: " . $e->getMessage());
+        }
+        return true;
     }
 
     /**

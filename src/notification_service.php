@@ -136,6 +136,12 @@ class NotificationService
             'teams_ch'     => 'admin',
             'action_param' => '/users?tab=list',
         ],
+        'force_checkin'               => [
+            'label'        => 'Force Check-In by Staff',
+            'audience'     => 'admin',
+            'teams_ch'     => 'fleet_ops',
+            'action_param' => '/checked_out_assets',
+        ],
     ];
 
     // ------------------------------------------------------------------
@@ -284,6 +290,9 @@ class NotificationService
                     (int)($context['expiring_count'] ?? 0),
                     (int)($context['expired_count'] ?? 0)
                 );
+                break;
+            case 'force_checkin':
+                $svc->notifyForceCheckin($context);
                 break;
             default:
                 error_log("[NotificationService] No email dispatch for '{$event_key}'");

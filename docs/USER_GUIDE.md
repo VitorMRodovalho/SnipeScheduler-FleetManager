@@ -35,7 +35,7 @@ After login, the Dashboard displays today's vehicle schedule, your upcoming rese
 
 Navigate to **Vehicle Catalogue**. View all fleet vehicles with real-time availability. Each vehicle card shows year, make, model, VIN (last 4), current status (Available / Reserved / In Service / Out of Service), and mileage. Use the date filter to narrow by availability window.
 
-In multi-entity deployments, you will only see vehicles belonging to your assigned company.
+In multi-entity deployments, you will only see vehicles belonging to your assigned company. Each vehicle card displays a colored company badge next to the vehicle name — the badge color and abbreviation are configured by your Fleet Admin in Snipe-IT.
 
 ### A4. Reserve a Vehicle
 
@@ -43,7 +43,7 @@ Click **Book Vehicle**. Complete the reservation form:
 
 1. Select **Pick-Up Location** and **Destination**
 2. Select **Pick-Up Date and Time** and **Return Date and Time** (business days only — weekends, holidays, and blackouts are grayed out)
-3. Choose from vehicles available for your date window
+3. Choose from vehicles available for your date window — in multi-entity mode, vehicle selection cards show a colored company badge for easy identification
 4. Add **Purpose Notes** (optional)
 5. Click **Submit**
 
@@ -287,26 +287,49 @@ This verifies all required groups, status labels, and custom fields exist in the
 
 ### C10. Configure Multi-Entity Fleet (Super Admin)
 
-Multi-entity fleet partitioning allows different user groups to see only vehicles belonging to their assigned company. Setup:
+Multi-entity fleet partitioning allows different user groups to see only vehicles belonging to their assigned company.
 
-1. **In Snipe-IT:** Navigate to Admin > Companies. Create one company per fleet entity (e.g., the delivery partner, the client).
-2. **In Snipe-IT:** Enable **Full Multiple Companies Support** in Admin > Settings > General.
-3. **In Snipe-IT:** Assign each user to their company (People > Edit User > Company).
-4. **In Snipe-IT:** Assign each vehicle to its company (Assets > Edit Asset > Company).
-5. **In SnipeScheduler:** Navigate to **Settings** (Super Admin only). Scroll to the **Multi-Entity Fleet** card.
-6. Select the filtering mode:
-   - **Auto-detect** (default) — Automatically enables filtering when Snipe-IT has more than one company. Shows detected count ("2 companies found — filtering active").
-   - **Always On** — Forces filtering even with a single company (useful for testing).
-   - **Always Off** — Disables filtering regardless of company count.
-7. Click **Save settings**.
+**When to use companies:** Enable multi-entity when your fleet serves multiple organizations, departments, or projects that need separate vehicle pools. If all users share the same fleet, leave this disabled.
+
+**Setup in Snipe-IT:**
+
+1. Go to **Settings → Companies** in Snipe-IT
+2. Create one Company per fleet entity
+3. For each company, set:
+   - **Name:** Full entity name (e.g., "Engineering Division")
+   - **Notes:** Short abbreviation for badges (e.g., "ENG") — max 5 characters recommended
+   - **Tag Color:** Hex color for the badge background (e.g., "#00537e")
+4. Assign each user to their company in Snipe-IT user profile (People > Edit User > Company)
+5. Assign each vehicle to its company in Snipe-IT asset profile (Assets > Edit Asset > Company)
+6. Enable **Full Multiple Companies Support** in Snipe-IT Admin > Settings > General
+
+**Setup in SnipeScheduler:**
+
+1. Navigate to **Settings** (Super Admin only). Scroll to the **Multi-Entity Fleet** card
+2. Select the filtering mode:
+   - **Auto-detect** (default) — Automatically enables filtering when Snipe-IT has more than one company. Shows detected count ("2 companies found — filtering active")
+   - **Always On** — Forces filtering even with a single company (useful for testing)
+   - **Always Off** — Disables filtering regardless of company count
+3. Click **Save settings**
 
 **How filtering works:**
 
 - Drivers and Fleet Staff see only vehicles belonging to their assigned company
 - Fleet Admin and Super Admin always see the full fleet across all companies
 - Users with no company assigned in Snipe-IT see all vehicles (backward compatible — no one is locked out)
+- Company badges appear on all vehicle references across the system: catalogue, reservations, dashboard, reports, maintenance, and email/Teams notifications
 - A company badge appears next to the user's name in the top bar showing their company assignment
 - The Vehicles admin page shows a Company column when multi-entity is active
+
+**Admin toggle in Settings:**
+
+| Mode | Behavior |
+|------|----------|
+| Auto-detect (default) | Enables when 2+ companies exist in Snipe-IT |
+| Always On | Forces filtering even with 1 company (useful for testing) |
+| Always Off | Disables all company filtering |
+
+**Important:** Badge text (abbreviation) and color are controlled entirely from Snipe-IT Companies settings. No code changes are needed to customize badge appearance.
 
 ### C11. Customize Theme (Super Admin)
 
@@ -323,3 +346,6 @@ In **Settings**, locate the App Preferences section. Use the **Primary Color** p
 - All vehicle incidents must be reported immediately to the safety team regardless of severity
 - Do not admit liability at an accident scene
 - Emergency safety kit must be verified present before departure
+- When creating vehicles or users, assign them to the correct company if multi-entity mode is active
+- Unassigned vehicles (no company) are visible to all users regardless of company filtering
+- Company assignment changes in Snipe-IT take effect within 2 minutes (auth revalidation cycle)

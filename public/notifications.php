@@ -142,6 +142,8 @@ $eventDescriptions = [
     'reservation_redirected'      => 'Sent when a reservation is redirected to an alternate vehicle.',
     'reservation_redirect_failed' => 'Sent when a reservation is cancelled because no alternate vehicle is available.',
     'overdue_redirect_staff'      => 'Sent to staff/admin when an overdue vehicle triggers a reservation redirect.',
+    'training_expiring'           => 'Weekly digest of drivers whose training certifications are expiring or expired.',
+    'force_checkin'               => 'Sent when staff force-checks-in a vehicle (e.g. overdue driver unavailable).',
 ];
 
 $defaultSubjects = [
@@ -159,6 +161,8 @@ $defaultSubjects = [
     'reservation_redirected'      => 'Reservation Redirected - {vehicle}',
     'reservation_redirect_failed' => 'Reservation Cancelled (No Alternate) - {vehicle}',
     'overdue_redirect_staff'      => 'Overdue Vehicle Redirect Alert - {vehicle}',
+    'training_expiring'           => 'Driver Training Alert - {count} driver(s) need attention',
+    'force_checkin'               => 'Force Check-In - {vehicle}',
 ];
 
 $defaultBodies = [
@@ -326,6 +330,22 @@ Vehicle: {vehicle}
 Assigned to: {user}
 
 Please follow up to ensure the vehicle is returned promptly.
+
+Fleet Management System',
+
+    'training_expiring' => 'Driver training certifications need attention.
+
+{count} driver(s) require action regarding their training status.
+
+Please review the driver list and ensure all certifications are up to date.
+
+Fleet Management System',
+
+    'force_checkin' => 'A vehicle has been force-checked-in by staff.
+
+Vehicle: {vehicle}
+
+Please review the vehicle status and any outstanding reservations.
 
 Fleet Management System',
 ];
