@@ -35,6 +35,7 @@ if ($isAdmin) {
     $tabs['vehicles'] = 'Vehicle Management';
     $tabs['users'] = 'User Management';
     $tabs['booking_rules'] = 'Booking Rules';
+    $tabs['checklists'] = 'Checklist Management';
     $tabs['notifications'] = 'Notifications';
     $tabs['announcements'] = 'Announcements';
     $tabs['multi_entity'] = 'Multi-Entity Fleet';
@@ -468,6 +469,58 @@ if (!isset($tabs[$activeTab])) {
             <li><strong>Email queue:</strong> 7 / 14 / 30 / 60 days.</li>
         </ul>
         <p>A weekly CRON job automatically purges expired data.</p>
+    '); ?>
+</div>
+
+<?php elseif ($activeTab === 'checklists' && $isAdmin): ?>
+<!-- CHECKLIST MANAGEMENT TAB -->
+<div class="accordion" id="accChecklists">
+    <?php help_section('accChecklists', 'cl1', 'Overview', '
+        <p>The Checklist Management system allows Fleet Admins to create and customize inspection checklists that drivers complete during vehicle checkout and checkin.</p>
+        <p>Go to <strong>Admin > Checklists</strong> to manage profiles, categories, items, and vehicle assignments.</p>
+        <p><strong>Note:</strong> The inspection mode must be set to "Full" in Booking Rules for the detailed checklist to appear.</p>
+    '); ?>
+    <?php help_section('accChecklists', 'cl2', 'Profiles', '
+        <p>A <strong>profile</strong> is a complete inspection checklist containing categories and items. You can create multiple profiles for different vehicle types.</p>
+        <ul>
+            <li><strong>Default Profile:</strong> Used when no specific profile is assigned to a vehicle model. Only one profile can be default.</li>
+            <li><strong>Active/Inactive:</strong> Inactive profiles are not used for inspections but are preserved for historical reference.</li>
+            <li><strong>Duplicate:</strong> Copy an existing profile as a starting point for a new one.</li>
+        </ul>
+    '); ?>
+    <?php help_section('accChecklists', 'cl3', 'Categories and Items', '
+        <p>Each profile contains <strong>categories</strong> (e.g., Tires, Lights, Interior) and each category contains <strong>items</strong> (e.g., "Front-Left tire condition").</p>
+        <ul>
+            <li>Categories can be reordered using the up/down buttons.</li>
+            <li>Items have a label, safety-critical flag, and an "applies to" setting (checkout, checkin, or both).</li>
+            <li>The "Overall Assessment" category typically contains a free-text comments field.</li>
+        </ul>
+    '); ?>
+    <?php help_section('accChecklists', 'cl4', 'Safety-Critical Items', '
+        <p>Items marked as <strong>safety-critical</strong> receive special treatment:</p>
+        <ul>
+            <li>Displayed with a red asterisk and "(Safety Critical)" label in the inspection form.</li>
+            <li>If a driver marks a safety-critical item as "No" during checkout, a <strong>warning modal</strong> appears.</li>
+            <li>The driver can choose to go back or proceed anyway (acknowledging the risk).</li>
+            <li>If they proceed, Fleet Staff receives an automatic notification about the safety override.</li>
+            <li>Examples: brakes, steering, seatbelts, headlights, windshield condition, fire extinguisher.</li>
+        </ul>
+    '); ?>
+    <?php help_section('accChecklists', 'cl5', 'Vehicle Assignments', '
+        <p>Assign specific checklist profiles to vehicle models from the <strong>Assignments</strong> tab.</p>
+        <ul>
+            <li>Each vehicle model can be assigned a different checklist profile.</li>
+            <li>Models without an assignment automatically use the default profile.</li>
+            <li>This allows heavy-duty trucks to have different inspection items than sedans, for example.</li>
+        </ul>
+    '); ?>
+    <?php help_section('accChecklists', 'cl6', 'Analytics', '
+        <p>The <strong>Analytics</strong> tab provides insight into inspection trends:</p>
+        <ul>
+            <li><strong>Top Failed Items:</strong> Most frequently failed items in the last 30 days.</li>
+            <li><strong>Safety-Critical Failures:</strong> Count of inspections with safety failures over 30/90/365 days.</li>
+            <li><strong>Inspections by Profile:</strong> Which profiles are being used most.</li>
+        </ul>
     '); ?>
 </div>
 

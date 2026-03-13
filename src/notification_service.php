@@ -160,6 +160,12 @@ class NotificationService
             'teams_ch'     => 'admin',
             'action_param' => '/security',
         ],
+        'safety_critical_override'    => [
+            'label'        => 'Safety-Critical Override at Checkout',
+            'audience'     => 'admin',
+            'teams_ch'     => 'fleet_ops',
+            'action_param' => '/reservations/detail/{reservation_id}',
+        ],
     ];
 
     // ------------------------------------------------------------------
@@ -319,6 +325,9 @@ class NotificationService
                 $svc->notifyMissedStaff($context);
                 break;
             case 'malware_detected':
+                // Uses generic admin notification — subject/body from templates
+                break;
+            case 'safety_critical_override':
                 // Uses generic admin notification — subject/body from templates
                 break;
             default:

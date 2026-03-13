@@ -62,6 +62,12 @@ $autoFields = ['Checkout Time', 'Return Time', 'Expected Return Time'];
 $inspectionMode = get_inspection_mode($pdo);
 $photoUploadEnabled = is_photo_upload_enabled($pdo);
 
+// BL-006: Load DB-driven checklist for this vehicle
+$checklistData = null;
+if ($inspectionMode === 'full' && $asset) {
+    $checklistData = get_checklist_for_vehicle($pdo, (int)$reservation['asset_id'], $asset);
+}
+
 // Load checkout inspection for comparison in full mode
 $checkoutInspection = null;
 if ($inspectionMode === 'full' && $reservationId) {
@@ -158,7 +164,7 @@ $stmt->execute([$newStatus, json_encode($inspectionData), $needsMaintenance ? 1 
                     }
                 }
                 if (!empty($inspResponseData)) {
-                    save_inspection_response($pdo, $reservationId, 'checkin', $userEmail, $inspResponseData);
+                    save_inspection_response($pdo, $reservationId, 'checkin', $userEmail, $inspResponseData, $checklistData);
                 }
             }
 
@@ -457,7 +463,7 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
                             <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Detailed Return Inspection</h5>
                         </div>
                         <div class="card-body">
-                            <?= render_inspection_form('checkin', $inspectionMode, null, $checkoutInspection) ?>
+                            <?= render_inspection_form('checkin', $inspectionMode, null, $checkoutInspection, $checklistData) ?>
                         </div>
                     </div>
                     <?php endif; ?>

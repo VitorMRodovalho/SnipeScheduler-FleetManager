@@ -199,3 +199,52 @@ CREATE TABLE IF NOT EXISTS data_requests (
     INDEX idx_data_requests_email (requester_email),
     INDEX idx_data_requests_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------
+-- BL-006: Inspection Checklist Profiles
+-- ------------------------------------------------------
+CREATE TABLE IF NOT EXISTS checklist_profiles (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT DEFAULT NULL,
+    is_default TINYINT(1) DEFAULT 0,
+    is_active TINYINT(1) DEFAULT 1,
+    created_by VARCHAR(255) DEFAULT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_name (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS checklist_categories (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    profile_id INT UNSIGNED NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    sort_order INT UNSIGNED DEFAULT 0,
+    is_active TINYINT(1) DEFAULT 1,
+    INDEX idx_profile (profile_id),
+    FOREIGN KEY (profile_id) REFERENCES checklist_profiles(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS checklist_items (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    category_id INT UNSIGNED NOT NULL,
+    label VARCHAR(255) NOT NULL,
+    sort_order INT UNSIGNED DEFAULT 0,
+    is_active TINYINT(1) DEFAULT 1,
+    is_safety_critical TINYINT(1) DEFAULT 0,
+    applies_to ENUM('both','checkout','checkin') DEFAULT 'both',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_category (category_id),
+    FOREIGN KEY (category_id) REFERENCES checklist_categories(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS checklist_profile_assignments (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    profile_id INT UNSIGNED NOT NULL,
+    snipeit_model_id INT UNSIGNED DEFAULT NULL,
+    snipeit_category_id INT UNSIGNED DEFAULT NULL,
+    INDEX idx_profile (profile_id),
+    INDEX idx_model (snipeit_model_id),
+    INDEX idx_category (snipeit_category_id),
+    FOREIGN KEY (profile_id) REFERENCES checklist_profiles(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -78,6 +78,12 @@ $autoFields = ['Checkout Time', 'Return Time', 'Expected Return Time']; // Auto-
 $inspectionMode = get_inspection_mode($pdo);
 $photoUploadEnabled = is_photo_upload_enabled($pdo);
 
+// BL-006: Load DB-driven checklist for this vehicle
+$checklistData = null;
+if ($inspectionMode === 'full' && $asset) {
+    $checklistData = get_checklist_for_vehicle($pdo, (int)$reservation['asset_id'], $asset);
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $asset && empty($error)) {
     $formData = [];
     $inspectionData = [];
@@ -180,7 +186,29 @@ $stmt->execute([json_encode($inspectionData), $reservationId]);
                     }
                 }
                 if (!empty($inspResponseData)) {
-                    save_inspection_response($pdo, $reservationId, 'checkout', $userEmail, $inspResponseData);
+                    save_inspection_response($pdo, $reservationId, 'checkout', $userEmail, $inspResponseData, $checklistData);
+
+                    // Check safety-critical failures
+                    if ($checklistData) {
+                        $safetyFailures = validate_inspection_safety($inspResponseData, $checklistData);
+                        if (!empty($safetyFailures) && !empty($_POST['acknowledged_safety_risk'])) {
+                            // Driver acknowledged risk — notify staff
+                            try {
+                                NotificationService::fire('safety_critical_override', [
+                                    'driver_name'     => $userName,
+                                    'vehicle_name'    => $asset['name'] ?? '',
+                                    'asset_tag'       => $asset['asset_tag'] ?? '',
+                                    'failures'        => $safetyFailures,
+                                    'reservation_id'  => $reservationId,
+                                ], $pdo);
+                            } catch (\Throwable $e) {
+                                // Non-blocking
+                            }
+                            activity_log_event('safety_critical_override', "Driver {$userName} proceeded with checkout despite safety failures: " . implode(', ', $safetyFailures), [
+                                'metadata' => ['reservation_id' => $reservationId, 'failures' => $safetyFailures],
+                            ]);
+                        }
+                    }
                 }
             }
 
@@ -476,7 +504,7 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
                             <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Detailed Vehicle Inspection</h5>
                         </div>
                         <div class="card-body">
-                            <?= render_inspection_form('checkout', $inspectionMode) ?>
+                            <?= render_inspection_form('checkout', $inspectionMode, null, null, $checklistData) ?>
                         </div>
                     </div>
                     <?php endif; ?>
@@ -822,6 +850,25 @@ document.getElementById('maintenanceConfirmYes')?.addEventListener('click', func
 });
 </script>
 <?= render_inspection_js($inspectionMode) ?>
+<?php if ($inspectionMode === 'full' && $checklistData): ?>
+<?= render_safety_critical_js() ?>
+<script>
+// Hook safety check into the checkout confirmation flow
+document.addEventListener('DOMContentLoaded', function() {
+    const origConfirmBtn = document.getElementById('checkoutConfirmBtn');
+    if (origConfirmBtn && typeof window._checkSafetyCritical === 'function') {
+        const origHandler = origConfirmBtn.onclick;
+        origConfirmBtn.addEventListener('click', function(e) {
+            if (!window._checkSafetyCritical()) {
+                e.stopImmediatePropagation();
+                e.preventDefault();
+                bootstrap.Modal.getInstance(document.getElementById('checkoutConfirmModal'))?.hide();
+            }
+        }, true);
+    }
+});
+</script>
+<?php endif; ?>
 <?php if ($photoUploadEnabled): ?><?= render_photo_upload_js() ?><?php endif; ?>
 <?php layout_footer(); ?>
 </body>

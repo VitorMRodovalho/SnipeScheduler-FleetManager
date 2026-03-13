@@ -154,7 +154,7 @@ if (!function_exists('layout_render_nav')) {
         ];
 
         // Admin dropdown pages (used to highlight Admin when on any admin page)
-        $adminPages = ['activity_log', 'vehicles', 'users', 'notifications', 'announcements', 'booking_rules', 'security', 'settings', 'admin_data_delete'];
+        $adminPages = ['activity_log', 'vehicles', 'users', 'notifications', 'announcements', 'booking_rules', 'checklist_admin', 'security', 'settings', 'admin_data_delete'];
 
         $html = '<nav class="app-nav">';
         foreach ($links as $link) {
@@ -188,6 +188,7 @@ if (!function_exists('layout_render_nav')) {
             $html .= '<li><a class="dropdown-item" href="notifications"><i class="bi bi-bell me-2"></i>Notifications</a></li>';
             $html .= '<li><a class="dropdown-item" href="announcements"><i class="bi bi-megaphone me-2"></i>Announcements</a></li>';
             $html .= '<li><a class="dropdown-item" href="booking_rules"><i class="bi bi-sliders me-2"></i>Booking Rules</a></li>';
+            $html .= '<li><a class="dropdown-item" href="checklist_admin"><i class="bi bi-list-check me-2"></i>Checklists</a></li>';
             $html .= '<li><hr class="dropdown-divider"></li>';
             $html .= '<li><a class="dropdown-item" href="security"><i class="bi bi-shield-lock me-2"></i>Security</a></li>';
             $html .= '<li><a class="dropdown-item" href="settings"><i class="bi bi-gear me-2"></i>Settings</a></li>';
