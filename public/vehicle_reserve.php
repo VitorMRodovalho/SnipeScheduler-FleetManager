@@ -562,7 +562,7 @@ function get_location_name($locations, $id) {
                                                         <input type="radio" class="form-check-input" name="asset_id" id="asset_<?= $asset['id'] ?>" value="<?= $asset['id'] ?>" required>
                                                         <label class="form-check-label w-100" for="asset_<?= $asset['id'] ?>">
                                                             <div class="d-flex justify-content-between align-items-start">
-                                                                <h6 class="mb-1"><?= h($asset['name']) ?></h6>
+<h6 class="mb-1"><?= h($asset['name']) ?><?= get_company_badge($asset, $pdo) ?></h6>
                                                                 <span class="availability-badge">
                                                                     <i class="bi bi-check-circle-fill me-1"></i>Available
                                                                 </span>

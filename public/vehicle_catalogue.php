@@ -143,7 +143,7 @@ $availableAssets = array_filter($assets, function($asset) {
                                 <?php endif; ?>
                             </div>
                             <div class="card-body">
-                                <h5 class="card-title"><?= h($asset['name']) ?></h5>
+                                <h5 class="card-title"><?= h($asset["name"]) ?><?= get_company_badge($asset, $pdo) ?></h5>
                                 <p class="card-text">
                                     <small class="text-muted">
                                         <i class="bi bi-tag me-1"></i><?= h($asset['asset_tag']) ?>
