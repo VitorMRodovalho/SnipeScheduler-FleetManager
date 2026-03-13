@@ -151,11 +151,10 @@ if (!function_exists('layout_render_nav')) {
             ['href' => 'scan',              'label' => 'Scan QR',             'staff' => false],
 //            ['href' => 'quick_checkout',    'label' => 'Quick Checkout',      'staff' => true],
 //            ['href' => 'quick_checkin',     'label' => 'Quick Checkin',       'staff' => true],
-            ['href' => 'activity_log',      'label' => 'Admin',               'staff' => false, 'admin_only' => true],
-
-
-
         ];
+
+        // Admin dropdown pages (used to highlight Admin when on any admin page)
+        $adminPages = ['activity_log', 'vehicles', 'users', 'notifications', 'announcements', 'booking_rules', 'security', 'settings', 'admin_data_delete'];
 
         $html = '<nav class="app-nav">';
         foreach ($links as $link) {
@@ -173,6 +172,28 @@ if (!function_exists('layout_render_nav')) {
 
             $html .= '<a href="' . $href . '" class="' . $classes . '">' . $label . '</a>';
         }
+
+        // Admin dropdown (replaces single Admin link)
+        if ($isAdmin) {
+            $adminActive = in_array($active, $adminPages, true);
+            $ddClass = 'app-nav-link dropdown-toggle' . ($adminActive ? ' active' : '');
+            $html .= '<div class="d-inline-block position-relative">';
+            $html .= '<a href="#" class="' . $ddClass . '" data-bs-toggle="dropdown" aria-expanded="false">Admin</a>';
+            $html .= '<ul class="dropdown-menu">';
+            $html .= '<li><a class="dropdown-item" href="help"><i class="bi bi-question-circle me-2"></i>Help & Guide</a></li>';
+            $html .= '<li><hr class="dropdown-divider"></li>';
+            $html .= '<li><a class="dropdown-item" href="vehicles"><i class="bi bi-truck me-2"></i>Vehicles</a></li>';
+            $html .= '<li><a class="dropdown-item" href="users"><i class="bi bi-people me-2"></i>Users</a></li>';
+            $html .= '<li><a class="dropdown-item" href="activity_log"><i class="bi bi-journal-text me-2"></i>Activity Log</a></li>';
+            $html .= '<li><a class="dropdown-item" href="notifications"><i class="bi bi-bell me-2"></i>Notifications</a></li>';
+            $html .= '<li><a class="dropdown-item" href="announcements"><i class="bi bi-megaphone me-2"></i>Announcements</a></li>';
+            $html .= '<li><a class="dropdown-item" href="booking_rules"><i class="bi bi-sliders me-2"></i>Booking Rules</a></li>';
+            $html .= '<li><hr class="dropdown-divider"></li>';
+            $html .= '<li><a class="dropdown-item" href="security"><i class="bi bi-shield-lock me-2"></i>Security</a></li>';
+            $html .= '<li><a class="dropdown-item" href="settings"><i class="bi bi-gear me-2"></i>Settings</a></li>';
+            $html .= '</ul></div>';
+        }
+
         $html .= '</nav>';
 
         return $html;
