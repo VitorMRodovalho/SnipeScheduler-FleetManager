@@ -136,6 +136,72 @@ if (set_user_vip_status($userId, $newVip)) {
             $error = 'Failed to update VIP status.';
         }
 
+    } elseif ($action === 'offboard_user') {
+        $userId = (int)$_POST['user_id'];
+        $offboardUserName = trim($_POST['offboard_user_name'] ?? 'Unknown');
+        $offboardUserEmail = trim($_POST['offboard_user_email'] ?? '');
+        $offboardActions = [];
+        $offboardErrors = [];
+
+        // 1. Cancel pending/confirmed reservations
+        try {
+            $cancelStmt = $pdo->prepare("
+                UPDATE reservations SET status = 'cancelled'
+                WHERE (user_id = :uid OR LOWER(user_email) = LOWER(:email))
+                  AND status IN ('pending', 'confirmed')
+            ");
+            $cancelStmt->execute([':uid' => (string)$userId, ':email' => $offboardUserEmail]);
+            $cancelledCount = $cancelStmt->rowCount();
+            if ($cancelledCount > 0) {
+                $offboardActions[] = "Cancelled {$cancelledCount} pending/confirmed reservation(s)";
+            }
+        } catch (Throwable $e) {
+            $offboardErrors[] = 'Failed to cancel reservations: ' . $e->getMessage();
+        }
+
+        // 2. Force-checkin any vehicles currently checked out to this user
+        try {
+            $checkedOutStmt = $pdo->prepare("
+                SELECT asset_id, asset_name FROM checked_out_asset_cache
+                WHERE assigned_to_email = ? OR assigned_to_id = ?
+            ");
+            $checkedOutStmt->execute([$offboardUserEmail, $userId]);
+            $checkedOutAssets = $checkedOutStmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($checkedOutAssets as $asset) {
+                try {
+                    checkin_asset((int)$asset['asset_id'], "Offboarding: {$offboardUserName}");
+                    $offboardActions[] = "Checked in vehicle: {$asset['asset_name']}";
+                } catch (Throwable $e) {
+                    $offboardErrors[] = "Failed to checkin asset {$asset['asset_id']}: " . $e->getMessage();
+                }
+            }
+        } catch (Throwable $e) {
+            $offboardErrors[] = 'Failed to query checked-out assets: ' . $e->getMessage();
+        }
+
+        // 3. Deactivate in Snipe-IT
+        if (deactivate_snipeit_user($userId)) {
+            $offboardActions[] = 'Deactivated user in Snipe-IT';
+        } else {
+            $offboardErrors[] = 'Failed to deactivate user in Snipe-IT';
+        }
+
+        // Activity log
+        activity_log_event('user_offboarded', "Offboarded user: {$offboardUserName}", [
+            'metadata' => [
+                'target_user_id'    => $userId,
+                'target_email'      => $offboardUserEmail,
+                'actions_completed' => $offboardActions,
+                'errors'            => $offboardErrors,
+            ],
+        ]);
+
+        if (empty($offboardErrors)) {
+            $success = "User '{$offboardUserName}' offboarded successfully. " . implode('. ', $offboardActions) . '.';
+        } else {
+            $error = "Offboarding partially completed. Actions: " . implode('; ', $offboardActions) . ". Errors: " . implode('; ', $offboardErrors);
+        }
+
     } elseif ($action === 'toggle_training') {
         $userEmail = trim($_POST['user_email'] ?? '');
         $currentState = (int)($_POST['current_training'] ?? 0);
@@ -504,7 +570,12 @@ foreach ($allUsers as $user) {
                                                    <i class="bi bi-pause-circle"></i>
                                                 </button>
                                             </form>
-                                            <a href="<?= htmlspecialchars($config['snipeit']['base_url']) ?>/users/<?= $user['id'] ?>" target="_blank" 
+                                            <button type="button" class="btn btn-sm btn-outline-danger" title="Offboard"
+                                                    data-bs-toggle="modal" data-bs-target="#offboardModal"
+                                                    onclick="prepareOffboard(<?= $user['id'] ?>, '<?= h($user['name']) ?>', '<?= h($user['email'] ?? '') ?>')">
+                                                <i class="bi bi-person-x"></i>
+                                            </button>
+                                            <a href="<?= htmlspecialchars($config['snipeit']['base_url']) ?>/users/<?= $user['id'] ?>" target="_blank"
                                                class="btn btn-sm btn-outline-secondary" title="View in Snipe-IT">
                                                 <i class="bi bi-box-arrow-up-right"></i>
                                             </a>
@@ -560,7 +631,12 @@ foreach ($allUsers as $user) {
                                             </form>
                                         </td>
                                         <td>
-                                            <a href="<?= htmlspecialchars($config['snipeit']['base_url']) ?>/users/<?= $user['id'] ?>" target="_blank" 
+                                            <button type="button" class="btn btn-sm btn-outline-danger" title="Offboard"
+                                                    data-bs-toggle="modal" data-bs-target="#offboardModal"
+                                                    onclick="prepareOffboard(<?= $user['id'] ?>, '<?= h($user['name']) ?>', '<?= h($user['email'] ?? '') ?>')">
+                                                <i class="bi bi-person-x"></i>
+                                            </button>
+                                            <a href="<?= htmlspecialchars($config['snipeit']['base_url']) ?>/users/<?= $user['id'] ?>" target="_blank"
                                                class="btn btn-sm btn-outline-secondary" title="View in Snipe-IT">
                                                 <i class="bi bi-box-arrow-up-right"></i>
                                             </a>
@@ -616,7 +692,12 @@ foreach ($allUsers as $user) {
                                             </form>
                                         </td>
                                         <td>
-                                            <a href="<?= htmlspecialchars($config['snipeit']['base_url']) ?>/users/<?= $user['id'] ?>" target="_blank" 
+                                            <button type="button" class="btn btn-sm btn-outline-danger" title="Offboard"
+                                                    data-bs-toggle="modal" data-bs-target="#offboardModal"
+                                                    onclick="prepareOffboard(<?= $user['id'] ?>, '<?= h($user['name']) ?>', '<?= h($user['email'] ?? '') ?>')">
+                                                <i class="bi bi-person-x"></i>
+                                            </button>
+                                            <a href="<?= htmlspecialchars($config['snipeit']['base_url']) ?>/users/<?= $user['id'] ?>" target="_blank"
                                                class="btn btn-sm btn-outline-secondary" title="View in Snipe-IT">
                                                 <i class="bi bi-box-arrow-up-right"></i>
                                             </a>
@@ -791,7 +872,52 @@ foreach ($allUsers as $user) {
 
     </div><!-- page-shell -->
 </div>
+<!-- Offboard User Modal -->
+<div class="modal fade" id="offboardModal" tabindex="-1" aria-labelledby="offboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="offboardModalLabel"><i class="bi bi-person-x me-2"></i>Offboard User</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" id="offboardForm">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="offboard_user">
+                <input type="hidden" name="user_id" id="offboardUserId">
+                <input type="hidden" name="offboard_user_name" id="offboardUserName">
+                <input type="hidden" name="offboard_user_email" id="offboardUserEmail">
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <strong>This will perform the following actions for <span id="offboardNameDisplay"></span>:</strong>
+                    </div>
+                    <ul class="list-group mb-3">
+                        <li class="list-group-item"><i class="bi bi-x-circle text-danger me-2"></i>Cancel all pending and confirmed reservations</li>
+                        <li class="list-group-item"><i class="bi bi-arrow-return-left text-warning me-2"></i>Force check-in any currently checked-out vehicles</li>
+                        <li class="list-group-item"><i class="bi bi-pause-circle text-secondary me-2"></i>Deactivate user in Snipe-IT</li>
+                    </ul>
+                    <p class="text-muted small mb-0">This action is logged in the Activity Log. The user's historical data (completed reservations, inspections) is preserved for audit purposes.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-person-x me-1"></i>Confirm Offboard
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function prepareOffboard(userId, userName, userEmail) {
+    document.getElementById('offboardUserId').value = userId;
+    document.getElementById('offboardUserName').value = userName;
+    document.getElementById('offboardUserEmail').value = userEmail;
+    document.getElementById('offboardNameDisplay').textContent = userName;
+}
+</script>
 <?php layout_footer(); ?>
 </body>
 </html>
