@@ -14,6 +14,7 @@ require_once SRC_PATH . '/snipeit_client.php';
 require_once SRC_PATH . '/activity_log.php';
 require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/layout.php';
+require_once SRC_PATH . '/company_filter.php';
 
 $active = 'activity_log';
 $isAdmin = !empty($currentUser['is_admin']);
@@ -44,6 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $isVip = isset($_POST['vip']) && $_POST['vip'] == '1';
         $canLogin = isset($_POST['can_login']) && $_POST['can_login'] == '1';
         $notes = trim($_POST['notes'] ?? '');
+        $companyId = !empty($_POST['company_id']) ? (int)$_POST['company_id'] : null;
         
         if (empty($firstName) || empty($email)) {
             $error = 'First name and email are required.';
@@ -71,6 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $updateData = ['groups' => $mergedGroupsCsv];
                 if ($isVip) { $updateData['vip'] = true; }
                 if ($notes) { $updateData['notes'] = $existingUser['notes'] . ' | ' . $notes; }
+                if ($companyId) { $updateData['company_id'] = $companyId; }
                 
                 $result = update_snipeit_user($existingUser['id'], $updateData);
                 
@@ -96,6 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'vip' => $isVip,
                     'notes' => $notes ?: 'Created via SnipeScheduler - Safety driving certified',
                 ];
+                if ($companyId) { $userData['company_id'] = $companyId; }
                 
                 $result = create_snipeit_user($userData);
                 
@@ -181,6 +185,8 @@ $drivers = [];
 $staff = [];
 $admins = [];
 $inactive = [];
+$multiCompany = is_multi_company_enabled($pdo);
+$allCompanies = $multiCompany ? get_all_companies() : [];
 
 foreach ($allUsers as $user) {
     $userGroups = [];
@@ -356,7 +362,19 @@ foreach ($allUsers as $user) {
                 </div>
             </div>
 
-           <!-- Drivers -->
+           <?php if ($multiCompany): ?>
+            <div class="alert alert-info d-flex align-items-start mb-4">
+                <i class="bi bi-building me-2 mt-1"></i>
+                <div>
+                    <strong>Multi-Entity Fleet:</strong> Your organisation has multiple companies configured.
+                    A user's <em>Company</em> assignment determines which vehicles they can see and book.
+                    Drivers and Staff see only their company's fleet; Fleet Admins see all vehicles across all entities.
+                    To change a user's company, edit them in Snipe-IT or use the Company selector when adding a new user.
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <!-- Drivers -->
             <div class="card mb-4">
                 <div class="card-header bg-success text-white">
                     <h6 class="mb-0"><i class="bi bi-car-front me-2"></i>Drivers (<?= count($drivers) ?>)</h6>
@@ -370,6 +388,7 @@ foreach ($allUsers as $user) {
                                 <thead class="table-light">
                                     <tr>
                                         <th>Name</th>
+                                        <?php if ($multiCompany): ?><th>Company</th><?php endif; ?>
                                         <th>Email</th>
                                         <th>Username</th>
                                         <th class="text-center">VIP</th>
@@ -381,7 +400,8 @@ foreach ($allUsers as $user) {
                                     <?php foreach ($drivers as $user): ?>
                                     <?php $userVip = !empty($user['vip']); ?>
                                     <tr>
-                                        <td><strong><?= h($user['name']) ?></strong></td>
+                                        <td><strong><?= h($user['name']) ?></strong><?= $multiCompany ? get_company_badge($user, $pdo) : '' ?></td>
+                                        <?php if ($multiCompany): ?><td><?= h($user['company']['name'] ?? '—') ?></td><?php endif; ?>
                                         <td><?= h($user['email'] ?? '-') ?></td>
                                         <td><code><?= h($user['username']) ?></code></td>
 <td class="text-center">
@@ -512,6 +532,7 @@ foreach ($allUsers as $user) {
                                 <thead class="table-light">
                                     <tr>
                                         <th>Name</th>
+                                        <?php if ($multiCompany): ?><th>Company</th><?php endif; ?>
                                         <th>Email</th>
                                         <th>Username</th>
                                         <th class="text-center">VIP</th>
@@ -522,7 +543,8 @@ foreach ($allUsers as $user) {
                                     <?php foreach ($staff as $user): ?>
                                     <?php $userVip = !empty($user['vip']); ?>
                                     <tr>
-                                        <td><strong><?= h($user['name']) ?></strong></td>
+                                        <td><strong><?= h($user['name']) ?></strong><?= $multiCompany ? get_company_badge($user, $pdo) : '' ?></td>
+                                        <?php if ($multiCompany): ?><td><?= h($user['company']['name'] ?? '—') ?></td><?php endif; ?>
                                         <td><?= h($user['email'] ?? '-') ?></td>
                                         <td><code><?= h($user['username']) ?></code></td>
                                         <td class="text-center">
@@ -566,6 +588,7 @@ foreach ($allUsers as $user) {
                                 <thead class="table-light">
                                     <tr>
                                         <th>Name</th>
+                                        <?php if ($multiCompany): ?><th>Company</th><?php endif; ?>
                                         <th>Email</th>
                                         <th>Username</th>
                                         <th class="text-center">VIP</th>
@@ -576,7 +599,8 @@ foreach ($allUsers as $user) {
                                     <?php foreach ($admins as $user): ?>
                                     <?php $userVip = !empty($user['vip']); ?>
                                     <tr>
-                                        <td><strong><?= h($user['name']) ?></strong></td>
+                                        <td><strong><?= h($user['name']) ?></strong><?= $multiCompany ? get_company_badge($user, $pdo) : '' ?></td>
+                                        <?php if ($multiCompany): ?><td><?= h($user['company']['name'] ?? '—') ?></td><?php endif; ?>
                                         <td><?= h($user['email'] ?? '-') ?></td>
                                         <td><code><?= h($user['username']) ?></code></td>
                                         <td class="text-center">
@@ -648,7 +672,20 @@ foreach ($allUsers as $user) {
                                 </select>
                                 <small class="text-muted">Hold Ctrl/Cmd to select multiple groups</small>
                             </div>
-                            
+
+                            <?php if ($multiCompany && !empty($allCompanies)): ?>
+                            <div class="col-md-6">
+                                <label class="form-label">Company</label>
+                                <select name="company_id" class="form-select">
+                                    <option value="">— No Company —</option>
+                                    <?php foreach ($allCompanies as $co): ?>
+                                        <option value="<?= (int)$co['id'] ?>"><?= h($co['name']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <small class="text-muted">Assigns the user to a fleet entity. Determines which vehicles they can see and book.</small>
+                            </div>
+                            <?php endif; ?>
+
                             <div class="col-md-12">
                                 <div class="row">
                                     <div class="col-md-4">

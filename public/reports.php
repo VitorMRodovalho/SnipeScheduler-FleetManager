@@ -38,6 +38,14 @@ $assetFilter = isset($_GET['asset_id']) ? (int)$_GET['asset_id'] : null;
 $userFilter = isset($_GET['user_email']) ? trim($_GET['user_email']) : null;
 $statusFilter = isset($_GET['status']) ? trim($_GET['status']) : null;
 $maintTypeFilter = isset($_GET['maint_type']) ? trim($_GET['maint_type']) : null;
+$companyFilter = isset($_GET['company_id']) ? (int)$_GET['company_id'] : null;
+// Resolve company name for SQL filtering (reservations store company_name, not company_id)
+$companyFilterName = null;
+if ($companyFilter && $multiCompany) {
+    foreach (get_all_companies() as $_co) {
+        if ((int)$_co['id'] === $companyFilter) { $companyFilterName = $_co['name']; break; }
+    }
+}
 
 // Build display period label
 $periodLabel = 'All Time';
@@ -79,11 +87,11 @@ function extractTripMileage(array $coData, array $ciData): array {
 // CSV Export handler
 // =========================================================================
 if (isset($_GET['export']) && $_GET['export'] === 'csv') {
-    exportReportCSV($pdo, $report, $queryDateFrom, $queryDateTo, $assetFilter, $userFilter, $statusFilter, $maintTypeFilter, $assetList);
+    exportReportCSV($pdo, $report, $queryDateFrom, $queryDateTo, $assetFilter, $userFilter, $statusFilter, $maintTypeFilter, $assetList, $companyFilterName);
     exit;
 }
 
-function exportReportCSV($pdo, $report, $queryDateFrom, $queryDateTo, $assetFilter, $userFilter, $statusFilter, $maintTypeFilter, $assetList) {
+function exportReportCSV($pdo, $report, $queryDateFrom, $queryDateTo, $assetFilter, $userFilter, $statusFilter, $maintTypeFilter, $assetList, $companyFilterName = null) {
     $filename = "fleet_report_{$report}_" . date('Y-m-d') . ".csv";
     header('Content-Type: text/csv');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
@@ -98,6 +106,7 @@ function exportReportCSV($pdo, $report, $queryDateFrom, $queryDateTo, $assetFilt
         if ($assetFilter) { $sql .= " AND r.asset_id = ?"; $params[] = $assetFilter; }
         if ($userFilter) { $sql .= " AND r.user_email = ?"; $params[] = $userFilter; }
         if ($statusFilter) { $sql .= " AND r.status = ?"; $params[] = $statusFilter; }
+        if ($companyFilterName) { $sql .= " AND r.company_name = ?"; $params[] = $companyFilterName; }
         $sql .= " ORDER BY r.start_datetime DESC";
 
         $stmt = $pdo->prepare($sql);
@@ -237,7 +246,7 @@ $reportData = [];
 
 if ($report === 'summary') {
     // Reservation statistics
-    $stmt = $pdo->prepare("
+    $summSql = "
         SELECT
             COUNT(*) as total,
             SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
@@ -248,8 +257,11 @@ if ($report === 'summary') {
             SUM(CASE WHEN status = 'maintenance_required' THEN 1 ELSE 0 END) as maintenance
         FROM reservations
         WHERE DATE(created_at) BETWEEN ? AND ?
-    ");
-    $stmt->execute([$queryDateFrom, $queryDateTo]);
+    ";
+    $summParams = [$queryDateFrom, $queryDateTo];
+    if ($companyFilterName) { $summSql .= " AND company_name = ?"; $summParams[] = $companyFilterName; }
+    $stmt = $pdo->prepare($summSql);
+    $stmt->execute($summParams);
     $reportData['reservation_stats'] = $stmt->fetch(PDO::FETCH_ASSOC);
 
     // Completion rate
@@ -260,8 +272,11 @@ if ($report === 'summary') {
     $reportData['completion_rate'] = $actionable > 0 ? round(($completed / $actionable) * 100) : 0;
 
     // Total miles driven across fleet
-    $stmt = $pdo->prepare("SELECT checkout_form_data, checkin_form_data FROM reservations WHERE status = 'completed' AND DATE(created_at) BETWEEN ? AND ?");
-    $stmt->execute([$queryDateFrom, $queryDateTo]);
+    $milesSql = "SELECT checkout_form_data, checkin_form_data FROM reservations WHERE status = 'completed' AND DATE(created_at) BETWEEN ? AND ?";
+    $milesParams = [$queryDateFrom, $queryDateTo];
+    if ($companyFilterName) { $milesSql .= " AND company_name = ?"; $milesParams[] = $companyFilterName; }
+    $stmt = $pdo->prepare($milesSql);
+    $stmt->execute($milesParams);
     $fleetMiles = 0;
     while ($r = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $mi = extractTripMileage(
@@ -273,26 +288,32 @@ if ($report === 'summary') {
     $reportData['fleet_miles'] = $fleetMiles;
 
     // Reservations by vehicle
-    $stmt = $pdo->prepare("
+    $bvSql = "
         SELECT asset_name_cache, asset_id, company_abbr, company_color, company_name,
                COUNT(*) as count,
                SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed
         FROM reservations
         WHERE DATE(created_at) BETWEEN ? AND ?
         AND asset_name_cache IS NOT NULL AND asset_name_cache != ''
-        GROUP BY asset_id, asset_name_cache, company_abbr, company_color, company_name ORDER BY count DESC
-    ");
-    $stmt->execute([$queryDateFrom, $queryDateTo]);
+    ";
+    $bvParams = [$queryDateFrom, $queryDateTo];
+    if ($companyFilterName) { $bvSql .= " AND company_name = ?"; $bvParams[] = $companyFilterName; }
+    $bvSql .= " GROUP BY asset_id, asset_name_cache, company_abbr, company_color, company_name ORDER BY count DESC";
+    $stmt = $pdo->prepare($bvSql);
+    $stmt->execute($bvParams);
     $reportData['by_vehicle'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Reservations by user
-    $stmt = $pdo->prepare("
+    $buSql = "
         SELECT user_name, user_email, COUNT(*) as count,
                SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed
         FROM reservations WHERE DATE(created_at) BETWEEN ? AND ?
-        GROUP BY user_email, user_name ORDER BY count DESC LIMIT 10
-    ");
-    $stmt->execute([$queryDateFrom, $queryDateTo]);
+    ";
+    $buParams = [$queryDateFrom, $queryDateTo];
+    if ($companyFilterName) { $buSql .= " AND company_name = ?"; $buParams[] = $companyFilterName; }
+    $buSql .= " GROUP BY user_email, user_name ORDER BY count DESC LIMIT 10";
+    $stmt = $pdo->prepare($buSql);
+    $stmt->execute($buParams);
     $reportData['by_user'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Maintenance costs (single pass)
@@ -339,6 +360,7 @@ if ($report === 'summary') {
     if ($assetFilter) { $sql .= " AND r.asset_id = ?"; $params[] = $assetFilter; }
     if ($userFilter) { $sql .= " AND r.user_email = ?"; $params[] = $userFilter; }
     if ($statusFilter) { $sql .= " AND r.status = ?"; $params[] = $statusFilter; }
+    if ($companyFilterName) { $sql .= " AND r.company_name = ?"; $params[] = $companyFilterName; }
     $sql .= " ORDER BY r.start_datetime DESC LIMIT 500";
 
     $stmt = $pdo->prepare($sql);
@@ -555,6 +577,7 @@ if ($report === 'summary') {
         FROM reservations WHERE DATE(created_at) BETWEEN ? AND ?";
     $driverParams = [$queryDateFrom, $queryDateTo];
     if ($userFilter) { $sql .= " AND user_email = ?"; $driverParams[] = $userFilter; }
+    if ($companyFilterName) { $sql .= " AND company_name = ?"; $driverParams[] = $companyFilterName; }
     $sql .= " GROUP BY user_email, user_name ORDER BY total_trips DESC";
 
     $stmt = $pdo->prepare($sql);
@@ -785,6 +808,18 @@ if ($report === 'summary') {
                             <option value="">All Types</option>
                             <?php foreach (['Maintenance', 'Repair', 'Upgrade', 'Calibration'] as $mt): ?>
                                 <option value="<?= $mt ?>" <?= $maintTypeFilter === $mt ? 'selected' : '' ?>><?= $mt ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <?php endif; ?>
+                    <?php if ($multiCompany): ?>
+                    <?php $filterCompanies = get_all_companies(); ?>
+                    <div class="col-md-2">
+                        <label class="form-label">Company</label>
+                        <select name="company_id" class="form-select">
+                            <option value="">All Companies</option>
+                            <?php foreach ($filterCompanies as $co): ?>
+                                <option value="<?= (int)$co['id'] ?>" <?= $companyFilter === (int)$co['id'] ? 'selected' : '' ?>><?= h($co['name']) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>

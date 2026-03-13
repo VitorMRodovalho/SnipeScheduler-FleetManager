@@ -84,6 +84,15 @@ $updateStmt->execute($missedIds);
                 ]);
                 update_asset_status($assetId, SNIPEIT_STATUS_AVAILABLE);
                 echo sprintf("[%s] Asset %d checked in and set to Available\n", date('Y-m-d H:i:s'), $assetId);
+
+                // Reset vehicle to its home (default) location
+                $assetDetail = get_asset($assetId);
+                $homeLocationId = (int)($assetDetail['rtd_location']['id'] ?? 0);
+                $currentLocationId = (int)($assetDetail['location']['id'] ?? 0);
+                if ($homeLocationId > 0 && $currentLocationId !== $homeLocationId) {
+                    update_asset_location($assetId, $homeLocationId);
+                    echo sprintf("[%s] Asset %d location reset to home (location #%d)\n", date('Y-m-d H:i:s'), $assetId, $homeLocationId);
+                }
             } catch (Throwable $e) {
                 echo sprintf("[%s] Failed to checkin asset %d: %s\n", date('Y-m-d H:i:s'), $assetId, $e->getMessage());
             }
@@ -147,6 +156,13 @@ foreach ($missedReservations as $reservation) {
             // Only release if currently Reserved (don't touch In Service or Out of Service)
             if ($currentStatusId === STATUS_VEH_RESERVED) {
                 update_asset_status($assetId, STATUS_VEH_AVAILABLE);
+                // Reset vehicle to home location if it was moved
+                $homeLocId = (int)($assetInfo['rtd_location']['id'] ?? 0);
+                $curLocId = (int)($assetInfo['location']['id'] ?? 0);
+                if ($homeLocId > 0 && $curLocId !== $homeLocId) {
+                    update_asset_location($assetId, $homeLocId);
+                    echo sprintf("[%s] Asset #%d location reset to home (location #%d)\n", date('Y-m-d H:i:s'), $assetId, $homeLocId);
+                }
                 echo sprintf("[%s] Released asset #%d back to Available\n", date('Y-m-d H:i:s'), $assetId);
             }
         } catch (Throwable $e) {
