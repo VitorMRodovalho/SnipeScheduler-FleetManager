@@ -187,9 +187,8 @@ $totalChecks = count($checkResults);
                             </table>
                         </div>
                     </div>
-                </div>
-                
-<!-- CRON Health -->
+                <!-- CRON Health -->
+                   
                     <div class="card mb-4">
                         <div class="card-header bg-dark text-white">
                             <h5 class="mb-0"><i class="bi bi-arrow-repeat me-2"></i>CRON Sync Health</h5>
@@ -239,7 +238,7 @@ $totalChecks = count($checkResults);
                             </table>
                         </div>
                     </div>
-
+</div>
                 <!-- Backup Status -->
                 <div class="col-md-6 mb-4">
                     <div class="card">
