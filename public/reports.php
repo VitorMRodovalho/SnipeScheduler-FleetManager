@@ -189,20 +189,35 @@ function exportReportCSV($pdo, $report, $queryDateFrom, $queryDateTo, $assetFilt
         $stmt = $pdo->prepare("SELECT user_name, user_email, COUNT(*) as total_trips, SUM(CASE WHEN status='completed' THEN 1 ELSE 0 END) as completed, SUM(CASE WHEN status='cancelled' THEN 1 ELSE 0 END) as cancelled, SUM(CASE WHEN status='missed' THEN 1 ELSE 0 END) as missed, SUM(CASE WHEN maintenance_flag=1 THEN 1 ELSE 0 END) as maint_flags, SUM(TIMESTAMPDIFF(HOUR, start_datetime, COALESCE(end_datetime, NOW()))) as total_hours FROM reservations WHERE DATE(created_at) BETWEEN ? AND ? GROUP BY user_email, user_name ORDER BY total_trips DESC");
         $stmt->execute([$queryDateFrom, $queryDateTo]);
         $drivers = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        foreach ($drivers as $d) {
-            $mileStmt = $pdo->prepare("SELECT checkout_form_data, checkin_form_data FROM reservations WHERE user_email=? AND status='completed' AND DATE(created_at) BETWEEN ? AND ?");
-            $mileStmt->execute([$d['user_email'], $queryDateFrom, $queryDateTo]);
-            $totalMiles = 0; $tripCount = 0;
-            while ($r = $mileStmt->fetch(PDO::FETCH_ASSOC)) {
-                $mi = extractTripMileage(json_decode($r['checkout_form_data'] ?? '{}', true) ?: [], json_decode($r['checkin_form_data'] ?? '{}', true) ?: []);
-                if ($mi['trip'] !== null) { $totalMiles += $mi['trip']; $tripCount++; }
+
+        // Batch: fetch all mileage data in one query
+        $mileAllStmt = $pdo->prepare("SELECT user_email, checkout_form_data, checkin_form_data FROM reservations WHERE status='completed' AND DATE(created_at) BETWEEN ? AND ?");
+        $mileAllStmt->execute([$queryDateFrom, $queryDateTo]);
+        $mileageByDriver = [];
+        while ($r = $mileAllStmt->fetch(PDO::FETCH_ASSOC)) {
+            $mi = extractTripMileage(json_decode($r['checkout_form_data'] ?? '{}', true) ?: [], json_decode($r['checkin_form_data'] ?? '{}', true) ?: []);
+            if ($mi['trip'] !== null) {
+                $email = $r['user_email'];
+                if (!isset($mileageByDriver[$email])) { $mileageByDriver[$email] = ['miles' => 0, 'trips' => 0]; }
+                $mileageByDriver[$email]['miles'] += $mi['trip'];
+                $mileageByDriver[$email]['trips']++;
             }
+        }
+
+        // Batch: fetch all training data in one query
+        $trainingStmt = $pdo->query("SELECT email, training_completed, training_date FROM users");
+        $trainingByEmail = [];
+        while ($t = $trainingStmt->fetch(PDO::FETCH_ASSOC)) {
+            $trainingByEmail[$t['email']] = $t;
+        }
+
+        foreach ($drivers as $d) {
+            $dMileage = $mileageByDriver[$d['user_email']] ?? ['miles' => 0, 'trips' => 0];
+            $totalMiles = $dMileage['miles'];
+            $tripCount = $dMileage['trips'];
             $cr = $d['total_trips'] > 0 ? round(($d['completed'] / $d['total_trips']) * 100) : 0;
 
-            // Training data
-            $tStmt = $pdo->prepare("SELECT training_completed, training_date FROM users WHERE email = ? LIMIT 1");
-            $tStmt->execute([$d['user_email']]);
-            $tUser = $tStmt->fetch(PDO::FETCH_ASSOC);
+            $tUser = $trainingByEmail[$d['user_email']] ?? null;
             $tCompleted = $tUser ? (int)$tUser['training_completed'] : 0;
             $tDate = $tUser['training_date'] ?? null;
             $tExpiry = $tDate ? date('Y-m-d', strtotime($tDate . " + {$trainValidityMonths} months")) : null;
@@ -548,23 +563,36 @@ if ($report === 'summary') {
     $driverSummary = ['total_drivers' => 0, 'total_miles' => 0, 'total_trips' => 0, 'fleet_completion' => 0,
                       'training_valid' => 0, 'training_expiring' => 0, 'training_expired' => 0, 'training_none' => 0];
 
-    foreach ($drivers as &$d) {
-        // Mileage enrichment
-        $mileStmt = $pdo->prepare("SELECT checkout_form_data, checkin_form_data FROM reservations WHERE user_email = ? AND status = 'completed' AND DATE(created_at) BETWEEN ? AND ?");
-        $mileStmt->execute([$d['user_email'], $queryDateFrom, $queryDateTo]);
-        $totalMiles = 0; $tripCount = 0;
-        while ($r = $mileStmt->fetch(PDO::FETCH_ASSOC)) {
-            $mi = extractTripMileage(json_decode($r['checkout_form_data'] ?? '{}', true) ?: [], json_decode($r['checkin_form_data'] ?? '{}', true) ?: []);
-            if ($mi['trip'] !== null) { $totalMiles += $mi['trip']; $tripCount++; }
+    // Batch: fetch all mileage data in one query
+    $mileAllStmt = $pdo->prepare("SELECT user_email, checkout_form_data, checkin_form_data FROM reservations WHERE status = 'completed' AND DATE(created_at) BETWEEN ? AND ?");
+    $mileAllStmt->execute([$queryDateFrom, $queryDateTo]);
+    $mileageByDriver = [];
+    while ($r = $mileAllStmt->fetch(PDO::FETCH_ASSOC)) {
+        $mi = extractTripMileage(json_decode($r['checkout_form_data'] ?? '{}', true) ?: [], json_decode($r['checkin_form_data'] ?? '{}', true) ?: []);
+        if ($mi['trip'] !== null) {
+            $email = $r['user_email'];
+            if (!isset($mileageByDriver[$email])) { $mileageByDriver[$email] = ['miles' => 0, 'trips' => 0]; }
+            $mileageByDriver[$email]['miles'] += $mi['trip'];
+            $mileageByDriver[$email]['trips']++;
         }
-        $d['total_miles'] = $totalMiles;
-        $d['avg_miles'] = $tripCount > 0 ? round($totalMiles / $tripCount) : 0;
+    }
+
+    // Batch: fetch all training data in one query
+    $trainingStmt = $pdo->query("SELECT email, training_completed, training_date FROM users");
+    $trainingByEmail = [];
+    while ($t = $trainingStmt->fetch(PDO::FETCH_ASSOC)) {
+        $trainingByEmail[$t['email']] = $t;
+    }
+
+    foreach ($drivers as &$d) {
+        // Mileage enrichment (from batch)
+        $dMileage = $mileageByDriver[$d['user_email']] ?? ['miles' => 0, 'trips' => 0];
+        $d['total_miles'] = $dMileage['miles'];
+        $d['avg_miles'] = $dMileage['trips'] > 0 ? round($dMileage['miles'] / $dMileage['trips']) : 0;
         $d['completion_rate'] = $d['total_trips'] > 0 ? round(($d['completed'] / $d['total_trips']) * 100) : 0;
 
-        // Training enrichment from users table
-        $tStmt = $pdo->prepare("SELECT training_completed, training_date FROM users WHERE email = ? LIMIT 1");
-        $tStmt->execute([$d['user_email']]);
-        $tUser = $tStmt->fetch(PDO::FETCH_ASSOC);
+        // Training enrichment (from batch)
+        $tUser = $trainingByEmail[$d['user_email']] ?? null;
 
         $d['training_completed'] = $tUser ? (int)$tUser['training_completed'] : 0;
         $d['training_date'] = $tUser['training_date'] ?? null;

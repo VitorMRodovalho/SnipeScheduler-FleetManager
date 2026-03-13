@@ -10,6 +10,8 @@ require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/layout.php';
 require_once SRC_PATH . '/email_service.php';
 require_once SRC_PATH . '/notification_service.php';
+require_once SRC_PATH . '/inspection_checklist.php';
+require_once SRC_PATH . '/inspection_photos.php';
 
 $active = basename($_SERVER['PHP_SELF']);
 $isAdmin = !empty($currentUser['is_admin']);
@@ -26,6 +28,8 @@ $reservation = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$reservation) {
     $error = 'Reservation not found.';
+} elseif (!$isStaff && ($reservation['user_email'] ?? '') !== ($currentUser['email'] ?? '')) {
+    $error = 'You do not have permission to check in this reservation.';
 } elseif ($reservation['status'] === 'completed') {
     $error = 'This vehicle has already been returned.';
 } elseif ($reservation['status'] !== 'confirmed') {
@@ -53,6 +57,17 @@ $userEmail = $currentUser['email'] ?? '';
 $vehicleInfoFields = ['VIN', 'License Plate', 'Vehicle Year', 'Insurance Expiry', 'Registration Expiry', 
                       'Last Oil Change (Miles)', 'Last Tire Rotation (Miles)', 'Holman Account #'];
 $autoFields = ['Checkout Time', 'Return Time', 'Expected Return Time'];
+
+// BL-006/BL-007: Inspection mode and photo upload settings
+$inspectionMode = get_inspection_mode($pdo);
+$photoUploadEnabled = is_photo_upload_enabled($pdo);
+
+// Load checkout inspection for comparison in full mode
+$checkoutInspection = null;
+if ($inspectionMode === 'full' && $reservationId) {
+    $checkoutInspResp = get_inspection_response($pdo, $reservationId, 'checkout');
+    $checkoutInspection = $checkoutInspResp ? $checkoutInspResp['response_data'] : null;
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $asset && empty($error)) {
     $formData = [];
@@ -133,7 +148,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $asset && empty($error)) {
             }            
 
 $stmt->execute([$newStatus, json_encode($inspectionData), $needsMaintenance ? 1 : 0, $maintenanceNotes, $reservationId]);
-            
+
+            // BL-006: Save full inspection response if in full mode
+            if ($inspectionMode === 'full') {
+                $inspResponseData = [];
+                foreach ($_POST as $k => $v) {
+                    if (strpos($k, 'insp_') === 0) {
+                        $inspResponseData[$k] = is_array($v) ? implode(', ', $v) : trim($v);
+                    }
+                }
+                if (!empty($inspResponseData)) {
+                    save_inspection_response($pdo, $reservationId, 'checkin', $userEmail, $inspResponseData);
+                }
+            }
+
+            // BL-007: Save inspection photos if uploaded
+            if ($photoUploadEnabled && !empty($_FILES['inspection_photos']['name'][0])) {
+                save_inspection_photos($pdo, $reservationId, 'checkin', $userEmail, $_FILES['inspection_photos']);
+            }
+
             $successMsg = $needsMaintenance ? 'Vehicle returned. Maintenance flagged!' : 'Vehicle returned at ' . $returnTime;
             header('Location: my_bookings?success=' . urlencode($successMsg));
             exit;
@@ -303,7 +336,7 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
                     </div>
                 </div>
 
-                <form method="post">
+                <form method="post" enctype="multipart/form-data">
                     <!-- Vehicle Compliance Status (read-only) -->
                     <?php
                     $insExpiry = $customFields['Insurance Expiry']['value'] ?? null;
@@ -388,13 +421,14 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
                     </div>
 
                     <!-- Inspection Form -->
+                    <?php if ($inspectionMode !== 'off'): ?>
                     <div class="card mb-4">
                         <div class="card-header bg-info text-white">
                             <h5 class="mb-0"><i class="bi bi-clipboard-check me-2"></i>Return Inspection</h5>
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <?php 
+                                <?php
                                 // Merge field_values from Snipe-IT fieldset into customFields for dynamic rendering
                                 $allFieldDefs = $fieldSettings['checkin_fields'] ?? [];
                                 foreach ($allFieldDefs as $fDef) {
@@ -414,6 +448,37 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
                             </div>
                         </div>
                     </div>
+                    <?php endif; ?>
+
+                    <?php // BL-006: Full inspection checklist (only in full mode) ?>
+                    <?php if ($inspectionMode === 'full'): ?>
+                    <div class="card mb-4">
+                        <div class="card-header bg-dark text-white">
+                            <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Detailed Return Inspection</h5>
+                        </div>
+                        <div class="card-body">
+                            <?= render_inspection_form('checkin', $inspectionMode, null, $checkoutInspection) ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+
+                    <?php // BL-007: Show checkout photos for comparison ?>
+                    <?php if ($photoUploadEnabled && $reservationId): ?>
+                        <?php $checkoutPhotos = get_inspection_photos($pdo, $reservationId, 'checkout'); ?>
+                        <?php if (!empty($checkoutPhotos)): ?>
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="bi bi-images me-2"></i>Checkout Photos (for comparison)</h6>
+                            </div>
+                            <div class="card-body">
+                                <?= render_photo_gallery($checkoutPhotos, $reservationId) ?>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                    <?php endif; ?>
+
+                    <?php // BL-007: Photo upload for checkin ?>
+                    <?= render_photo_upload('checkin', $photoUploadEnabled) ?>
 
                     <!-- Maintenance Flag -->
                     <div class="card mb-4 border-danger">
@@ -659,6 +724,8 @@ document.addEventListener('DOMContentLoaded', function() {
     updateTextareaState();
 });
 </script>
+<?= render_inspection_js($inspectionMode) ?>
+<?php if ($photoUploadEnabled): ?><?= render_photo_upload_js() ?><?php endif; ?>
 <?php layout_footer(); ?>
 </body>
 </html>

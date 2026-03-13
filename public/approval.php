@@ -43,6 +43,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
 
 if ($action === 'approve') {
+                // Check if vehicle is currently In Service (already checked out)
+                if (!empty($reservation['asset_id'])) {
+                    $assetInfo = get_asset($reservation['asset_id']);
+                    $currentStatusId = $assetInfo['status_label']['id'] ?? 0;
+                    if ($currentStatusId === STATUS_VEH_IN_SERVICE) {
+                        $error = 'Cannot approve: this vehicle is currently checked out (In Service). Please wait for it to be returned or assign a different vehicle.';
+                    }
+                }
+
+                if (empty($error)) {
                 $stmt = $pdo->prepare("UPDATE reservations SET approval_status = 'approved', status = 'pending',
                     approved_by_name = ?, approved_by_email = ?, approved_at = '" . date('Y-m-d H:i:s') . "' WHERE id = ?");
                 $stmt->execute([$userName, $userEmail, $reservationId]);
@@ -52,7 +62,7 @@ if ($action === 'approve') {
                 $stmt->execute([$reservationId, $userName, $userEmail, $notes ?: 'Reservation approved']);
 
 
-                
+
                 // Update asset status to VEH-Reserved in Snipe-IT
                 if (!empty($reservation['asset_id'])) {
                     update_asset_status($reservation['asset_id'], STATUS_VEH_RESERVED);
@@ -65,8 +75,7 @@ if ($action === 'approve') {
                 NotificationService::fire('reservation_approved', array_merge($reservation, ['approver' => $userName]), $pdo);               
 
  $success = "Reservation #{$reservationId} has been approved.";
-
-
+                } // end if (empty($error))
 
 
 
@@ -76,12 +85,17 @@ if ($action === 'approve') {
                     approved_by_name = ?, approved_by_email = ?, approved_at = '" . date('Y-m-d H:i:s') . "' WHERE id = ?");
                 $stmt->execute([$userName, $userEmail, $reservationId]);
 
-                
-		$stmt = $pdo->prepare("INSERT INTO approval_history (reservation_id, action, performed_by_name, performed_by_email, notes)
+                $stmt = $pdo->prepare("INSERT INTO approval_history (reservation_id, action, actor_name, actor_email, notes)
                     VALUES (?, 'rejected', ?, ?, ?)");
+                $stmt->execute([$reservationId, $userName, $userEmail, $notes ?: 'Reservation rejected']);
+
+                // Send rejection notification
+                NotificationService::fire('reservation_rejected', array_merge($reservation, [
+                    'approver' => $userName,
+                    'reason' => $notes,
+                ]), $pdo);
+
 		$success = "Reservation #{$reservationId} has been rejected.";
-
-
             }
         } else {
             $error = 'Reservation not found or already processed.';

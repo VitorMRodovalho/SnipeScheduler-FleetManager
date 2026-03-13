@@ -15,6 +15,19 @@ require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/teams_service.php';
 require_once SRC_PATH . '/notification_service.php';
 
+// Prevent concurrent runs with file lock
+$lockFile = sys_get_temp_dir() . '/snipescheduler_email_queue.lock';
+$lockFp = fopen($lockFile, 'w');
+if (!flock($lockFp, LOCK_EX | LOCK_NB)) {
+    echo "Another instance is already running. Exiting.\n";
+    fclose($lockFp);
+    exit(0);
+}
+register_shutdown_function(function() use ($lockFp, $lockFile) {
+    flock($lockFp, LOCK_UN);
+    fclose($lockFp);
+});
+
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 

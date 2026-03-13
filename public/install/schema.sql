@@ -134,3 +134,37 @@ CREATE TABLE IF NOT EXISTS schema_version (
 
 INSERT IGNORE INTO schema_version (version)
 VALUES ('v0.8.0-beta');
+
+-- ------------------------------------------------------
+-- BL-006: Full Inspection Responses
+-- ------------------------------------------------------
+CREATE TABLE IF NOT EXISTS inspection_responses (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    reservation_id INT UNSIGNED NOT NULL,
+    inspection_type ENUM('checkout','checkin') NOT NULL,
+    inspector_email VARCHAR(255) NOT NULL,
+    response_data JSON NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_insp_reservation_type (reservation_id, inspection_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------
+-- BL-007: Inspection Photos
+-- ------------------------------------------------------
+CREATE TABLE IF NOT EXISTS inspection_photos (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    reservation_id INT UNSIGNED NOT NULL,
+    inspection_type ENUM('checkout','checkin') NOT NULL,
+    filename VARCHAR(255) NOT NULL,
+    original_name VARCHAR(255) NOT NULL,
+    file_size INT UNSIGNED NOT NULL,
+    mime_type VARCHAR(50) NOT NULL,
+    uploaded_by_email VARCHAR(255) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id),
+    KEY idx_photo_reservation_type (reservation_id, inspection_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

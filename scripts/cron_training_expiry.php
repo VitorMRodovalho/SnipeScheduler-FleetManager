@@ -120,25 +120,4 @@ foreach ($expired as $d) {
         echo "[" . date('Y-m-d H:i:s') . "] ERROR sending to {$d['email']}\n";
     }
 }
-foreach ($expired as $d) {
-    try {
-        $mail = $emailService->createMailer();
-        $mail->addAddress($d['email']);
-        $mail->Subject = 'Driver Training Expired - Action Required';
-        $content = "
-            <p>Hi {$d['name']},</p>
-            <div class='danger-box'>
-                <strong>Your Driver Safety Training expired on {$d['expiry_date']}.</strong>
-            </div>
-            <p>You are currently <strong>unable to reserve fleet vehicles</strong>.
-            Please contact Fleet Staff immediately to renew your training.</p>
-        ";
-        $mail->Body = $emailService->template('Training Expired', $content, "{$baseUrl}/my_bookings", 'My Reservations');
-        $emailService->send($mail);
-        echo "[" . date('Y-m-d H:i:s') . "] Expired notice sent to {$d['email']}\n";
-    } catch (Exception $e) {
-        echo "[" . date('Y-m-d H:i:s') . "] ERROR sending to {$d['email']}: " . $e->getMessage() . "\n";
-    }
-}
-
 echo "[" . date('Y-m-d H:i:s') . "] Training expiry check complete.\n";

@@ -59,17 +59,33 @@ foreach ($assetList as $asset) {
 $todayStart = date('Y-m-d 00:00:00');
 $todayEnd = date('Y-m-d 23:59:59');
 
+// Build company filter clause for reservation queries
+$companyAssetIds = [];
+if (!empty($userCompanyIds)) {
+    foreach ($assetList as $a) {
+        $companyAssetIds[] = (int)($a['id'] ?? 0);
+    }
+}
+$companyClause = '';
+$companyParams = [];
+if (!empty($companyAssetIds)) {
+    $placeholders = implode(',', array_fill(0, count($companyAssetIds), '?'));
+    $companyClause = " AND r.asset_id IN ({$placeholders})";
+    $companyParams = $companyAssetIds;
+}
+
 // Get today's pickups (approved, pending checkout)
 $stmt = $pdo->prepare("
-    SELECT r.*, 
+    SELECT r.*,
            TIMESTAMPDIFF(MINUTE, NOW(), r.start_datetime) as minutes_until
     FROM reservations r
     WHERE r.status = 'pending'
     AND r.approval_status IN ('approved', 'auto_approved')
     AND DATE(r.start_datetime) = CURDATE()
+    {$companyClause}
     ORDER BY r.start_datetime ASC
 ");
-$stmt->execute();
+$stmt->execute($companyParams);
 $todayPickups = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get today's returns (checked out, due today)
@@ -79,9 +95,10 @@ $stmt = $pdo->prepare("
     FROM reservations r
     WHERE r.status = 'confirmed'
     AND DATE(r.end_datetime) = CURDATE()
+    {$companyClause}
     ORDER BY r.end_datetime ASC
 ");
-$stmt->execute();
+$stmt->execute($companyParams);
 $todayReturns = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get overdue vehicles
@@ -91,9 +108,10 @@ $stmt = $pdo->prepare("
     FROM reservations r
     WHERE r.status = 'confirmed'
     AND r.end_datetime < NOW()
+    {$companyClause}
     ORDER BY r.end_datetime ASC
 ");
-$stmt->execute();
+$stmt->execute($companyParams);
 $overdueList = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get pending approvals
@@ -101,9 +119,10 @@ $stmt = $pdo->prepare("
     SELECT r.*
     FROM reservations r
     WHERE r.approval_status = 'pending_approval'
+    {$companyClause}
     ORDER BY r.created_at ASC
 ");
-$stmt->execute();
+$stmt->execute($companyParams);
 $pendingApprovals = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get vehicles needing maintenance
@@ -111,10 +130,11 @@ $stmt = $pdo->prepare("
     SELECT r.*, r.maintenance_notes
     FROM reservations r
     WHERE r.status = 'maintenance_required'
+    {$companyClause}
     ORDER BY r.updated_at DESC
     LIMIT 10
 ");
-$stmt->execute();
+$stmt->execute($companyParams);
 $maintenanceList = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get recent activity (last 7 days)
@@ -123,23 +143,25 @@ $stmt = $pdo->prepare("
     FROM approval_history ah
     JOIN reservations r ON ah.reservation_id = r.id
     WHERE ah.created_at > DATE_SUB(NOW(), INTERVAL 7 DAY)
+    {$companyClause}
     ORDER BY ah.created_at DESC
     LIMIT 15
 ");
-$stmt->execute();
+$stmt->execute($companyParams);
 $recentActivity = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Weekly stats
 $stmt = $pdo->prepare("
-    SELECT 
+    SELECT
         COUNT(*) as total,
         SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
         SUM(CASE WHEN status = 'missed' THEN 1 ELSE 0 END) as missed,
         SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled
-    FROM reservations
+    FROM reservations r
     WHERE created_at > DATE_SUB(NOW(), INTERVAL 7 DAY)
+    {$companyClause}
 ");
-$stmt->execute();
+$stmt->execute($companyParams);
 $weeklyStats = $stmt->fetch(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>

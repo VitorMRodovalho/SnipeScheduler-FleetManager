@@ -278,6 +278,13 @@ class NotificationService
                     (int)($context['days_remaining'] ?? 0)
                 );
                 break;
+            case 'training_expiring':
+                $svc->notifyTrainingExpiring(
+                    $context['drivers'] ?? [],
+                    (int)($context['expiring_count'] ?? 0),
+                    (int)($context['expired_count'] ?? 0)
+                );
+                break;
             default:
                 error_log("[NotificationService] No email dispatch for '{$event_key}'");
         }

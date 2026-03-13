@@ -472,8 +472,13 @@ if ($provider === 'microsoft') {
 
    // Get permissions from Snipe-IT groups
     require_once SRC_PATH . '/snipeit_client.php';
-    $snipePerms = get_user_permissions_from_snipeit($email);
-    
+    try {
+        $snipePerms = get_user_permissions_from_snipeit($email);
+    } catch (Throwable $e) {
+        error_log("[Login] Snipe-IT API error for {$email}: " . $e->getMessage());
+        $redirectWithError('Fleet Management system is temporarily unavailable. Please try again in a few minutes.');
+    }
+
     // Fallback to config-based permissions if user not in Snipe-IT
     if (!$snipePerms['exists']) {
         // User not registered in Snipe-IT - block login

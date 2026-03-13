@@ -11,6 +11,8 @@ require_once SRC_PATH . '/layout.php';
 require_once SRC_PATH . '/email_service.php';
 require_once SRC_PATH . '/notification_service.php';
 require_once SRC_PATH . '/booking_helpers.php';
+require_once SRC_PATH . '/inspection_checklist.php';
+require_once SRC_PATH . '/inspection_photos.php';
 
 $active = basename($_SERVER['PHP_SELF']);
 $isAdmin = !empty($currentUser['is_admin']);
@@ -27,6 +29,8 @@ $reservation = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$reservation) {
     $error = 'Reservation not found.';
+} elseif (!$isStaff && ($reservation['user_email'] ?? '') !== ($currentUser['email'] ?? '')) {
+    $error = 'You do not have permission to check out this reservation.';
 } elseif (!in_array($reservation['approval_status'] ?? '', ['approved', 'auto_approved'])) {
     $error = 'This reservation has not been approved yet.';
 } elseif ($reservation['status'] === 'completed') {
@@ -69,6 +73,10 @@ $userEmail = $currentUser['email'] ?? '';
 $vehicleInfoFields = ['VIN', 'License Plate', 'Vehicle Year', 'Insurance Expiry', 'Registration Expiry', 
                       'Last Oil Change (Miles)', 'Last Tire Rotation (Miles)', 'Holman Account #'];
 $autoFields = ['Checkout Time', 'Return Time', 'Expected Return Time']; // Auto-filled, not shown
+
+// BL-006/BL-007: Inspection mode and photo upload settings
+$inspectionMode = get_inspection_mode($pdo);
+$photoUploadEnabled = is_photo_upload_enabled($pdo);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $asset && empty($error)) {
     $formData = [];
@@ -160,8 +168,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $asset && empty($error)) {
             checkout_asset_to_user($reservation['asset_id'], $snipeUserId, $note, $expectedCheckin);
             $stmt = $pdo->prepare("UPDATE reservations SET status = 'confirmed', checkout_form_data = ? WHERE id = ?");
 // Send checkout receipt email
-            NotificationService::fire('vehicle_checked_out', array_merge($reservation, ['mileage' => $mileage]), $pdo);            
+            NotificationService::fire('vehicle_checked_out', array_merge($reservation, ['mileage' => $mileage]), $pdo);
 $stmt->execute([json_encode($inspectionData), $reservationId]);
+
+            // BL-006: Save full inspection response if in full mode
+            if ($inspectionMode === 'full') {
+                $inspResponseData = [];
+                foreach ($_POST as $k => $v) {
+                    if (strpos($k, 'insp_') === 0) {
+                        $inspResponseData[$k] = is_array($v) ? implode(', ', $v) : trim($v);
+                    }
+                }
+                if (!empty($inspResponseData)) {
+                    save_inspection_response($pdo, $reservationId, 'checkout', $userEmail, $inspResponseData);
+                }
+            }
+
+            // BL-007: Save inspection photos if uploaded
+            if ($photoUploadEnabled && !empty($_FILES['inspection_photos']['name'][0])) {
+                save_inspection_photos($pdo, $reservationId, 'checkout', $userEmail, $_FILES['inspection_photos']);
+            }
+
             header('Location: my_bookings?success=' . urlencode('Vehicle checked out successfully at ' . $checkoutTime));
             exit;
         } catch (Exception $e) {
@@ -344,7 +371,7 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
                     </div>
                 </div>
 
-                <form method="post">
+                <form method="post" enctype="multipart/form-data">
                     <!-- Vehicle Compliance Status (read-only) -->
                     <?php
                     $insExpiry = $customFields['Insurance Expiry']['value'] ?? null;
@@ -413,13 +440,14 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
                     </div>
 
                     <!-- Inspection Form - Dynamic from Snipe-IT -->
+                    <?php if ($inspectionMode !== 'off'): ?>
                     <div class="card mb-4">
                         <div class="card-header bg-warning text-dark">
                             <h5 class="mb-0"><i class="bi bi-clipboard-check me-2"></i>Checkout Inspection</h5>
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <?php 
+                                <?php
                                 // Merge field_values from Snipe-IT fieldset into customFields for dynamic rendering
                                 $allFieldDefs = $fieldSettings['checkout_fields'] ?? [];
                                 foreach ($allFieldDefs as $fDef) {
@@ -439,6 +467,22 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
                             </div>
                         </div>
                     </div>
+                    <?php endif; ?>
+
+                    <?php // BL-006: Full inspection checklist (only in full mode) ?>
+                    <?php if ($inspectionMode === 'full'): ?>
+                    <div class="card mb-4">
+                        <div class="card-header bg-dark text-white">
+                            <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Detailed Vehicle Inspection</h5>
+                        </div>
+                        <div class="card-body">
+                            <?= render_inspection_form('checkout', $inspectionMode) ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+
+                    <?php // BL-007: Photo upload (if enabled) ?>
+                    <?= render_photo_upload('checkout', $photoUploadEnabled) ?>
 
                     <!-- Epic 1: Vehicle Issue at Pickup -->
                     <div class="card mb-4 border-warning">
@@ -777,6 +821,8 @@ document.getElementById('maintenanceConfirmYes')?.addEventListener('click', func
     bootstrap.Modal.getInstance(document.getElementById('maintenanceConfirmModal')).hide();
 });
 </script>
+<?= render_inspection_js($inspectionMode) ?>
+<?php if ($photoUploadEnabled): ?><?= render_photo_upload_js() ?><?php endif; ?>
 <?php layout_footer(); ?>
 </body>
 </html>

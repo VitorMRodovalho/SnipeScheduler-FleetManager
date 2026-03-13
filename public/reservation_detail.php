@@ -5,6 +5,7 @@ require_once SRC_PATH . '/auth.php';
 require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/booking_helpers.php';
 require_once SRC_PATH . '/layout.php';
+require_once SRC_PATH . '/inspection_photos.php';
 
 $isAdmin = !empty($currentUser['is_admin']);
 $isStaff = !empty($currentUser['is_staff']) || $isAdmin;
@@ -132,6 +133,25 @@ $active  = 'staff_reservations.php'; // Treat detail view as part of booking his
                     </tbody>
                 </table>
             </div>
+        <?php endif; ?>
+
+        <?php
+        // BL-007: Show inspection photos
+        $allPhotos = get_inspection_photos($pdo, $id);
+        $coPhotos = array_filter($allPhotos, fn($p) => $p['inspection_type'] === 'checkout');
+        $ciPhotos = array_filter($allPhotos, fn($p) => $p['inspection_type'] === 'checkin');
+        ?>
+        <?php if (!empty($coPhotos)): ?>
+        <div class="card mb-3">
+            <div class="card-header"><h6 class="mb-0"><i class="bi bi-camera me-2"></i>Checkout Photos</h6></div>
+            <div class="card-body"><?= render_photo_gallery($coPhotos, $id) ?></div>
+        </div>
+        <?php endif; ?>
+        <?php if (!empty($ciPhotos)): ?>
+        <div class="card mb-3">
+            <div class="card-header"><h6 class="mb-0"><i class="bi bi-camera me-2"></i>Checkin Photos</h6></div>
+            <div class="card-body"><?= render_photo_gallery($ciPhotos, $id) ?></div>
+        </div>
         <?php endif; ?>
 
         <form method="post"

@@ -26,6 +26,8 @@ while ($row = $stmtTS->fetch()) {
 $trainingRequired = ($trainingSettings['training_required'] ?? '1') === '1';
 $trainingValidityMonths = (int)($trainingSettings['training_validity_months'] ?? 12);
 require_once SRC_PATH . '/business_days.php';
+require_once SRC_PATH . '/inspection_checklist.php';
+require_once SRC_PATH . '/inspection_photos.php';
 
 $active = basename($_SERVER['PHP_SELF']);
 $isAdmin = !empty($currentUser['is_admin']);
@@ -92,7 +94,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $messages[] = 'Custom holiday deleted.';
         }
 
-if ($action === 'save_training_settings') {
+if ($action === 'save_inspection_settings') {
+            $inspMode = $_POST['inspection_mode'] ?? 'quick';
+            if (!in_array($inspMode, ['quick', 'full', 'off'])) $inspMode = 'quick';
+            $photoEnabled = isset($_POST['photo_upload_enabled']) ? '1' : '0';
+
+            $stmtSave = $pdo->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
+            $stmtSave->execute(['inspection_mode', $inspMode]);
+            $stmtSave->execute(['photo_upload_enabled', $photoEnabled]);
+
+            activity_log_event('inspection_settings', 'Inspection settings updated', [
+                'metadata' => ['mode' => $inspMode, 'photo_upload' => $photoEnabled],
+            ]);
+            $messages[] = 'Vehicle inspection settings saved.';
+        }
+
+        if ($action === 'save_training_settings') {
             $trainingRequired = isset($_POST['training_required']) ? '1' : '0';
             $validityMonths = (int)($_POST['training_validity_months'] ?? 12);
             if (!in_array($validityMonths, [0, 6, 12, 24])) $validityMonths = 12;
@@ -430,6 +447,60 @@ $customHolidays = array_filter($allHolidays, fn($h) => $h['holiday_type'] === 'c
                 <button type="submit" name="action" value="save_business_days" class="btn btn-primary">
                     <i class="bi bi-save me-1"></i>Save Booking Rules
                 </button>
+            </div>
+        </form>
+
+        <!-- Vehicle Inspection Settings -->
+        <?php
+        $currentInspMode = get_inspection_mode($pdo);
+        $currentPhotoEnabled = is_photo_upload_enabled($pdo);
+        ?>
+        <form method="post" class="mt-4">
+            <?= csrf_field() ?>
+            <div class="card mb-4">
+                <div class="card-header bg-info bg-opacity-25">
+                    <h5 class="mb-0"><i class="bi bi-clipboard-check me-2"></i>Vehicle Inspection Settings</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">
+                        Configure the level of detail required for vehicle checkout and checkin inspections.
+                    </p>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold" for="inspectionMode">Inspection Mode</label>
+                            <select class="form-select" id="inspectionMode" name="inspection_mode">
+                                <option value="quick" <?= $currentInspMode === 'quick' ? 'selected' : '' ?>>Quick — 4-category check (current Snipe-IT fields)</option>
+                                <option value="full" <?= $currentInspMode === 'full' ? 'selected' : '' ?>>Full — 50-item detailed checklist</option>
+                                <option value="off" <?= $currentInspMode === 'off' ? 'selected' : '' ?>>Off — Mileage only, no inspection form</option>
+                            </select>
+                            <div class="form-text">
+                                <strong>Quick:</strong> Uses the existing Snipe-IT custom field checkboxes (Exterior, Tires, Interior, Lights).<br>
+                                <strong>Full:</strong> Adds a detailed 50-item checklist with per-category &ldquo;All OK&rdquo; buttons and progress tracking.<br>
+                                <strong>Off:</strong> Hides inspection fields entirely. Only mileage is recorded.
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Photo Upload</label>
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" id="photoUploadEnabled" name="photo_upload_enabled" value="1"
+                                    <?= $currentPhotoEnabled ? 'checked' : '' ?>>
+                                <label class="form-check-label" for="photoUploadEnabled">
+                                    Enable photo capture during checkout and checkin
+                                </label>
+                            </div>
+                            <div class="form-text">
+                                When enabled, drivers can optionally photograph vehicle condition using their device camera.
+                                Photos are resized automatically and stored with the inspection record. Staff can compare checkout and checkin photos.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3 text-end">
+                        <button type="submit" name="action" value="save_inspection_settings" class="btn btn-primary">
+                            <i class="bi bi-save me-1"></i>Save Inspection Settings
+                        </button>
+                    </div>
+                </div>
             </div>
         </form>
 

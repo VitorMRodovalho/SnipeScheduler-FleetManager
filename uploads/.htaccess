@@ -1,0 +1,3 @@
+# Deny all direct web access to uploaded files
+# Photos must be served through api/serve_photo.php
+Require all denied
