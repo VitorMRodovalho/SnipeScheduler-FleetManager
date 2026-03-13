@@ -4,6 +4,19 @@ Step-by-step procedures for each user role. All procedures assume the system is 
 
 ---
 
+## System Requirements
+
+| Component | Minimum Version | Notes |
+|-----------|----------------|-------|
+| PHP | 8.1+ | With cURL, PDO, LDAP, GD extensions |
+| MySQL | 5.7+ | Or MariaDB 10.3+ |
+| Apache | 2.4+ | With mod_rewrite enabled |
+| Snipe-IT | v6+ | With API access and valid API token |
+| GD Library | PHP GD extension | Required for photo resize during upload |
+| CRON | System crontab | Required for sync, health checks, and alerts |
+
+---
+
 ## Procedure A: Driver (Group 2)
 
 Drivers can reserve vehicles, view their own reservations, complete checkout/checkin inspections, and cancel their own pending bookings.
@@ -16,11 +29,13 @@ Open the booking portal URL in your browser. Click "Sign in with Microsoft" (or 
 
 ### A2. Dashboard
 
-After login, the Dashboard displays today's vehicle schedule, your upcoming reservations, overdue return alerts, and system announcements. Check for announcements regarding blackout dates or maintenance windows.
+After login, the Dashboard displays today's vehicle schedule, your upcoming reservations, overdue return alerts, and system announcements. KPI summary cards show active reservations, pending approvals, and fleet utilization. Check for announcements regarding blackout dates or maintenance windows.
 
 ### A3. Browse Vehicle Catalogue
 
 Navigate to **Vehicle Catalogue**. View all fleet vehicles with real-time availability. Each vehicle card shows year, make, model, VIN (last 4), current status (Available / Reserved / In Service / Out of Service), and mileage. Use the date filter to narrow by availability window.
+
+In multi-entity deployments, you will only see vehicles belonging to your assigned company.
 
 ### A4. Reserve a Vehicle
 
@@ -34,7 +49,7 @@ Click **Book Vehicle**. Complete the reservation form:
 
 Your reservation enters "Pending Approval" status. You will receive an email/Teams notification when it is approved or rejected.
 
-> **Training Gate:** If driver training enforcement is enabled and your training is not completed or has expired, you will see a warning banner and the submit button will be disabled. Contact Fleet Staff for training verification.
+> **Training Gate:** If driver training enforcement is enabled and your training is not completed or has expired, the reservation form will display a warning banner explaining that your training must be current before booking. The submit button will be disabled until your training status is resolved. Contact Fleet Staff to update your training record.
 
 ### A5. Track Your Reservations
 
@@ -54,16 +69,21 @@ You can cancel any Pending or Approved reservation from this page.
 
 ### A6. Check Out the Vehicle
 
-On your reservation date, go to **My Reservations** and click **Check Out**. Complete the digital inspection form:
+On your reservation date, go to **My Reservations** and click **Check Out**. The checkout form includes:
 
 - Driver Name (pre-filled)
 - Vehicle (pre-filled)
 - Check-Out Date and Time (auto-populated)
 - Odometer reading (required)
 - Pick-Up Location and Destination
-- Visual Inspection Complete (Yes/No)
-- Report any condition issues by category (Exterior, Tires, Undercarriage, Interior)
-- Description for each flagged category
+
+**Vehicle Inspection** — the inspection section depends on the mode configured by your Fleet Admin:
+
+- **Quick Mode (default):** Four high-level category checks — Exterior, Tires/Undercarriage, Interior, and Lights/Signals. Each has a checkbox and optional description field. Use "All OK" to quickly mark all categories as satisfactory.
+- **Full Mode:** A detailed 50-item checklist covering every inspectable component (body panels, glass, mirrors, tire tread, fluid levels, controls, emergency equipment, etc.). Each item is individually checked. "All OK" buttons are available per section to speed up a clean inspection.
+- **Off:** No inspection form is shown. Only mileage is required.
+
+**Photo Upload** (if enabled): Optionally capture photos of the vehicle's condition using your device camera. The camera opens in capture mode by default on mobile devices. Photos are resized automatically and stored with the inspection record.
 
 Click **Check Out** to set the vehicle status to In Service.
 
@@ -87,7 +107,10 @@ When returning the vehicle, go to **My Reservations** and click **Check In**. Co
 
 - Check-In Date and Time (auto-populated)
 - Updated odometer reading (required — must be greater than or equal to checkout reading)
+- Vehicle inspection (same mode as checkout — Quick, Full, or Off)
 - Report any new condition issues discovered during use
+
+**Photo Upload** (if enabled): Capture return-condition photos. Fleet Staff can compare checkout and checkin photos to identify new damage.
 
 Click **Check In**. The vehicle returns to Available status. Flagged issues are routed to Fleet Staff for maintenance review.
 
@@ -111,7 +134,7 @@ Fleet Staff have all Driver capabilities plus: reservation approval/rejection, a
 
 ### B1. Dashboard
 
-Sign in with your corporate credentials. The Dashboard shows today's schedule across all vehicles, pending approval count, overdue returns, and recent activity. The Staff badge appears next to your name.
+Sign in with your corporate credentials. The Dashboard shows today's schedule across all vehicles, pending approval count, overdue returns, and recent activity. Chart.js visualizations display fleet utilization trends. The Staff badge appears next to your name.
 
 ### B2. Process Approval Queue
 
@@ -133,9 +156,12 @@ Navigate to **Maintenance**. View issues flagged during check-in inspections. Ea
 
 Navigate to **Reports**. Available reports:
 
-- **Vehicle Utilization** — Usage rates by vehicle and time period
-- **Compliance Status** — Insurance expiry, registration expiry, maintenance due
-- **Reservation History** — Filterable by driver, vehicle, date range, status
+- **Summary** — KPI cards with active reservations, completion rate, total miles, fleet pulse
+- **Vehicle Utilization** — Fleet average utilization, completion rate, idle vehicle callout
+- **Compliance Status** — Insurance expiry, registration expiry, maintenance due. Worst-first sort with action links
+- **Reservation History** — Filterable by driver, vehicle, date range, status with footer totals
+- **Maintenance Costs** — Maintenance type breakdown with footer totals and type filter
+- **Driver Analytics** — Per-driver summary cards with user filter and row highlighting
 - **Mileage Summary** — Mileage per driver, per vehicle
 
 Export any report to CSV for external analysis.
@@ -144,15 +170,31 @@ Export any report to CSV for external analysis.
 
 In the **Users** page (Admin tab), the Drivers table shows a **Training** column:
 
-- **Green mortarboard** — Training completed and valid (with expiry date)
-- **Yellow mortarboard** — Training expiring within 15 days
-- **Red mortarboard** — Training expired or not completed
+- **Green mortarboard** — Training completed and valid (with expiry date displayed)
+- **Yellow mortarboard** — Training expiring within 15 days (date shown in yellow)
+- **Red mortarboard** — Training expired or not completed (date shown in red, or "Not Set")
 
-To set training: Click the mortarboard icon, enter the training completion date (can be historical), and confirm. To clear training: Click the green mortarboard and confirm. Training dates are preserved when cleared — only the completion flag is toggled.
+To set training: Click the mortarboard icon. A date picker appears allowing you to select the training completion date (can be a historical date for retroactive recording). Confirm to save. The system automatically calculates the expiration date based on the configured validity period (6, 12, or 24 months).
+
+To clear training: Click the green mortarboard and confirm. Training dates are preserved when cleared — only the completion flag is toggled. Re-enabling restores the previous date.
+
+**Weekly Alerts:** The `cron_training_expiry.php` CRON job runs weekly and sends a summary notification to Fleet Staff listing all drivers with training expiring within 30 days or already expired.
 
 ### B8. Handle Incidents
 
 When a driver reports a vehicle incident: document it in the maintenance log, update vehicle status if needed, and coordinate with the safety team. For traffic violations, follow your organization's progressive discipline process.
+
+### B9. Monitor CRON Health
+
+Navigate to the **Security Dashboard** (Admin tab). The CRON Sync Health card shows:
+
+- **Status:** Healthy (synced recently), Stale (sync overdue), or Never Run
+- **Last Sync:** Timestamp of most recent sync
+- **Asset Count:** Number of assets in the checked-out cache
+- **Health Check Frequency:** How often the health check runs
+- **Alert Threshold:** How many minutes of staleness triggers an alert
+
+If the sync status shows "Stale," verify that the CRON jobs are running on the server. Check `/var/log/snipescheduler/` for error logs.
 
 ### Maintenance Intervals Reference
 
@@ -187,7 +229,7 @@ Sign in with your credentials. The Admin badge appears next to your name. You ha
 Navigate to **Users** (Admin tab). View all registered users organized by Snipe-IT group (Drivers, Fleet Staff, Fleet Admin, Inactive). Features:
 
 - **VIP Toggle** — Click the star icon to grant/revoke VIP status (auto-approve reservations). Confirmation dialog before each action.
-- **Training Toggle** — Click the mortarboard icon to manage training. Date picker for historical training dates. Color-coded expiration status.
+- **Training Toggle** — Click the mortarboard icon to manage training. Date picker for historical training dates. Color-coded expiration status (green/yellow/red).
 - **Deactivate/Activate** — Manage user access. Confirmation required.
 - **Snipe-IT Link** — Quick link to user profile in Snipe-IT for group changes.
 
@@ -195,7 +237,7 @@ Users are auto-provisioned on first SSO login. Assign them to the correct Snipe-
 
 ### C3. Configure Vehicle Fleet
 
-Navigate to **Vehicles** (Admin tab). View all fleet assets from Snipe-IT. Use **Add Vehicle** for guided creation with auto-generated asset tags, VIN/plate validation, and compliance field enforcement. All vehicles sync to Snipe-IT as requestable assets.
+Navigate to **Vehicles** (Admin tab). View all fleet assets from Snipe-IT. When multi-entity fleet mode is active, a Company column shows each vehicle's company assignment. Use **Add Vehicle** for guided creation with auto-generated asset tags, VIN/plate validation, and compliance field enforcement. All vehicles sync to Snipe-IT as requestable assets.
 
 ### C4. Configure Notifications
 
@@ -208,7 +250,12 @@ Navigate to **Booking Rules**. Configure:
 - **Business Days** — Select working days (Mon-Fri default)
 - **Holiday Calendar** — Federal holidays pre-seeded (2025-2030), plus custom holidays
 - **Vehicle Turnaround Buffer** — Business days between consecutive reservations
-- **Driver Training Requirements** — Enable/disable training enforcement globally. Set validity period (6/12/24 months or no expiration). When disabled, all training records are preserved — re-enabling restores enforcement with existing data intact.
+- **Driver Training Requirements** — Enable/disable training enforcement globally. Set validity period (6/12/24 months or no expiration). When disabled, all training records are preserved — re-enabling restores enforcement with existing data intact
+- **Inspection Mode** — Select the vehicle inspection checklist mode:
+  - **Quick** (default) — 4 high-level category checks (Exterior, Tires, Interior, Lights)
+  - **Full** — Detailed 50-item checklist with "All OK" quick-fill buttons per section
+  - **Off** — No inspection form, only mileage required
+- **Photo Upload** — Enable or disable optional photo capture during checkout/checkin. When enabled, drivers can photograph vehicle condition using their device camera
 
 ### C6. Publish Announcements
 
@@ -237,6 +284,33 @@ php scripts/validate_snipeit.php
 ```
 
 This verifies all required groups, status labels, and custom fields exist in the connected Snipe-IT instance. Use `--strict` flag for CI/deploy pipelines (exits with code 1 on failure).
+
+### C10. Configure Multi-Entity Fleet (Super Admin)
+
+Multi-entity fleet partitioning allows different user groups to see only vehicles belonging to their assigned company. Setup:
+
+1. **In Snipe-IT:** Navigate to Admin > Companies. Create one company per fleet entity (e.g., the delivery partner, the client).
+2. **In Snipe-IT:** Enable **Full Multiple Companies Support** in Admin > Settings > General.
+3. **In Snipe-IT:** Assign each user to their company (People > Edit User > Company).
+4. **In Snipe-IT:** Assign each vehicle to its company (Assets > Edit Asset > Company).
+5. **In SnipeScheduler:** Navigate to **Settings** (Super Admin only). Scroll to the **Multi-Entity Fleet** card.
+6. Select the filtering mode:
+   - **Auto-detect** (default) — Automatically enables filtering when Snipe-IT has more than one company. Shows detected count ("2 companies found — filtering active").
+   - **Always On** — Forces filtering even with a single company (useful for testing).
+   - **Always Off** — Disables filtering regardless of company count.
+7. Click **Save settings**.
+
+**How filtering works:**
+
+- Drivers and Fleet Staff see only vehicles belonging to their assigned company
+- Fleet Admin and Super Admin always see the full fleet across all companies
+- Users with no company assigned in Snipe-IT see all vehicles (backward compatible — no one is locked out)
+- A company badge appears next to the user's name in the top bar showing their company assignment
+- The Vehicles admin page shows a Company column when multi-entity is active
+
+### C11. Customize Theme (Super Admin)
+
+In **Settings**, locate the App Preferences section. Use the **Primary Color** picker to set your organization's brand color. The entire UI adapts automatically — navigation, buttons, badges, and accent colors are all derived from the primary color using CSS custom properties. Changes take effect immediately after saving.
 
 ---
 
