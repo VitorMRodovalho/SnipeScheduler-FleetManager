@@ -526,6 +526,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $mcStmt->execute(['multi_company_mode', $mcModeInput]);
         }
 
+        // Save session timeout
+        $stVal = $_POST['session_timeout_minutes'] ?? '';
+        if ($stVal !== '' && in_array((int)$stVal, [0, 15, 30, 60, 120], true)) {
+            $stStmt = $pdo->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES (?,?) ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value)");
+            $stStmt->execute(['session_timeout_minutes', (string)(int)$stVal]);
+        }
+
         $content = layout_build_config_file($newConfig, [
             'SNIPEIT_API_PAGE_LIMIT'   => $pageLimit,
             'CATALOGUE_ITEMS_PER_PAGE' => $cataloguePP,
@@ -1361,6 +1368,39 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
                 </div>
             </div>
             
+            <!-- Session & Security -->
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title mb-1">Session & Security</h5>
+                        <p class="text-muted small mb-3">Session idle timeout and privacy settings.</p>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <?php
+                                $stmtST = $pdo->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'session_timeout_minutes' LIMIT 1");
+                                $stmtST->execute();
+                                $currentTimeout = (int)($stmtST->fetchColumn() ?: 30);
+                                ?>
+                                <label class="form-label">Session Idle Timeout</label>
+                                <select name="session_timeout_minutes" class="form-select">
+                                    <option value="15" <?= $currentTimeout === 15 ? 'selected' : '' ?>>15 minutes</option>
+                                    <option value="30" <?= $currentTimeout === 30 ? 'selected' : '' ?>>30 minutes</option>
+                                    <option value="60" <?= $currentTimeout === 60 ? 'selected' : '' ?>>60 minutes</option>
+                                    <option value="120" <?= $currentTimeout === 120 ? 'selected' : '' ?>>120 minutes</option>
+                                    <option value="0" <?= $currentTimeout === 0 ? 'selected' : '' ?>>No timeout</option>
+                                </select>
+                                <div class="form-text">Users are automatically logged out after this period of inactivity.</div>
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <a href="privacy" class="btn btn-outline-secondary btn-sm" target="_blank">
+                                    <i class="bi bi-shield-lock me-1"></i>View Privacy Notice
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="col-12 d-flex justify-content-end">
                 <button type="submit" name="action" value="save" class="btn btn-primary">Save settings</button>
             </div>

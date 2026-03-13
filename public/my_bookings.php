@@ -317,6 +317,12 @@ if (!empty($_GET['deleted'])) {
             <?php endif; ?>
         <?php endif; ?>
 
+        <div class="text-center mt-4">
+            <a href="my_data_export" class="text-muted small">
+                <i class="bi bi-download me-1"></i>Download My Data
+            </a>
+        </div>
+
     </div>
 </div>
 <?php layout_footer(); ?>

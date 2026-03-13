@@ -106,9 +106,11 @@ function save_inspection_photos(PDO $pdo, int $reservationId, string $type, stri
             continue;
         }
 
-        // Resize if larger than 1920px width (JPEG/PNG only)
+        // Re-save through GD to strip EXIF metadata (GPS, device info)
+        // GD does not preserve EXIF, so any image passed through it is clean.
+        // We ALWAYS re-save even if no resize is needed, to ensure EXIF is stripped.
         if (in_array($mimeType, ['image/jpeg', 'image/png']) && function_exists('imagecreatefromjpeg')) {
-            resize_inspection_photo($destPath, $mimeType, 1920);
+            strip_and_resize_photo($destPath, $mimeType, 1920);
         }
 
         // Get final file size after resize
@@ -128,21 +130,32 @@ function save_inspection_photos(PDO $pdo, int $reservationId, string $type, stri
 }
 
 /**
- * Resize image to max width using GD.
+ * Strip EXIF metadata and optionally resize image using GD.
+ *
+ * ALWAYS re-saves through GD even if no resize is needed.
+ * GD does not preserve EXIF data, so the output file is guaranteed
+ * free of GPS coordinates, device identifiers, and timestamps.
  */
-function resize_inspection_photo(string $path, string $mimeType, int $maxWidth): void
+function strip_and_resize_photo(string $path, string $mimeType, int $maxWidth): void
 {
     $info = @getimagesize($path);
-    if (!$info || $info[0] <= $maxWidth) return;
+    if (!$info) return;
 
     $srcW = $info[0];
     $srcH = $info[1];
-    $ratio = $maxWidth / $srcW;
-    $newW = $maxWidth;
-    $newH = (int)round($srcH * $ratio);
 
     $src = ($mimeType === 'image/png') ? imagecreatefrompng($path) : imagecreatefromjpeg($path);
     if (!$src) return;
+
+    // Determine output dimensions (resize if wider than max, otherwise keep original size)
+    if ($srcW > $maxWidth) {
+        $ratio = $maxWidth / $srcW;
+        $newW = $maxWidth;
+        $newH = (int)round($srcH * $ratio);
+    } else {
+        $newW = $srcW;
+        $newH = $srcH;
+    }
 
     $dst = imagecreatetruecolor($newW, $newH);
     if ($mimeType === 'image/png') {
@@ -160,6 +173,14 @@ function resize_inspection_photo(string $path, string $mimeType, int $maxWidth):
 
     imagedestroy($src);
     imagedestroy($dst);
+}
+
+/**
+ * @deprecated Use strip_and_resize_photo() instead. Kept for backward compatibility.
+ */
+function resize_inspection_photo(string $path, string $mimeType, int $maxWidth): void
+{
+    strip_and_resize_photo($path, $mimeType, $maxWidth);
 }
 
 /**

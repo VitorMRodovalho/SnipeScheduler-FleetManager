@@ -109,6 +109,29 @@ if ($action === 'save_inspection_settings') {
             $messages[] = 'Vehicle inspection settings saved.';
         }
 
+        if ($action === 'save_retention_settings') {
+            $retKeys = [
+                'data_retention_activity_log_days' => [90, 180, 365, 730],
+                'data_retention_photos_days'       => [0, 365, 730, 1095],
+                'data_retention_email_queue_days'   => [7, 14, 30, 60],
+            ];
+            $stmtSave = $pdo->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
+            foreach ($retKeys as $key => $allowed) {
+                $val = (int)($_POST[$key] ?? 0);
+                if (in_array($val, $allowed)) {
+                    $stmtSave->execute([$key, (string)$val]);
+                }
+            }
+            activity_log_event('retention_settings', 'Data retention settings updated', [
+                'metadata' => [
+                    'activity_log_days' => $_POST['data_retention_activity_log_days'] ?? '',
+                    'photos_days'       => $_POST['data_retention_photos_days'] ?? '',
+                    'email_queue_days'  => $_POST['data_retention_email_queue_days'] ?? '',
+                ],
+            ]);
+            $messages[] = 'Data retention settings saved.';
+        }
+
         if ($action === 'save_training_settings') {
             $trainingRequired = isset($_POST['training_required']) ? '1' : '0';
             $validityMonths = (int)($_POST['training_validity_months'] ?? 12);
@@ -498,6 +521,80 @@ $customHolidays = array_filter($allHolidays, fn($h) => $h['holiday_type'] === 'c
                     <div class="mt-3 text-end">
                         <button type="submit" name="action" value="save_inspection_settings" class="btn btn-primary">
                             <i class="bi bi-save me-1"></i>Save Inspection Settings
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <!-- Data Retention Settings -->
+        <?php
+        $retStmt = $pdo->prepare("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('data_retention_activity_log_days','data_retention_photos_days','data_retention_email_queue_days','data_retention_last_purge')");
+        $retStmt->execute();
+        $retSettings = [];
+        while ($row = $retStmt->fetch()) {
+            $retSettings[$row['setting_key']] = $row['setting_value'];
+        }
+        $retActivityDays = (int)($retSettings['data_retention_activity_log_days'] ?? 365);
+        $retPhotoDays    = (int)($retSettings['data_retention_photos_days'] ?? 730);
+        $retEmailDays    = (int)($retSettings['data_retention_email_queue_days'] ?? 30);
+        $retLastPurge    = $retSettings['data_retention_last_purge'] ?? null;
+        ?>
+        <form method="post" class="mt-4">
+            <?= csrf_field() ?>
+            <div class="card mb-4">
+                <div class="card-header bg-danger bg-opacity-10">
+                    <h5 class="mb-0"><i class="bi bi-trash3 me-2"></i>Data Retention</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">
+                        Configure how long data is retained before automatic purge. A CRON job runs weekly (Sunday 3 AM) to remove expired records.
+                    </p>
+
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Activity Log Retention</label>
+                            <select name="data_retention_activity_log_days" class="form-select">
+                                <option value="90" <?= $retActivityDays === 90 ? 'selected' : '' ?>>90 days</option>
+                                <option value="180" <?= $retActivityDays === 180 ? 'selected' : '' ?>>180 days</option>
+                                <option value="365" <?= $retActivityDays === 365 ? 'selected' : '' ?>>1 year (365 days)</option>
+                                <option value="730" <?= $retActivityDays === 730 ? 'selected' : '' ?>>2 years (730 days)</option>
+                            </select>
+                            <div class="form-text">Login events, system actions, and audit entries.</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Inspection Photos Retention</label>
+                            <select name="data_retention_photos_days" class="form-select">
+                                <option value="365" <?= $retPhotoDays === 365 ? 'selected' : '' ?>>1 year (365 days)</option>
+                                <option value="730" <?= $retPhotoDays === 730 ? 'selected' : '' ?>>2 years (730 days)</option>
+                                <option value="1095" <?= $retPhotoDays === 1095 ? 'selected' : '' ?>>3 years (1095 days)</option>
+                                <option value="0" <?= $retPhotoDays === 0 ? 'selected' : '' ?>>Never delete</option>
+                            </select>
+                            <div class="form-text">Vehicle condition photos from checkout/checkin inspections.</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Email Queue Retention</label>
+                            <select name="data_retention_email_queue_days" class="form-select">
+                                <option value="7" <?= $retEmailDays === 7 ? 'selected' : '' ?>>7 days</option>
+                                <option value="14" <?= $retEmailDays === 14 ? 'selected' : '' ?>>14 days</option>
+                                <option value="30" <?= $retEmailDays === 30 ? 'selected' : '' ?>>30 days</option>
+                                <option value="60" <?= $retEmailDays === 60 ? 'selected' : '' ?>>60 days</option>
+                            </select>
+                            <div class="form-text">Sent and failed email/Teams notification records.</div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div class="small text-muted">
+                            <?php if ($retLastPurge): ?>
+                                <i class="bi bi-clock me-1"></i>Last purge: <?= h($retLastPurge) ?>
+                            <?php else: ?>
+                                <i class="bi bi-clock me-1"></i>No purge has run yet
+                            <?php endif; ?>
+                            &nbsp;|&nbsp; Next run: Sunday 3:00 AM
+                        </div>
+                        <button type="submit" name="action" value="save_retention_settings" class="btn btn-primary">
+                            <i class="bi bi-save me-1"></i>Save Retention Settings
                         </button>
                     </div>
                 </div>

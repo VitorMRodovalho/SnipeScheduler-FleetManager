@@ -141,6 +141,10 @@ if (!empty($_SESSION['user']['email'])) {
                 No authentication methods are enabled. Please contact an administrator.
             </div>
         <?php endif; ?>
+
+        <div class="text-center mt-4">
+            <a href="privacy" class="text-muted small">Privacy Notice</a>
+        </div>
     </div>
 </div>
 <?php layout_footer(); ?>
