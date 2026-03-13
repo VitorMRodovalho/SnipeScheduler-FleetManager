@@ -1,6 +1,6 @@
 # SnipeScheduler FleetManager
 
-**v2.1.0** — A comprehensive fleet vehicle management system built on top of [Snipe-IT](https://snipeitapp.com/), designed for enterprise fleet operations with reservation scheduling, maintenance tracking, compliance management, and multi-entity fleet partitioning.
+**v2.0.0** — A comprehensive fleet vehicle management system built on top of [Snipe-IT](https://snipeitapp.com/), designed for enterprise fleet operations with reservation scheduling, maintenance tracking, compliance management, and multi-entity fleet partitioning.
 
 ## Why This Project?
 

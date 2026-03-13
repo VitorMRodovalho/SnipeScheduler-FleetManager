@@ -161,7 +161,7 @@ CREATE TABLE IF NOT EXISTS schema_version (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT IGNORE INTO schema_version (version)
-VALUES ('v2.1.0');
+VALUES ('v2.0.0');
 
 -- ------------------------------------------------------
 -- System settings (key-value configuration store)

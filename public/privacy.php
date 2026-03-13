@@ -2,7 +2,7 @@
 /**
  * Privacy Notice — publicly accessible (no authentication required)
  *
- * @since v2.1.0
+ * @since v2.0.0
  */
 require_once __DIR__ . '/../src/bootstrap.php';
 require_once SRC_PATH . '/layout.php';

@@ -1,4 +1,4 @@
--- v2.1.0: Data compliance settings
+-- v2.0.0: Data compliance settings
 -- Retention periods + session timeout
 
 INSERT IGNORE INTO system_settings (setting_key, setting_value) VALUES

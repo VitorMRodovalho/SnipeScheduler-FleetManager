@@ -7,7 +7,7 @@
  * Schedule: weekly, Sunday 3:00 AM
  *   0 3 * * 0 php /path/to/scripts/cron_data_retention.php >> /var/log/snipescheduler/data_retention.log 2>&1
  *
- * @since v2.1.0
+ * @since v2.0.0
  */
 
 require_once __DIR__ . '/../src/bootstrap.php';

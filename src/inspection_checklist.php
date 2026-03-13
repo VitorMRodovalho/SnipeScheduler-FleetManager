@@ -6,7 +6,7 @@
  * Profiles, categories, and items are managed via checklist_admin.php.
  * Safety-critical items trigger warnings during checkout.
  *
- * @since v2.1.0  Hardcoded checklist
+ * @since v2.0.0  Hardcoded checklist
  * @since v2.2.0  Database-driven with profiles, safety-critical items
  */
 

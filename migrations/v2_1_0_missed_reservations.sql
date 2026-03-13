@@ -1,4 +1,4 @@
--- v2.1.0: Missed reservations — action tracking, key handover, configurable buffer
+-- v2.0.0: Missed reservations — action tracking, key handover, configurable buffer
 
 ALTER TABLE reservations ADD COLUMN IF NOT EXISTS missed_resolved TINYINT(1) NOT NULL DEFAULT 0;
 ALTER TABLE reservations ADD COLUMN IF NOT EXISTS missed_resolved_by VARCHAR(255) DEFAULT NULL;

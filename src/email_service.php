@@ -1105,7 +1105,7 @@ class FleetEmailService
 
     /**
      * FORCE CHECK-IN - Admin/staff alert
-     * @since v2.1.0
+     * @since v2.0.0
      */
     public function notifyForceCheckin(array $context): bool
     {
@@ -1152,7 +1152,7 @@ class FleetEmailService
 
     /**
      * MISSED RESERVATION - Driver notification
-     * @since v2.1.0
+     * @since v2.0.0
      */
     public function notifyMissedDriver(array $reservation): bool
     {
@@ -1201,7 +1201,7 @@ class FleetEmailService
 
     /**
      * MISSED RESERVATION - Staff/Admin alert
-     * @since v2.1.0
+     * @since v2.0.0
      */
     public function notifyMissedStaff(array $reservation): bool
     {

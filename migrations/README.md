@@ -14,12 +14,12 @@ versions. Apply them in order after upgrading the application files:
 | File | From → To | Purpose |
 |------|-----------|---------|
 | `v1_3_5_future_availability.sql` | v1.3.x → v1.3.5 | Holidays table, business day config, reservation redirect, status enum expansion |
-| `v2_1_0_checklist_admin.sql` | v2.0.x → v2.1.0 | Inspection checklist profiles, categories, items, assignments + seed data |
-| `v2_1_0_company_columns.sql` | v2.0.x → v2.1.0 | Company badge columns on reservations |
-| `v2_1_0_data_compliance.sql` | v2.0.x → v2.1.0 | Data retention system settings |
-| `v2_1_0_dsar_tracking.sql` | v2.0.x → v2.1.0 | DSAR (data_requests) table |
-| `v2_1_0_missed_reservations.sql` | v2.0.x → v2.1.0 | Missed resolution + key handover columns, notification events |
-| `v2_1_0_notification_events.sql` | v2.0.x → v2.1.0 | Training expiry + force check-in notification events |
+| `v2_1_0_checklist_admin.sql` | v1.x → v2.0.0 | Inspection checklist profiles, categories, items, assignments + seed data |
+| `v2_1_0_company_columns.sql` | v1.x → v2.0.0 | Company badge columns on reservations |
+| `v2_1_0_data_compliance.sql` | v1.x → v2.0.0 | Data retention system settings |
+| `v2_1_0_dsar_tracking.sql` | v1.x → v2.0.0 | DSAR (data_requests) table |
+| `v2_1_0_missed_reservations.sql` | v1.x → v2.0.0 | Missed resolution + key handover columns, notification events |
+| `v2_1_0_notification_events.sql` | v1.x → v2.0.0 | Training expiry + force check-in notification events |
 
 ### Running Migrations
 

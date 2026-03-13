@@ -3,7 +3,7 @@
  * API: Dismiss a missed reservation (mark as resolved)
  * POST only, staff/admin required.
  *
- * @since v2.1.0
+ * @since v2.0.0
  */
 require_once __DIR__ . '/../../src/bootstrap.php';
 require_once SRC_PATH . '/auth.php';

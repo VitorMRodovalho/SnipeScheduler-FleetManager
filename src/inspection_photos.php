@@ -3,7 +3,7 @@
  * BL-007: Inspection Photo Upload
  * Handles photo capture, storage, retrieval, and display for vehicle inspections.
  *
- * @since v2.1.0
+ * @since v2.0.0
  */
 
 /**

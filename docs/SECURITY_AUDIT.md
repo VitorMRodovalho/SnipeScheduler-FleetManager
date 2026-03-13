@@ -2,7 +2,7 @@
 
 **Version:** 1.0
 **Last Updated:** 2026-03-13
-**System:** SnipeScheduler FleetManager v2.1.0
+**System:** SnipeScheduler FleetManager v2.0.0
 
 ---
 
