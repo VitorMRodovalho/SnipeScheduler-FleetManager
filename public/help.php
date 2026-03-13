@@ -543,6 +543,11 @@ if (!isset($tabs[$activeTab])) {
             <li><strong>Off:</strong> Disabled even if multiple companies exist.</li>
         </ul>
     '); ?>
+    <?php help_section('accMulti', 'me5', 'Location Scoping', '
+        <p><strong>Pickup locations are shared across all entities.</strong> Locations in Snipe-IT do not have a direct company field, so all users see the same set of pickup and return locations.</p>
+        <p>Vehicle availability is always filtered by company assignment — a driver will only see vehicles belonging to their company at any given location, even if vehicles from other companies are also parked there.</p>
+        <div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>This is by design. Snipe-IT location scoping has known conflicts with multi-tenant setups. The safe approach is to share locations and filter vehicles instead.</div>
+    '); ?>
 </div>
 
 <?php elseif ($activeTab === 'system_settings' && $isSuperAdmin): ?>
