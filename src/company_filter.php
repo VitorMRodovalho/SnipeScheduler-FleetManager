@@ -104,42 +104,70 @@ function filter_assets_by_company(array $assets, array $companyIds): array
 
 /**
  * Generate a compact company badge HTML for an asset.
+ * Uses Snipe-IT company tag_color and notes as source of truth.
+ * - notes = badge text (abbreviation)
+ * - tag_color = badge background color
  * Returns empty string if multi-company is disabled or asset has no company.
  */
 function get_company_badge($asset, $pdo = null): string
 {
     static $enabled = null;
+    static $companyMeta = [];
+
     if ($enabled === null) {
         $enabled = $pdo ? is_multi_company_enabled($pdo) : true;
+        if ($enabled) {
+            // Cache company metadata (tag_color, notes) from API
+            $companies = get_all_companies();
+            foreach ($companies as $co) {
+                $companyMeta[(int)$co['id']] = $co;
+            }
+        }
     }
     if (!$enabled) return '';
 
     $company = $asset['company'] ?? null;
     if (!$company || empty($company['name'])) return '';
 
-    $name = $company['name'];
-    // Extract abbreviation from parentheses if present, e.g. "Company Name (DP)" → "DP"
-    if (preg_match('/\(([A-Z0-9]{1,5})\)\s*$/', $name, $m)) {
-        $abbr = $m[1];
-    } else {
-        // First letter of each word, max 3
-        $words = preg_split('/[\s&]+/', $name);
-        $abbr = '';
-        foreach ($words as $w) {
-            $w = trim($w);
-            if ($w !== '' && ctype_alpha($w[0])) $abbr .= strtoupper($w[0]);
-            if (strlen($abbr) >= 3) break;
+    $companyId = (int)($company['id'] ?? 0);
+    $meta = $companyMeta[$companyId] ?? [];
+
+    // Badge text: use notes field, fallback to abbreviation extraction
+    $abbr = trim($meta['notes'] ?? '');
+    if ($abbr === '') {
+        $name = $company['name'];
+        if (preg_match('/\(([A-Z0-9]{1,5})\)\s*$/', $name, $m)) {
+            $abbr = $m[1];
+        } else {
+            $words = preg_split('/[\s&]+/', $name);
+            $abbr = '';
+            foreach ($words as $w) {
+                $w = trim($w);
+                if ($w !== '' && ctype_alpha($w[0])) $abbr .= strtoupper($w[0]);
+                if (strlen($abbr) >= 3) break;
+            }
         }
     }
     if ($abbr === '') return '';
 
-    // Color cycle based on company ID
-    $colors = ['info', 'primary', 'success', 'warning', 'secondary'];
-    $colorIdx = ((int)($company['id'] ?? 0)) % count($colors);
-    $color = $colors[$colorIdx];
-    $textClass = in_array($color, ['warning']) ? 'text-dark' : 'text-white';
+    // Badge color: use tag_color field, fallback to theme colors
+    $bgColor = trim($meta['tag_color'] ?? '');
+    if ($bgColor !== '' && $bgColor[0] === '#') {
+        // Determine text color based on brightness
+        $hex = ltrim($bgColor, '#');
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+        $brightness = ($r * 299 + $g * 587 + $b * 114) / 1000;
+        $textColor = $brightness > 128 ? '#000' : '#fff';
+        return ' <span class="badge ms-1" style="font-size:0.7em;background-color:' . h($bgColor) . ';color:' . $textColor . ';" title="' . h($company['name']) . '">' . h($abbr) . '</span>';
+    }
 
-    return ' <span class="badge bg-' . $color . ' ' . $textClass . '" style="font-size:0.7em;" title="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($abbr, ENT_QUOTES, 'UTF-8') . '</span>';
+    // Fallback: Bootstrap color cycle
+    $colors = ['info', 'primary', 'success', 'warning', 'secondary'];
+    $color = $colors[$companyId % count($colors)];
+    $textClass = $color === 'warning' ? 'text-dark' : 'text-white';
+    return ' <span class="badge bg-' . $color . ' ' . $textClass . ' ms-1" style="font-size:0.7em;" title="' . h($company['name']) . '">' . h($abbr) . '</span>';
 }
 
 /**
@@ -173,8 +201,10 @@ function get_all_companies(): array
     $result = [];
     foreach ($rows as $row) {
         $result[] = [
-            'id'   => (int)($row['id'] ?? 0),
-            'name' => (string)($row['name'] ?? ''),
+            'id'        => (int)($row['id'] ?? 0),
+            'name'      => (string)($row['name'] ?? ''),
+            'tag_color' => (string)($row['tag_color'] ?? ''),
+            'notes'     => (string)($row['notes'] ?? ''),
         ];
     }
 
