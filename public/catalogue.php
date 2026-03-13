@@ -477,6 +477,7 @@ if ($isStaff && ($_GET['ajax'] ?? '') === 'user_search') {
 
 // Handle staff override selection
 if ($isStaff && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['mode'] ?? '') === 'set_booking_user') {
+    csrf_check();
     $revert   = isset($_POST['booking_user_revert']) && $_POST['booking_user_revert'] === '1';
     $selEmail = trim($_POST['booking_user_email'] ?? '');
     $selName  = trim($_POST['booking_user_name'] ?? '');
@@ -1205,6 +1206,7 @@ if (!empty($allowedCategoryMap) && !empty($categories)) {
                     <?php endif; ?>
                 </div>
                 <form method="post" id="booking_user_form" class="d-flex gap-2 mb-0 flex-wrap position-relative" style="z-index: 9998;">
+                    <?= csrf_field() ?>
                     <input type="hidden" name="mode" value="set_booking_user">
                     <input type="hidden" name="booking_user_email" id="booking_user_email">
                     <input type="hidden" name="booking_user_name" id="booking_user_name">

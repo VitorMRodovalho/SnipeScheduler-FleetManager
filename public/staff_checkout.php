@@ -191,6 +191,7 @@ foreach ($checkoutAssets as $existing) {
 
 // Handle reservation selection (POST)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['mode'] ?? '') === 'select_reservation') {
+    csrf_check();
     $selectedReservationId = (int)($_POST['reservation_id'] ?? 0);
     if ($selectedReservationId > 0) {
         $_SESSION['selected_reservation_id'] = $selectedReservationId;
@@ -309,6 +310,7 @@ if ($selectedReservationId) {
 // Handle POST actions: add_asset or checkout
 // ---------------------------------------------------------------------
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_check();
     $mode = $_POST['mode'] ?? '';
 
     if (isset($_POST['remove_model_id_all']) || isset($_POST['remove_slot'])) {
@@ -854,6 +856,7 @@ $active  = 'staff_checkout';
         <div class="card mb-3">
             <div class="card-body">
                 <form method="post" class="row g-3 align-items-end" action="<?= h($selfUrl) ?>">
+                    <?= csrf_field() ?>
                     <?php foreach ($baseQuery as $k => $v): ?>
                         <input type="hidden" name="<?= h($k) ?>" value="<?= h($v) ?>">
                     <?php endforeach; ?>
@@ -937,6 +940,7 @@ $active  = 'staff_checkout';
                     </p>
 
                     <form method="post" action="<?= h($selfUrl) ?>">
+                        <?= csrf_field() ?>
                         <?php foreach ($baseQuery as $k => $v): ?>
                             <input type="hidden" name="<?= h($k) ?>" value="<?= h($v) ?>">
                         <?php endforeach; ?>

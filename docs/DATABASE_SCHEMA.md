@@ -1,7 +1,7 @@
 # SnipeScheduler FleetManager Database Schema
 
-**Version:** v1.3.1  
-**Last Updated:** March 1, 2026
+**Version:** v2.1.0
+**Last Updated:** March 13, 2026
 
 ## Tables Overview
 

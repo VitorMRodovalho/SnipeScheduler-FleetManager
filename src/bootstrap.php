@@ -4,6 +4,16 @@
 
 date_default_timezone_set('America/New_York');
 
+// Harden session cookies before session_start()
+if (session_status() === PHP_SESSION_NONE) {
+    $isLocalhost = in_array($_SERVER['HTTP_HOST'] ?? '', ['localhost', '127.0.0.1'], true);
+    session_set_cookie_params([
+        'httponly'  => true,
+        'secure'   => !$isLocalhost,
+        'samesite' => 'Lax',
+    ]);
+}
+
 if (!defined('APP_ROOT')) {
     define('APP_ROOT', dirname(__DIR__));
 }

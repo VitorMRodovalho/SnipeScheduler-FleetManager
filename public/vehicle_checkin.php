@@ -76,6 +76,7 @@ if ($inspectionMode === 'full' && $reservationId) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $asset && empty($error)) {
+    csrf_check();
     $formData = [];
     $inspectionData = [];
     
@@ -343,6 +344,7 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
                 </div>
 
                 <form method="post" enctype="multipart/form-data">
+                    <?= csrf_field() ?>
                     <!-- Vehicle Compliance Status (read-only) -->
                     <?php
                     $insExpiry = $customFields['Insurance Expiry']['value'] ?? null;

@@ -181,6 +181,7 @@ if ($trainingRequired && !$isStaff) {
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_reservation'])) {
+    csrf_check();
     // Training gate: block untrained drivers from submitting
     if (!$trainingCompleted) {
         $error = $trainingMessage;
@@ -448,6 +449,7 @@ function get_location_name($locations, $id) {
             <?php endif; ?>
 
             <form method="post" id="reservationForm">
+                <?= csrf_field() ?>
                 <?php if ($isStaff): ?>
                 <div class="card mb-3 border-info">
                     <div class="card-header bg-info text-white py-2">

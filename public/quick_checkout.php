@@ -121,6 +121,7 @@ if (isset($_GET['remove'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_check();
     $mode = $_POST['mode'] ?? '';
 
     if ($mode === 'add_asset') {
@@ -459,6 +460,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </p>
 
                 <form method="post" class="row g-2 mb-3">
+                    <?= csrf_field() ?>
                     <input type="hidden" name="mode" value="add_asset">
                     <div class="col-md-6">
                         <label class="form-label">Asset tag</label>
@@ -551,6 +553,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <?php endif; ?>
 
                     <form method="post" class="border-top pt-3">
+                        <?= csrf_field() ?>
                         <input type="hidden" name="mode" value="checkout">
 
                         <div class="row g-3 mb-3">

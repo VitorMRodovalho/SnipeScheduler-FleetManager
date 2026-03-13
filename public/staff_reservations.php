@@ -72,6 +72,7 @@ $sortOptions = [
 $sort = array_key_exists($sortRaw, $sortOptions) ? $sortRaw : 'start_desc';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'restore_missed') {
+    csrf_check();
     $restoreId = (int)($_POST['reservation_id'] ?? 0);
     if ($restoreId <= 0) {
         $restoreError = 'Invalid reservation selected for restore.';
@@ -477,6 +478,7 @@ try {
                                         <?php endif; ?>
                                         <?php if ($status === 'missed'): ?>
                                             <form method="post" action="<?= h($actionUrl) ?>">
+                                                <?= csrf_field() ?>
                                                 <input type="hidden" name="action" value="restore_missed">
                                                 <input type="hidden" name="reservation_id" value="<?= (int)$r['id'] ?>">
                                                 <?php if ($qRaw !== ''): ?>
@@ -502,6 +504,7 @@ try {
                                         <form method="post"
                                               action="delete_reservation"
                                               onsubmit="return confirm('Delete this reservation and all its items? This cannot be undone.');">
+                                            <?= csrf_field() ?>
                                             <input type="hidden"
                                                    name="reservation_id"
                                                    value="<?= (int)$r['id'] ?>">
