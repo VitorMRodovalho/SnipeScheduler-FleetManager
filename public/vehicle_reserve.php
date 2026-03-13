@@ -267,11 +267,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_reservation'])
                     $approvalStatus = $isVip ? 'auto_approved' : 'pending_approval';
                     $status = 'pending';
 
-                    // Get asset name for cache
+                    // Get asset name and company data for cache
                     $assetName = '';
+                    $selectedAsset = null;
                     foreach ($availableAssets as $a) {
                         if ($a['id'] == $assetId) {
                             $assetName = $a['name'] . ' [' . $a['asset_tag'] . ']';
+                            $selectedAsset = $a;
                             break;
                         }
                     }
@@ -281,6 +283,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_reservation'])
                         foreach ($allFleet as $a) {
                             if ($a['id'] == $assetId) {
                                 $assetName = $a['name'] . ' [' . $a['asset_tag'] . ']';
+                                $selectedAsset = $a;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Extract company badge data from the asset
+                    $companyName = null;
+                    $companyAbbr = null;
+                    $companyColor = null;
+                    if ($selectedAsset && !empty($selectedAsset['company']['id'])) {
+                        $companyName = $selectedAsset['company']['name'] ?? null;
+                        $coId = (int)$selectedAsset['company']['id'];
+                        $allCompanies = get_all_companies();
+                        foreach ($allCompanies as $co) {
+                            if ((int)$co['id'] === $coId) {
+                                $companyAbbr = trim($co['notes'] ?? '');
+                                $companyColor = trim($co['tag_color'] ?? '');
                                 break;
                             }
                         }
@@ -288,12 +308,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_reservation'])
 
                     $stmt = $pdo->prepare("
                         INSERT INTO reservations (user_id, user_name, user_email, asset_id, asset_name_cache, pickup_location_id, destination_id,
-                            start_datetime, end_datetime, status, approval_status, notes, created_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                            start_datetime, end_datetime, status, approval_status, notes, company_name, company_abbr, company_color, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
                     ");
                     $stmt->execute([
                         $bookingUserId, $userName, $userEmail, $assetId, $assetName, $pickupLocationId, $destinationId,
-                        $startDatetime, $endDatetime, $status, $approvalStatus, $purpose
+                        $startDatetime, $endDatetime, $status, $approvalStatus, $purpose, $companyName, $companyAbbr, $companyColor
                     ]);
 
                     $reservationId = $pdo->lastInsertId();

@@ -274,12 +274,13 @@ if ($report === 'summary') {
 
     // Reservations by vehicle
     $stmt = $pdo->prepare("
-        SELECT asset_name_cache, asset_id, COUNT(*) as count,
+        SELECT asset_name_cache, asset_id, company_abbr, company_color, company_name,
+               COUNT(*) as count,
                SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed
         FROM reservations
         WHERE DATE(created_at) BETWEEN ? AND ?
         AND asset_name_cache IS NOT NULL AND asset_name_cache != ''
-        GROUP BY asset_id, asset_name_cache ORDER BY count DESC
+        GROUP BY asset_id, asset_name_cache, company_abbr, company_color, company_name ORDER BY count DESC
     ");
     $stmt->execute([$queryDateFrom, $queryDateTo]);
     $reportData['by_vehicle'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -868,7 +869,7 @@ if ($report === 'summary') {
                                     <thead class="table-light"><tr><th>Vehicle</th><th class="text-center">Total</th><th class="text-center">Completed</th></tr></thead>
                                     <tbody>
                                         <?php foreach ($reportData['by_vehicle'] as $row): ?>
-                                        <tr><td><?= h($row['asset_name_cache']) ?></td><td class="text-center"><?= $row['count'] ?></td><td class="text-center text-success"><?= $row['completed'] ?></td></tr>
+                                        <tr><td><?= h($row['asset_name_cache']) ?><?= get_company_badge_from_row($row) ?></td><td class="text-center"><?= $row['count'] ?></td><td class="text-center text-success"><?= $row['completed'] ?></td></tr>
                                         <?php endforeach; ?>
                                     </tbody>
                                 </table>
@@ -966,7 +967,7 @@ if ($report === 'summary') {
                                     ?>
                                     <tr>
                                         <td class="text-nowrap"><?= date('M j, Y', strtotime($row['start_datetime'])) ?></td>
-                                        <td><strong><?= h($row['asset_name_cache'] ?: 'Vehicle #' . $row['asset_id']) ?></strong></td>
+                                        <td><strong><?= h($row['asset_name_cache'] ?: 'Vehicle #' . $row['asset_id']) ?><?= get_company_badge_from_row($row) ?></strong></td>
                                         <td><?= h($row['user_name']) ?></td>
                                         <td><span class="badge bg-<?= $sc ?>"><?= ucfirst($row['status']) ?></span></td>
                                         <td><?= $row['actual_checkout'] ? date('M j, g:i A', strtotime($row['actual_checkout'])) : '-' ?></td>

@@ -4,6 +4,7 @@ require_once SRC_PATH . '/auth.php';
 require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/booking_helpers.php';
 require_once SRC_PATH . '/layout.php';
+require_once SRC_PATH . '/company_filter.php';
 
 function display_date(?string $isoDate): string
 {
@@ -241,7 +242,7 @@ if (!empty($_GET['deleted'])) {
                                 <h5 class="card-title mb-0">
                                     Reservation #<?= $resId ?>
                                     <?php if (!empty($res['asset_name_cache'])): ?>
-                                        <small class="text-muted ms-2">— <?= h($res['asset_name_cache']) ?></small>
+                                        <small class="text-muted ms-2">— <?= h($res['asset_name_cache']) ?><?= get_company_badge_from_row($res) ?></small>
                                     <?php endif; ?>
                                 </h5>
                                 <span class="badge bg-<?= $badgeColor ?> px-3 py-2">

@@ -6,6 +6,7 @@ require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/activity_log.php';
 require_once SRC_PATH . '/layout.php';
 require_once SRC_PATH . '/notification_service.php';
+require_once SRC_PATH . '/company_filter.php';
 
 function load_asset_labels(PDO $pdo, array $assetIds): array
 {
@@ -572,7 +573,7 @@ function layout_checked_out_url(string $base, array $params): string
                                                value="<?= $aid ?>">
                                     </td>
                                     <td><?= h($atag) ?></td>
-                                    <td><?= h($name) ?></td>
+                                    <td><?= h($name) ?><?= get_company_badge($a, $pdo) ?></td>
                                     <td><?= h($model) ?></td>
                                     <td><?= h($user) ?></td>
                                     <td><?= h(format_display_datetime($checkedOut)) ?></td>

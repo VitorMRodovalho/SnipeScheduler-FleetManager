@@ -5,6 +5,7 @@ require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/booking_helpers.php';
 require_once SRC_PATH . '/activity_log.php';
 require_once SRC_PATH . '/layout.php';
+require_once SRC_PATH . '/company_filter.php';
 
 $active    = basename($_SERVER['PHP_SELF']);
 $isAdmin   = !empty($currentUser['is_admin']);
@@ -450,7 +451,7 @@ try {
                                         . '<div class="items-section-body">' . $assetLines . '</div>'
                                         . '</details>';
                                 }
-                                $itemsText = $modelsHtml . $assetsHtml;
+                                $itemsText = $modelsHtml . $assetsHtml . get_company_badge_from_row($r);
                             ?>
                             <tr>
                                 <td data-label="ID">#<?= (int)$r['id'] ?></td>

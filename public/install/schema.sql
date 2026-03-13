@@ -45,6 +45,11 @@ CREATE TABLE IF NOT EXISTS reservations (
     -- Cached display string of items (for quick admin lists)
     asset_name_cache TEXT NULL,
 
+    -- Company badge data (captured at booking time)
+    company_name VARCHAR(255) DEFAULT NULL,
+    company_abbr VARCHAR(10) DEFAULT NULL,
+    company_color VARCHAR(10) DEFAULT NULL,
+
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id),

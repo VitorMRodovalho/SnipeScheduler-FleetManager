@@ -171,6 +171,35 @@ function get_company_badge($asset, $pdo = null): string
 }
 
 /**
+ * Generate a company badge from a DB row (reservation or similar).
+ * Reads company_abbr and company_color stored at booking time.
+ * Returns empty string if data is missing.
+ */
+function get_company_badge_from_row(array $row): string
+{
+    $abbr  = trim($row['company_abbr'] ?? '');
+    $color = trim($row['company_color'] ?? '');
+    $name  = trim($row['company_name'] ?? '');
+
+    if ($abbr === '') {
+        return '';
+    }
+
+    if ($color !== '' && $color[0] === '#') {
+        $hex = ltrim($color, '#');
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+        $brightness = ($r * 299 + $g * 587 + $b * 114) / 1000;
+        $textColor = $brightness > 128 ? '#000' : '#fff';
+        return ' <span class="badge ms-1" style="font-size:0.7em;background-color:' . h($color) . ';color:' . $textColor . ';" title="' . h($name) . '">' . h($abbr) . '</span>';
+    }
+
+    // Fallback: Bootstrap muted badge
+    return ' <span class="badge bg-secondary text-white ms-1" style="font-size:0.7em;" title="' . h($name) . '">' . h($abbr) . '</span>';
+}
+
+/**
  * Fetch all companies from Snipe-IT with 5-minute cache.
  *
  * @return array Array of ['id' => int, 'name' => string]

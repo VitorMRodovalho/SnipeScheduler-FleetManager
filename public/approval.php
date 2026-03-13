@@ -12,6 +12,7 @@ require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/layout.php';
 require_once SRC_PATH . '/email_service.php';
 require_once SRC_PATH . '/notification_service.php';
+require_once SRC_PATH . '/company_filter.php';
 
 $active = basename($_SERVER['PHP_SELF']);
 $isAdmin = !empty($currentUser['is_admin']);
@@ -180,7 +181,7 @@ $recentReservations = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     <tr>
                                         <td><strong>#<?= $res['id'] ?></strong></td>
                                         <td><strong><?= h($res['user_name']) ?></strong><br><small class="text-muted"><?= h($res['user_email']) ?></small></td>
-                                        <td><?= h($res['asset_name_cache'] ?: 'N/A') ?></td>
+                                        <td><?= h($res['asset_name_cache'] ?: 'N/A') ?><?= get_company_badge_from_row($res) ?></td>
                                         <td>
                                             <i class="bi bi-calendar me-1"></i><?= date('M j, Y', strtotime($res['start_datetime'])) ?><br>
                                             <small><?= date('g:i A', strtotime($res['start_datetime'])) ?> - <?= date('g:i A', strtotime($res['end_datetime'])) ?></small>
@@ -215,7 +216,7 @@ $recentReservations = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                         </div>
                                         <div class="modal-body">
                                             <p>Approve reservation for <strong><?= h($res['user_name']) ?></strong>?</p>
-                                            <p><strong>Vehicle:</strong> <?= h($res['asset_name_cache'] ?: 'N/A') ?></p>
+                                            <p><strong>Vehicle:</strong> <?= h($res['asset_name_cache'] ?: 'N/A') ?><?= get_company_badge_from_row($res) ?></p>
                                             <div class="mb-3">
                                                 <label class="form-label">Notes (optional)</label>
                                                 <textarea name="notes" class="form-control" rows="2"></textarea>
@@ -276,7 +277,7 @@ $recentReservations = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     <tr>
                                         <td>#<?= $res['id'] ?></td>
                                         <td><?= h($res['user_name']) ?></td>
-                                        <td><?= h($res['asset_name_cache'] ?: 'N/A') ?></td>
+                                        <td><?= h($res['asset_name_cache'] ?: 'N/A') ?><?= get_company_badge_from_row($res) ?></td>
 					<td>
                                             <?php if ($res['approval_status'] === 'approved'): ?>
                                                 <span class="badge bg-success">Approved</span>

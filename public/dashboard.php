@@ -139,7 +139,7 @@ $maintenanceList = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get recent activity (last 7 days)
 $stmt = $pdo->prepare("
-    SELECT ah.*, r.asset_name_cache, r.user_name as requester_name
+    SELECT ah.*, r.asset_name_cache, r.company_abbr, r.company_color, r.company_name, r.user_name as requester_name
     FROM approval_history ah
     JOIN reservations r ON ah.reservation_id = r.id
     WHERE ah.created_at > DATE_SUB(NOW(), INTERVAL 7 DAY)
@@ -404,7 +404,7 @@ foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
                                     <?php foreach ($todayPickups as $pickup): ?>
                                         <div class="border rounded p-2 mb-2 bg-light">
                                             <div class="d-flex justify-content-between">
-                                                <strong><?= h($pickup['asset_name_cache'] ?: 'Vehicle #' . $pickup['asset_id']) ?></strong>
+                                                <strong><?= h($pickup['asset_name_cache'] ?: 'Vehicle #' . $pickup['asset_id']) ?><?= get_company_badge_from_row($pickup) ?></strong>
                                                 <span class="badge bg-success"><?= date('g:i A', strtotime($pickup['start_datetime'])) ?></span>
                                             </div>
                                             <small class="text-muted"><?= h($pickup['user_name']) ?></small>
@@ -424,7 +424,7 @@ foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
                                     <?php foreach ($todayReturns as $return): ?>
                                         <div class="border rounded p-2 mb-2 <?= $return['minutes_overdue'] > 0 ? 'bg-danger bg-opacity-10' : 'bg-light' ?>">
                                             <div class="d-flex justify-content-between">
-                                                <strong><?= h($return['asset_name_cache'] ?: 'Vehicle #' . $return['asset_id']) ?></strong>
+                                                <strong><?= h($return['asset_name_cache'] ?: 'Vehicle #' . $return['asset_id']) ?><?= get_company_badge_from_row($return) ?></strong>
                                                 <span class="badge <?= $return['minutes_overdue'] > 0 ? 'bg-danger' : 'bg-info' ?>">
                                                     <?= date('g:i A', strtotime($return['end_datetime'])) ?>
                                                 </span>
@@ -461,7 +461,7 @@ foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
                             <tbody>
                                 <?php foreach ($overdueList as $overdue): ?>
                                 <tr>
-                                    <td><strong><?= h($overdue['asset_name_cache'] ?: 'Vehicle #' . $overdue['asset_id']) ?></strong></td>
+                                    <td><strong><?= h($overdue['asset_name_cache'] ?: 'Vehicle #' . $overdue['asset_id']) ?><?= get_company_badge_from_row($overdue) ?></strong></td>
                                     <td><?= h($overdue['user_name']) ?></td>
                                     <td><?= date('M j, g:i A', strtotime($overdue['end_datetime'])) ?></td>
                                     <td><span class="badge bg-danger"><?= round($overdue['minutes_overdue']) ?> min</span></td>
@@ -493,7 +493,7 @@ foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
                             <tbody>
                                 <?php foreach ($maintenanceList as $maint): ?>
                                 <tr>
-                                    <td><strong><?= h($maint['asset_name_cache'] ?: 'Vehicle #' . $maint['asset_id']) ?></strong></td>
+                                    <td><strong><?= h($maint['asset_name_cache'] ?: 'Vehicle #' . $maint['asset_id']) ?><?= get_company_badge_from_row($maint) ?></strong></td>
                                     <td><?= h($maint['user_name']) ?></td>
                                     <td><small><?= h(substr($maint['maintenance_notes'] ?? 'No details', 0, 50)) ?>...</small></td>
                                     <td><?= date('M j', strtotime($maint['updated_at'] ?? $maint['created_at'])) ?></td>
@@ -588,7 +588,7 @@ foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
                                         <strong><?= ucfirst(str_replace('_', ' ', $activity['action'])) ?></strong>
                                         <br>
                                         <span class="text-muted">
-                                            <?= h($activity['asset_name_cache'] ?: 'Reservation #' . $activity['reservation_id']) ?>
+                                            <?= h($activity['asset_name_cache'] ?: 'Reservation #' . $activity['reservation_id']) ?><?= get_company_badge_from_row($activity) ?>
                                         </span>
                                         <br>
                                         <small class="text-muted">

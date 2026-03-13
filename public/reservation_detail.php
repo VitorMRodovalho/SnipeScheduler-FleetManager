@@ -6,6 +6,7 @@ require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/booking_helpers.php';
 require_once SRC_PATH . '/layout.php';
 require_once SRC_PATH . '/inspection_photos.php';
+require_once SRC_PATH . '/company_filter.php';
 
 $isAdmin = !empty($currentUser['is_admin']);
 $isStaff = !empty($currentUser['is_staff']) || $isAdmin;
@@ -102,7 +103,7 @@ $active  = 'staff_reservations.php'; // Treat detail view as part of booking his
 
                     <?php if (!empty($reservation['asset_name_cache'])): ?>
                         <strong>Checked-out assets:</strong>
-                        <?= h($reservation['asset_name_cache']) ?><br>
+                        <?= h($reservation['asset_name_cache']) ?><?= get_company_badge_from_row($reservation) ?><br>
                     <?php endif; ?>
                 </p>
             </div>
