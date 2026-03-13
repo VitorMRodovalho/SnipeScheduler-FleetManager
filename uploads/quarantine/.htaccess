@@ -1,0 +1,2 @@
+# Deny all direct web access to quarantined files
+Require all denied

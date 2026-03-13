@@ -277,9 +277,72 @@ $totalChecks = count($checkResults);
                             </div>
                         </div>
                     </div>
+                <!-- Upload Scanning -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-dark text-white">
+                            <h5 class="mb-0"><i class="bi bi-bug me-2"></i>Upload Scanning (ClamAV)</h5>
+                        </div>
+                        <div class="card-body">
+                            <?php
+                            $scanStmt = $pdo->prepare("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('upload_scan_status', 'upload_scan_last_run', 'upload_scan_infected_count')");
+                            $scanStmt->execute();
+                            $scanData = [];
+                            while ($r = $scanStmt->fetch()) { $scanData[$r['setting_key']] = $r['setting_value']; }
+                            $scanStatus = $scanData['upload_scan_status'] ?? 'never_run';
+                            $scanLastRun = $scanData['upload_scan_last_run'] ?? null;
+                            $scanInfected = (int)($scanData['upload_scan_infected_count'] ?? 0);
+
+                            $scanClass = 'secondary';
+                            $scanLabel = 'Never Run';
+                            if ($scanStatus === 'clean') { $scanClass = 'success'; $scanLabel = 'Clean'; }
+                            elseif ($scanStatus === 'infected_found') { $scanClass = 'danger'; $scanLabel = 'Infected Files Found'; }
+                            elseif ($scanStatus === 'error' || $scanStatus === 'error_no_clamscan') { $scanClass = 'warning'; $scanLabel = 'Error — Check ClamAV'; }
+                            ?>
+                            <div class="d-flex align-items-center mb-3">
+                                <span class="badge bg-<?= $scanClass ?> fs-6 me-3"><?= $scanLabel ?></span>
+                                <?php if ($scanLastRun): ?>
+                                    <span class="text-muted">Last scan: <?= h($scanLastRun) ?></span>
+                                <?php else: ?>
+                                    <span class="text-muted">No scan has been run yet. Ensure ClamAV is installed and the CRON job is configured.</span>
+                                <?php endif; ?>
+                            </div>
+                            <?php if ($scanInfected > 0): ?>
+                                <div class="alert alert-danger mb-3">
+                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                    <strong><?= $scanInfected ?> infected file(s)</strong> quarantined in <code>uploads/quarantine/</code>. Review and delete manually.
+                                </div>
+                            <?php endif; ?>
+                            <div class="table-responsive">
+                            <table class="table table-sm mb-0">
+                                <tr>
+                                    <td class="text-muted" style="width:200px;">Scan Schedule</td>
+                                    <td>Every hour (CRON)</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Scanner</td>
+                                    <td>ClamAV (clamscan)</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Scan Target</td>
+                                    <td><code>uploads/inspections/</code></td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Quarantine</td>
+                                    <td><code>uploads/quarantine/</code></td>
+                                </tr>
+                            </table>
+                            </div>
+                            <div class="mt-3">
+                                <small class="text-muted">
+                                    <strong>Setup:</strong> <code>sudo apt install clamav clamav-daemon && sudo freshclam</code><br>
+                                    <strong>CRON:</strong> <code>0 * * * * php /var/www/snipescheduler/scripts/cron_scan_uploads.php</code>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            
+
             <!-- Maintenance Commands Reference -->
             <div class="card mb-4">
                 <div class="card-header bg-dark text-white">

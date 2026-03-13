@@ -159,7 +159,7 @@ Communication with Snipe-IT API:
 | Limitation | Risk | Mitigation |
 |-----------|------|------------|
 | No application-level MFA | Medium — relies on IdP enforcement | Enforce MFA at Azure AD / Google Workspace level (see Section 1) |
-| No malware scanning on uploads | Medium — crafted images could pass MIME validation | Recommend installing ClamAV on server; scan `/uploads/inspections/` directory |
+| No malware scanning on uploads | Medium — crafted images could pass MIME validation | ClamAV hourly CRON scan available (`scripts/cron_scan_uploads.php`). Install ClamAV and configure the CRON job. Infected files are quarantined and admin is notified. See Security Dashboard for status |
 | No application-level data-at-rest encryption | Medium — all database and file data stored in plaintext on disk | **Disk-level encryption MUST be enabled.** AWS EC2: enable EBS encryption on all volumes. Bare metal: use LUKS/dm-crypt. Verify with `lsblk` or AWS console. This is an infrastructure requirement, not an application feature. |
 | No automated CCPA deletion | Low — deletion requires manual admin intervention | Self-service export available; deletion requests handled by Fleet Admin |
 | LDAP password transmitted to server | Low — encrypted via HTTPS | Consider migrating LDAP users to OAuth for improved security posture |

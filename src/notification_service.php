@@ -154,6 +154,12 @@ class NotificationService
             'teams_ch'     => 'fleet_ops',
             'action_param' => '/reservations/detail/{reservation_id}',
         ],
+        'malware_detected'            => [
+            'label'        => 'Malware Detected in Upload',
+            'audience'     => 'admin',
+            'teams_ch'     => 'admin',
+            'action_param' => '/security',
+        ],
     ];
 
     // ------------------------------------------------------------------
@@ -311,6 +317,9 @@ class NotificationService
                 break;
             case 'reservation_missed_staff':
                 $svc->notifyMissedStaff($context);
+                break;
+            case 'malware_detected':
+                // Uses generic admin notification — subject/body from templates
                 break;
             default:
                 error_log("[NotificationService] No email dispatch for '{$event_key}'");
