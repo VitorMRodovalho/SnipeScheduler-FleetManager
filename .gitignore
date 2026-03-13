@@ -1,5 +1,6 @@
 # Environment / secrets
 .env
+config/config.php
 config.local.php
 config.php
 
@@ -13,6 +14,7 @@ logs/
 # Cache / temp
 cache/
 tmp/
+config/cache/*.json
 
 # OS files
 .DS_Store
@@ -27,12 +29,27 @@ archive/
 
 # Node modules
 node_modules/
+scripts/package-lock.json
 
 # Project context (contains sensitive internal data)
 docs/PROJECT_CONTEXT.md
 config/security_terms.json
 
-# Backup files
+# Backup / temp files
 *.bak
 *.bak.*
 *.save
+*.tmp
+*.old
+*.orig
+*.swp
+*~
+
+# Instance-specific files
+.installed
+
+# Upload content (tracked via .htaccess only)
+uploads/inspections/*
+!uploads/inspections/.htaccess
+uploads/quarantine/*
+!uploads/quarantine/.htaccess
