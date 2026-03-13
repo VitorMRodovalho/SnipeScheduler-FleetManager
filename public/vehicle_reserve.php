@@ -409,6 +409,7 @@ function get_location_name($locations, $id) {
     </style>
 </head>
 <body class="p-4">
+<?= layout_loading_overlay() ?>
 <div class="container">
     <div class="page-shell">
         <?= layout_logo_tag() ?>

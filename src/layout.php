@@ -289,7 +289,22 @@ function render_top_bar(array $currentUser, bool $isStaff = false, bool $isAdmin
             </div>
             <div class="top-bar-actions">
                 ' . $extraActions . '
+                <a href="help" class="btn btn-outline-secondary btn-sm" title="Help"><i class="bi bi-question-circle"></i></a>
                 <a href="logout" class="btn btn-outline-secondary btn-sm">Log out</a>
             </div>
         </div>';
+}
+
+/**
+ * Render a page-loading overlay with spinner.
+ * Include this at the very top of <body> on pages that may take time to render.
+ * The overlay is automatically removed when the DOM is ready.
+ */
+function layout_loading_overlay(): string
+{
+    return '
+        <div class="page-loading-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,.85);z-index:9999;display:flex;align-items:center;justify-content:center;">
+            <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+        </div>
+        <script>document.addEventListener("DOMContentLoaded",function(){document.querySelector(".page-loading-overlay")?.remove();});</script>';
 }

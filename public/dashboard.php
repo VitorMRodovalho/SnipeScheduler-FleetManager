@@ -265,6 +265,7 @@ foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
     </style>
 </head>
 <body class="p-4">
+<?= layout_loading_overlay() ?>
 <div class="container">
     <div class="page-shell">
         <?= layout_logo_tag() ?>
@@ -727,7 +728,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 datasets: [{
                     label: 'Reservations',
                     data: counts,
-                    backgroundColor: '#0078b9'
+                    backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || '#0078b9'
                 }]
             },
             options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } }

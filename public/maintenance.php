@@ -545,6 +545,7 @@ $healthyCount = count(array_filter($fleetVehicles, fn($v) => $v['health_score'] 
     </style>
 </head>
 <body class="p-4">
+<?= layout_loading_overlay() ?>
 <div class="container">
     <div class="page-shell">
         <?= layout_logo_tag() ?>

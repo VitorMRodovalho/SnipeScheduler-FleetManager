@@ -259,6 +259,7 @@ try {
     <?= layout_theme_styles() ?>
 </head>
 <body class="p-4">
+<?= layout_loading_overlay() ?>
 <div class="container">
     <div class="page-shell">
         <?= layout_logo_tag() ?>
