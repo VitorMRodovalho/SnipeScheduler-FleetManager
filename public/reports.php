@@ -589,6 +589,7 @@ if ($report === 'summary') {
         // Mileage enrichment (from batch)
         $dMileage = $mileageByDriver[$d['user_email']] ?? ['miles' => 0, 'trips' => 0];
         $d['total_miles'] = $dMileage['miles'];
+        $totalMiles = $dMileage['miles'];
         $d['avg_miles'] = $dMileage['trips'] > 0 ? round($dMileage['miles'] / $dMileage['trips']) : 0;
         $d['completion_rate'] = $d['total_trips'] > 0 ? round(($d['completed'] / $d['total_trips']) * 100) : 0;
 

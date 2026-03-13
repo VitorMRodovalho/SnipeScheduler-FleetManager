@@ -126,7 +126,7 @@ if ($trainingRow) {
 // 2. Reservations
 $resStmt = $pdo->prepare("
     SELECT id, asset_id, asset_name_cache, status, approval_status,
-           start_datetime, end_datetime, user_name, purpose,
+           start_datetime, end_datetime, user_name, notes,
            checkout_form_data, checkin_form_data,
            company_name, company_abbr,
            created_at, updated_at
@@ -195,7 +195,7 @@ if ($format === 'csv') {
             $r['approval_status'] ?? '',
             $r['start_datetime'] ?? '',
             $r['end_datetime'] ?? '',
-            $r['purpose'] ?? '',
+            $r['notes'] ?? '',
             $r['created_at'] ?? '',
         ]);
     }
