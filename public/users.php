@@ -401,7 +401,7 @@ foreach ($allUsers as $user) {
                                     <?php $userVip = !empty($user['vip']); ?>
                                     <tr>
                                         <td><strong><?= h($user['name']) ?></strong><?= $multiCompany ? get_company_badge($user, $pdo) : '' ?></td>
-                                        <?php if ($multiCompany): ?><td><?= h($user['company']['name'] ?? '—') ?></td><?php endif; ?>
+                                        <?php if ($multiCompany): ?><td><?php if (!empty($user['company']['name'])): ?><?= h($user['company']['name']) ?><?php else: ?><span class="text-warning" title="No company assigned — user sees all fleets. Click Snipe-IT link to assign."><i class="bi bi-exclamation-triangle-fill me-1"></i>None</span><?php endif; ?></td><?php endif; ?>
                                         <td><?= h($user['email'] ?? '-') ?></td>
                                         <td><code><?= h($user['username']) ?></code></td>
 <td class="text-center">
@@ -544,7 +544,7 @@ foreach ($allUsers as $user) {
                                     <?php $userVip = !empty($user['vip']); ?>
                                     <tr>
                                         <td><strong><?= h($user['name']) ?></strong><?= $multiCompany ? get_company_badge($user, $pdo) : '' ?></td>
-                                        <?php if ($multiCompany): ?><td><?= h($user['company']['name'] ?? '—') ?></td><?php endif; ?>
+                                        <?php if ($multiCompany): ?><td><?php if (!empty($user['company']['name'])): ?><?= h($user['company']['name']) ?><?php else: ?><span class="text-warning" title="No company assigned — user sees all fleets. Click Snipe-IT link to assign."><i class="bi bi-exclamation-triangle-fill me-1"></i>None</span><?php endif; ?></td><?php endif; ?>
                                         <td><?= h($user['email'] ?? '-') ?></td>
                                         <td><code><?= h($user['username']) ?></code></td>
                                         <td class="text-center">
@@ -600,7 +600,7 @@ foreach ($allUsers as $user) {
                                     <?php $userVip = !empty($user['vip']); ?>
                                     <tr>
                                         <td><strong><?= h($user['name']) ?></strong><?= $multiCompany ? get_company_badge($user, $pdo) : '' ?></td>
-                                        <?php if ($multiCompany): ?><td><?= h($user['company']['name'] ?? '—') ?></td><?php endif; ?>
+                                        <?php if ($multiCompany): ?><td><?php if (!empty($user['company']['name'])): ?><?= h($user['company']['name']) ?><?php else: ?><span class="text-warning" title="No company assigned — user sees all fleets. Click Snipe-IT link to assign."><i class="bi bi-exclamation-triangle-fill me-1"></i>None</span><?php endif; ?></td><?php endif; ?>
                                         <td><?= h($user['email'] ?? '-') ?></td>
                                         <td><code><?= h($user['username']) ?></code></td>
                                         <td class="text-center">
