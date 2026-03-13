@@ -13,7 +13,7 @@ require_once SRC_PATH . '/email.php';
 require_once SRC_PATH . '/notification_service.php';
 require_once SRC_PATH . '/db.php';
 
-$active  = basename($_SERVER['PHP_SELF']);
+$active  = 'activity_log';
 $isAdmin = !empty($currentUser['is_admin']);
 $isStaff = !empty($currentUser['is_staff']) || $isAdmin;
 $isSuperAdmin = !empty($currentUser['is_super_admin']);
@@ -700,8 +700,6 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
             </li>
         </ul>
 
-        <form method="post">
-                    <?= csrf_field() ?>
 <form method="post" action="<?= h($active) ?>" class="row g-3 settings-form" id="settings-form">
             <?= csrf_field() ?>
 

@@ -4,7 +4,7 @@ require_once SRC_PATH . '/auth.php';
 require_once SRC_PATH . '/layout.php';
 require_once SRC_PATH . '/db.php';
 
-$active  = basename($_SERVER['PHP_SELF']);
+$active  = 'activity_log';
 $isAdmin = !empty($currentUser['is_admin']);
 $isStaff = !empty($currentUser['is_staff']) || $isAdmin;
 

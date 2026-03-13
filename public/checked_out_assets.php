@@ -99,7 +99,7 @@ function expected_to_timestamp($value): ?int
     return $ts;
 }
 
-$active    = basename($_SERVER['PHP_SELF']);
+$active    = 'checked_out_assets';
 $isAdmin   = !empty($currentUser['is_admin']);
 $isStaff   = !empty($currentUser['is_staff']) || $isAdmin;
 $embedded  = defined('RESERVATIONS_EMBED');

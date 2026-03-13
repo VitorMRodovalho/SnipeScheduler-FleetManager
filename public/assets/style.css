@@ -420,7 +420,7 @@ a.btn.btn-link:visited {
 /* Placeholder text stays centred and matches height */
 .model-image-placeholder {
     font-size: 0.85rem;
-    color: #888;
+    color: #666;
     text-align: center;
 }
 
@@ -620,7 +620,7 @@ a.btn.btn-link:visited {
 .model-calendar-weekday {
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     color: var(--muted);
     font-weight: 700;
     text-align: center;
@@ -771,8 +771,8 @@ body.catalogue-modal-open {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.7rem;
-    color: #888;
+    font-size: 0.75rem;
+    color: #666;
     text-align: center;
 }
 
@@ -1588,7 +1588,7 @@ form .form-select {
     }
 
     .model-calendar-day-number {
-        font-size: 0.7rem;
+        font-size: 0.75rem;
         line-height: 1.1;
     }
 
@@ -2027,7 +2027,7 @@ footer, footer a {
     padding: 0;
 }
 .photo-name {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     max-width: 100px;
 }
 .photo-gallery {

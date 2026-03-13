@@ -15,7 +15,7 @@ require_once SRC_PATH . '/activity_log.php';
 require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/layout.php';
 
-$active = 'activity_log.php'; // Keep Admin highlighted in nav
+$active = 'activity_log';
 $isAdmin = !empty($currentUser['is_admin']);
 $isStaff = !empty($currentUser['is_staff']) || $isAdmin;
 

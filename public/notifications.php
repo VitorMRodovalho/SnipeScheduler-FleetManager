@@ -12,7 +12,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/layout.php';
 
-$active = 'notifications.php';
+$active = 'activity_log';
 $isAdmin = !empty($currentUser['is_admin']);
 $isStaff = !empty($currentUser['is_staff']) || $isAdmin;
 $isSuperAdmin = !empty($currentUser['is_super_admin']);

@@ -60,7 +60,7 @@ function qc_current_reservations_for_model(PDO $pdo, int $modelId): array
     return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 }
 
-$active  = basename($_SERVER['PHP_SELF']);
+$active  = 'scan';
 $isAdmin = !empty($currentUser['is_admin']);
 $isStaff = !empty($currentUser['is_staff']) || $isAdmin;
 

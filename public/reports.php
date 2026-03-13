@@ -19,7 +19,7 @@ require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/layout.php';
 require_once SRC_PATH . '/company_filter.php';
 
-$active = 'reports.php';
+$active = 'reports';
 $isAdmin = !empty($currentUser['is_admin']);
 $isStaff = !empty($currentUser['is_staff']) || $isAdmin;
 
@@ -865,6 +865,7 @@ if ($report === 'summary') {
                             <?php if (empty($reportData['by_vehicle'])): ?>
                                 <p class="text-muted text-center py-4">No data for this period. Try a wider date range.</p>
                             <?php else: ?>
+                                <div class="table-responsive">
                                 <table class="table table-sm mb-0">
                                     <thead class="table-light"><tr><th>Vehicle</th><th class="text-center">Total</th><th class="text-center">Completed</th></tr></thead>
                                     <tbody>
@@ -873,6 +874,7 @@ if ($report === 'summary') {
                                         <?php endforeach; ?>
                                     </tbody>
                                 </table>
+                                </div>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -884,6 +886,7 @@ if ($report === 'summary') {
                             <?php if (empty($reportData['by_user'])): ?>
                                 <p class="text-muted text-center py-4">No data for this period. Try a wider date range.</p>
                             <?php else: ?>
+                                <div class="table-responsive">
                                 <table class="table table-sm mb-0">
                                     <thead class="table-light"><tr><th>User</th><th class="text-center">Total</th><th class="text-center">Completed</th></tr></thead>
                                     <tbody>
@@ -892,6 +895,7 @@ if ($report === 'summary') {
                                         <?php endforeach; ?>
                                     </tbody>
                                 </table>
+                                </div>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -914,10 +918,10 @@ if ($report === 'summary') {
                     <div class="card"><div class="card-header"><h6 class="mb-0"><i class="bi bi-tools me-2"></i>By Type</h6></div>
                         <div class="card-body p-0">
                             <?php if (empty($reportData['maintenance_by_type'])): ?><p class="text-muted text-center py-4">No data</p>
-                            <?php else: ?><table class="table table-sm mb-0"><tbody>
+                            <?php else: ?><div class="table-responsive"><table class="table table-sm mb-0"><tbody>
                                 <?php foreach ($reportData['maintenance_by_type'] as $row): ?>
                                 <tr><td><?= ucfirst(str_replace('_', ' ', $row['maintenance_type'])) ?></td><td class="text-center"><?= $row['count'] ?></td><td class="text-end">$<?= number_format($row['total_cost'], 2) ?></td></tr>
-                                <?php endforeach; ?></tbody></table><?php endif; ?>
+                                <?php endforeach; ?></tbody></table></div><?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -925,10 +929,10 @@ if ($report === 'summary') {
                     <div class="card"><div class="card-header"><h6 class="mb-0"><i class="bi bi-currency-dollar me-2"></i>Cost by Vehicle (Top 5)</h6></div>
                         <div class="card-body p-0">
                             <?php if (empty($reportData['cost_by_vehicle'])): ?><p class="text-muted text-center py-4">No data</p>
-                            <?php else: ?><table class="table table-sm mb-0"><tbody>
+                            <?php else: ?><div class="table-responsive"><table class="table table-sm mb-0"><tbody>
                                 <?php foreach ($reportData['cost_by_vehicle'] as $cpv): ?>
                                 <tr><td><?= h($cpv['name']) ?></td><td class="text-center"><?= $cpv['count'] ?> svc</td><td class="text-end">$<?= number_format($cpv['total_cost'], 2) ?></td></tr>
-                                <?php endforeach; ?></tbody></table><?php endif; ?>
+                                <?php endforeach; ?></tbody></table></div><?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -1031,6 +1035,7 @@ if ($report === 'summary') {
                     <a href="?<?= http_build_query(array_merge($_GET, ['export' => 'csv'])) ?>" class="btn btn-sm btn-outline-success"><i class="bi bi-download me-1"></i>Export CSV</a>
                 </div>
                 <div class="card-body p-0">
+                    <div class="table-responsive">
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
                             <tr><th>Vehicle</th><th class="text-center">Reservations</th><th class="text-center">Completed</th><th class="text-center">Completion</th><th class="text-center">Hours</th><th>Utilization</th></tr>
@@ -1064,6 +1069,7 @@ if ($report === 'summary') {
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
 
@@ -1075,6 +1081,7 @@ if ($report === 'summary') {
             <div class="card mb-4">
                 <div class="card-header"><h5 class="mb-0"><i class="bi bi-currency-dollar me-2"></i>Cost per Vehicle</h5></div>
                 <div class="card-body p-0">
+                    <div class="table-responsive">
                     <table class="table table-sm mb-0">
                         <thead class="table-light"><tr><th>Vehicle</th><th class="text-center">Services</th><th class="text-end">Total Cost</th><th class="text-end">Cost/Mile</th></tr></thead>
                         <tbody>
@@ -1088,6 +1095,7 @@ if ($report === 'summary') {
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
             <?php endif; ?>
@@ -1104,6 +1112,7 @@ if ($report === 'summary') {
                     <?php if (empty($reportData['maintenance'])): ?>
                         <p class="text-muted text-center py-4">No maintenance records for this period<?= $maintTypeFilter ? " with type \"" . h($maintTypeFilter) . "\"" : '' ?>. Try adjusting filters.</p>
                     <?php else: ?>
+                        <div class="table-responsive">
                         <table class="table table-hover mb-0">
                             <thead class="table-light">
                                 <tr><th>Date</th><th>Vehicle</th><th>Type / Title</th><th class="text-center">Mileage</th><th>Provider</th><th class="text-end">Cost</th><th>Logged By</th></tr>
@@ -1132,6 +1141,7 @@ if ($report === 'summary') {
                                 </tr>
                             </tfoot>
                         </table>
+                        </div>
                     <?php endif; ?>
                 </div>
             </div>
@@ -1267,6 +1277,7 @@ if ($report === 'summary') {
                     </div>
                 </div>
                 <div class="card-body p-0">
+                    <div class="table-responsive">
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
                             <tr><th>Vehicle</th><th class="text-center">Insurance</th><th class="text-center">Registration</th><th class="text-center">Maintenance</th><th>Action</th></tr>
@@ -1322,6 +1333,7 @@ if ($report === 'summary') {
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
         <?php endif; ?>

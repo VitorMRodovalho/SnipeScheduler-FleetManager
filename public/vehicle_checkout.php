@@ -14,7 +14,7 @@ require_once SRC_PATH . '/booking_helpers.php';
 require_once SRC_PATH . '/inspection_checklist.php';
 require_once SRC_PATH . '/inspection_photos.php';
 
-$active = basename($_SERVER['PHP_SELF']);
+$active = 'vehicle_checkout';
 $isAdmin = !empty($currentUser['is_admin']);
 $isStaff = !empty($currentUser['is_staff']) || $isAdmin;
 $error = '';

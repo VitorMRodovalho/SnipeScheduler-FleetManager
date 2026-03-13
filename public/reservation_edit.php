@@ -389,7 +389,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $startValue = datetime_local_value($reservation['start_datetime'] ?? '');
 $endValue   = datetime_local_value($reservation['end_datetime'] ?? '');
 
-$active = $embedded ? 'reservations.php' : ($fromMy ? 'my_bookings.php' : 'staff_reservations.php');
+$active = $embedded ? 'reservations' : ($fromMy ? 'my_bookings' : 'staff_reservations');
 $ajaxBase = 'reservation_edit.php?id=' . (int)$id;
 if ($from !== '') {
     $ajaxBase .= '&from=' . urlencode($from);

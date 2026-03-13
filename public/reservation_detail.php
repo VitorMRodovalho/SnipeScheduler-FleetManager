@@ -54,7 +54,7 @@ if (!$reservation) {
 // Load items via shared helper
 $items = get_reservation_items_with_names($pdo, $id);
 
-$active  = 'staff_reservations.php'; // Treat detail view as part of booking history.
+$active  = 'staff_reservations';
 ?>
 <!DOCTYPE html>
 <html>
@@ -155,15 +155,20 @@ $active  = 'staff_reservations.php'; // Treat detail view as part of booking his
         </div>
         <?php endif; ?>
 
-        <form method="post"
-              action="delete_reservation"
-              onsubmit="return confirm('Delete this booking and all its items? This cannot be undone.');">
-            <?= csrf_field() ?>
-            <input type="hidden" name="reservation_id" value="<?= (int)$id ?>">
-            <button class="btn btn-outline-danger" type="submit">
-                Delete this booking
-            </button>
-        </form>
+        <div class="d-flex gap-2 mt-3">
+            <a href="staff_reservations" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Back to Reservations
+            </a>
+            <form method="post"
+                  action="delete_reservation"
+                  onsubmit="return confirm('Delete this booking and all its items? This cannot be undone.');">
+                <?= csrf_field() ?>
+                <input type="hidden" name="reservation_id" value="<?= (int)$id ?>">
+                <button class="btn btn-outline-danger" type="submit">
+                    Delete this booking
+                </button>
+            </form>
+        </div>
 
     </div>
 </div>

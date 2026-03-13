@@ -21,7 +21,7 @@ $embedded   = defined('RESERVATIONS_EMBED');
 $pageBase   = $embedded ? 'reservations.php' : 'staff_checkout.php';
 $baseQuery  = $embedded ? ['tab' => 'today'] : [];
 $selfUrl    = $pageBase . (!empty($baseQuery) ? '?' . http_build_query($baseQuery) : '');
-$active     = basename($_SERVER['PHP_SELF']);
+$active     = 'staff_checkout';
 $isAdmin    = !empty($currentUser['is_admin']);
 $isStaff    = !empty($currentUser['is_staff']) || $isAdmin;
 $tz       = new DateTimeZone($timezone);
@@ -785,7 +785,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // ---------------------------------------------------------------------
 // View data
 // ---------------------------------------------------------------------
-$active  = basename($_SERVER['PHP_SELF']);
+$active  = 'staff_checkout';
 ?>
 <?php if (!$embedded): ?>
 <!DOCTYPE html>

@@ -20,7 +20,7 @@ require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/layout.php';
 require_once SRC_PATH . '/company_filter.php';
 
-$active = 'maintenance.php';
+$active = 'maintenance';
 $isAdmin = !empty($currentUser['is_admin']);
 $isStaff = !empty($currentUser['is_staff']) || $isAdmin;
 
@@ -443,6 +443,7 @@ if ($tab === 'history') {
             'vehicle_name' => $vehicleName,
             'vehicle_tag' => $vehicleTag,
             'vehicle_id' => $vehicleId,
+            'asset' => $record['asset'] ?? [],
             'type' => $record['asset_maintenance_type'] ?? 'Maintenance',
             'title' => $record['title'] ?? '',
             'supplier' => $record['supplier']['name'] ?? '-',
@@ -721,7 +722,7 @@ $healthyCount = count(array_filter($fleetVehicles, fn($v) => $v['health_score'] 
                                     ?>
                                     <tr class="<?= $rowClass ?>">
                                         <td>
-                                            <strong><?= h($v['asset']['name']) ?></strong><br>
+                                            <strong><?= h($v['asset']['name']) ?><?= get_company_badge($v['asset'], $pdo) ?></strong><br>
                                             <small class="text-muted"><?= h($v['asset']['asset_tag']) ?></small>
                                         </td>
                                         <td class="text-center">
@@ -829,7 +830,7 @@ $healthyCount = count(array_filter($fleetVehicles, fn($v) => $v['health_score'] 
                             <?php foreach ($maintenanceAlerts as $alert): ?>
                             <tr class="<?= $alert['urgent'] ? 'table-warning' : '' ?>">
                                 <td>
-                                    <strong><?= h($alert['asset']['name']) ?></strong><br>
+                                    <strong><?= h($alert['asset']['name']) ?><?= get_company_badge($alert['asset'], $pdo) ?></strong><br>
                                     <small class="text-muted"><?= h($alert['asset']['asset_tag']) ?></small>
                                 </td>
                                 <td><?= number_format($alert['current_mileage']) ?> mi</td>
@@ -874,7 +875,7 @@ $healthyCount = count(array_filter($fleetVehicles, fn($v) => $v['health_score'] 
                         <tbody>
                             <?php foreach ($insuranceAlerts as $alert): ?>
                             <tr class="<?= $alert['expired'] ? 'table-danger' : '' ?>">
-                                <td><strong><?= h($alert['asset']['name']) ?></strong><br><small class="text-muted"><?= h($alert['asset']['asset_tag']) ?></small></td>
+                                <td><strong><?= h($alert['asset']['name']) ?><?= get_company_badge($alert['asset'], $pdo) ?></strong><br><small class="text-muted"><?= h($alert['asset']['asset_tag']) ?></small></td>
                                 <td><?= date('M j, Y', strtotime($alert['insurance_expiry'])) ?></td>
                                 <td><?= $alert['expired'] ? '<span class="badge bg-danger">EXPIRED</span>' : '<span class="badge bg-warning text-dark">' . $alert['insurance_days'] . ' days</span>' ?></td>
                             </tr>
@@ -896,7 +897,7 @@ $healthyCount = count(array_filter($fleetVehicles, fn($v) => $v['health_score'] 
                         <tbody>
                             <?php foreach ($registrationAlerts as $alert): ?>
                             <tr class="<?= $alert['expired'] ? 'table-danger' : '' ?>">
-                                <td><strong><?= h($alert['asset']['name']) ?></strong><br><small class="text-muted"><?= h($alert['asset']['asset_tag']) ?></small></td>
+                                <td><strong><?= h($alert['asset']['name']) ?><?= get_company_badge($alert['asset'], $pdo) ?></strong><br><small class="text-muted"><?= h($alert['asset']['asset_tag']) ?></small></td>
                                 <td><?= date('M j, Y', strtotime($alert['registration_expiry'])) ?></td>
                                 <td><?= $alert['expired'] ? '<span class="badge bg-danger">EXPIRED</span>' : '<span class="badge bg-warning text-dark">' . $alert['registration_days'] . ' days</span>' ?></td>
                             </tr>
@@ -936,7 +937,7 @@ $healthyCount = count(array_filter($fleetVehicles, fn($v) => $v['health_score'] 
                                 <div class="row">
                                     <!-- Left: Vehicle info + issue context + history -->
                                     <div class="col-md-7">
-                                        <h5 class="mb-3"><?= h($asset['name']) ?> <small class="text-muted"><?= h($asset['asset_tag']) ?></small></h5>
+                                        <h5 class="mb-3"><?= h($asset['name']) ?><?= get_company_badge($asset, $pdo) ?> <small class="text-muted"><?= h($asset['asset_tag']) ?></small></h5>
 
                                         <div class="row mb-3">
                                             <div class="col-6">
@@ -1318,7 +1319,7 @@ $healthyCount = count(array_filter($fleetVehicles, fn($v) => $v['health_score'] 
                                     <tr>
                                         <td class="text-nowrap"><?= date('M j, Y', strtotime($record['date'])) ?></td>
                                         <td>
-                                            <strong><?= h($record['vehicle_name']) ?></strong><br>
+                                            <strong><?= h($record['vehicle_name']) ?><?= get_company_badge($record['asset'], $pdo) ?></strong><br>
                                             <small class="text-muted"><?= h($record['vehicle_tag']) ?></small>
                                         </td>
                                         <td>

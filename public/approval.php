@@ -14,7 +14,7 @@ require_once SRC_PATH . '/email_service.php';
 require_once SRC_PATH . '/notification_service.php';
 require_once SRC_PATH . '/company_filter.php';
 
-$active = basename($_SERVER['PHP_SELF']);
+$active = 'approval';
 $isAdmin = !empty($currentUser['is_admin']);
 $isStaff = !empty($currentUser['is_staff']) || $isAdmin;
 

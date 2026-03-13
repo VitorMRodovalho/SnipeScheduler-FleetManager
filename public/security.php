@@ -8,7 +8,7 @@ require_once SRC_PATH . '/auth.php';
 require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/layout.php';
 
-$active = 'security.php';
+$active = 'activity_log';
 $isAdmin = !empty($currentUser['is_admin']);
 $isStaff = !empty($currentUser['is_staff']) || $isAdmin;
 $isSuperAdmin = !empty($currentUser['is_super_admin']);
@@ -169,6 +169,7 @@ $totalChecks = count($checkResults);
                                 <span class="badge bg-secondary"><?= date('M j, Y g:i A') ?></span>
                             </div>
                             
+                            <div class="table-responsive">
                             <table class="table table-sm">
                                 <tbody>
                                     <?php foreach ($securityChecks as $key => $check): ?>
@@ -185,6 +186,7 @@ $totalChecks = count($checkResults);
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
+                            </div>
                         </div>
                     </div>
                 <!-- CRON Health -->
@@ -218,6 +220,7 @@ $totalChecks = count($checkResults);
                                     <span class="text-muted">No sync data recorded yet. Run the sync once to initialize.</span>
                                 <?php endif; ?>
                             </div>
+                            <div class="table-responsive">
                             <table class="table table-sm mb-0">
                                 <tr>
                                     <td class="text-muted" style="width:200px;">Sync Schedule</td>
@@ -236,6 +239,7 @@ $totalChecks = count($checkResults);
                                     <td>> 5 minutes without sync triggers admin notification</td>
                                 </tr>
                             </table>
+                            </div>
                         </div>
                     </div>
 </div>
@@ -287,6 +291,7 @@ $totalChecks = count($checkResults);
                     <div class="row">
                         <div class="col-md-6">
                             <h6><i class="bi bi-hdd me-2"></i>Backup Commands</h6>
+                            <div class="table-responsive">
                             <table class="table table-sm table-bordered">
                                 <tr>
                                     <td><code>sudo /usr/local/bin/backup-snipescheduler.sh</code></td>
@@ -301,8 +306,10 @@ $totalChecks = count($checkResults);
                                     <td>View backup log</td>
                                 </tr>
                             </table>
-                            
+                            </div>
+
                             <h6 class="mt-3"><i class="bi bi-database me-2"></i>Database Commands</h6>
+                            <div class="table-responsive">
                             <table class="table table-sm table-bordered">
                                 <tr>
                                     <td><code>sudo mysql -u root snipescheduler</code></td>
@@ -313,10 +320,12 @@ $totalChecks = count($checkResults);
                                     <td>Export database</td>
                                 </tr>
                             </table>
+                            </div>
                         </div>
                         
                         <div class="col-md-6">
                             <h6><i class="bi bi-arrow-repeat me-2"></i>Service Commands</h6>
+                            <div class="table-responsive">
                             <table class="table table-sm table-bordered">
                                 <tr>
                                     <td><code>sudo systemctl reload apache2</code></td>
@@ -331,8 +340,10 @@ $totalChecks = count($checkResults);
                                     <td>Watch error log</td>
                                 </tr>
                             </table>
-                            
+                            </div>
+
                             <h6 class="mt-3"><i class="bi bi-shield me-2"></i>Security Commands</h6>
+                            <div class="table-responsive">
                             <table class="table table-sm table-bordered">
                                 <tr>
                                     <td><code>sudo chmod 640 /var/www/snipescheduler/config/config.php</code></td>
@@ -343,6 +354,7 @@ $totalChecks = count($checkResults);
                                     <td>Fix ownership</td>
                                 </tr>
                             </table>
+                            </div>
                         </div>
                     </div>
                     

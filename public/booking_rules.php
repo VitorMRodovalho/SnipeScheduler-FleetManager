@@ -29,7 +29,7 @@ require_once SRC_PATH . '/business_days.php';
 require_once SRC_PATH . '/inspection_checklist.php';
 require_once SRC_PATH . '/inspection_photos.php';
 
-$active = basename($_SERVER['PHP_SELF']);
+$active = 'activity_log';
 $isAdmin = !empty($currentUser['is_admin']);
 $isStaff = !empty($currentUser['is_staff']) || $isAdmin;
 

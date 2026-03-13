@@ -16,7 +16,7 @@ function display_datetime(?string $isoDatetime): string
     return app_format_datetime($isoDatetime);
 }
 
-$active        = basename($_SERVER['PHP_SELF']);
+$active        = 'my_bookings';
 $isAdmin       = !empty($currentUser['is_admin']);
 $isStaff       = !empty($currentUser['is_staff']) || $isAdmin;
 $currentUserId = (string)($currentUser['id'] ?? '');

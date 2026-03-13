@@ -218,16 +218,16 @@ foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
             border-left: 4px solid;
         }
         .alert-card.overdue {
-            border-left-color: #dc3545;
-            background: #fff5f5;
+            border-left-color: var(--bs-danger, #dc3545);
+            background: var(--bs-danger-bg-subtle, #fff5f5);
         }
         .alert-card.pending {
-            border-left-color: #ffc107;
-            background: #fffbf0;
+            border-left-color: var(--bs-warning, #ffc107);
+            background: var(--bs-warning-bg-subtle, #fffbf0);
         }
         .alert-card.maintenance {
-            border-left-color: #fd7e14;
-            background: #fff8f0;
+            border-left-color: var(--bs-orange, #fd7e14);
+            background: var(--bs-warning-bg-subtle, #fff8f0);
         }
         .timeline-item {
             border-left: 2px solid #dee2e6;
@@ -623,7 +623,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 labels: ['Available', 'Reserved', 'In Service', 'Out of Service'],
                 datasets: [{
                     data: [<?= (int)$statusCounts['available'] ?>, <?= (int)$statusCounts['reserved'] ?>, <?= (int)$statusCounts['in_service'] ?>, <?= (int)$statusCounts['out_of_service'] ?>],
-                    backgroundColor: ['#62a744', '#0078b9', '#ec7c1f', '#ef3824']
+                    backgroundColor: [
+                        getComputedStyle(document.documentElement).getPropertyValue('--bs-success').trim() || '#62a744',
+                        getComputedStyle(document.documentElement).getPropertyValue('--bs-info').trim() || '#0078b9',
+                        getComputedStyle(document.documentElement).getPropertyValue('--bs-warning').trim() || '#ec7c1f',
+                        getComputedStyle(document.documentElement).getPropertyValue('--bs-danger').trim() || '#ef3824'
+                    ]
                 }]
             },
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }

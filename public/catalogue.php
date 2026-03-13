@@ -495,7 +495,7 @@ if ($isStaff && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['mode'] ?? '') 
 }
 
 // Active nav + staff flag
-$active  = basename($_SERVER['PHP_SELF']);
+$active  = 'catalogue';
 
 // ---------------------------------------------------------------------
 // Helper: decode Snipe-IT strings safely
