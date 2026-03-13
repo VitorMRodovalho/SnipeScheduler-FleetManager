@@ -35,3 +35,4 @@ config/security_terms.json
 # Backup files
 *.bak
 *.bak.*
+*.save

@@ -9,7 +9,7 @@
  *   NotificationService::fire('vehicle_checked_out', [
  *       'driver_name'      => 'John Smith',
  *       'vehicle_name'     => '2023 Ford F-150',
- *       'asset_tag'        => 'BPTR-VEH-012',
+ *       'asset_tag'        => 'FLEET-VEH-001',
  *       'destination'      => 'Area 2: Wilkens Interlocking',
  *       'scheduled_return' => 'Mar 5, 2026 5:00 PM',
  *       'reservation_id'   => 42,

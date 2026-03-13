@@ -238,6 +238,6 @@ class TeamsService
     {
         // Config is already loaded globally by the time this runs
         global $config;
-        return $config['app']['base_url'] ?? 'https://inventory.amtrakfdt.com/booking';
+        return $config['app']['base_url'] ?? '';
     }
 }
