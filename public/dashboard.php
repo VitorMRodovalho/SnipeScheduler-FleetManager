@@ -20,7 +20,7 @@ $multiCompany = is_multi_company_enabled($pdo);
 $userCompanyIds = $multiCompany ? get_user_company_ids($currentUser) : [];
 
 // Get all fleet vehicles
-$allAssets = get_requestable_assets(100, null);
+$allAssets = get_requestable_assets(500, null);
 $assetList = is_array($allAssets) ? $allAssets : [];
 
 // Apply company filtering
@@ -163,6 +163,29 @@ $stmt = $pdo->prepare("
 ");
 $stmt->execute($companyParams);
 $weeklyStats = $stmt->fetch(PDO::FETCH_ASSOC);
+
+// Daily reservation breakdown for bar chart (this week Mon-Sun)
+$weekStart = date('Y-m-d', strtotime('monday this week'));
+$dailyBreakdown = [];
+for ($d = 0; $d < 7; $d++) {
+    $day = date('Y-m-d', strtotime($weekStart . " +{$d} days"));
+    $dailyBreakdown[$day] = 0;
+}
+$stmt = $pdo->prepare("
+    SELECT DATE(start_datetime) as day, COUNT(*) as cnt
+    FROM reservations r
+    WHERE DATE(start_datetime) >= :week_start
+    AND DATE(start_datetime) < DATE_ADD(:week_start2, INTERVAL 7 DAY)
+    {$companyClause}
+    GROUP BY DATE(start_datetime)
+");
+$params = array_merge([':week_start' => $weekStart, ':week_start2' => $weekStart], $companyParams);
+$stmt->execute($params);
+foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+    if (isset($dailyBreakdown[$row['day']])) {
+        $dailyBreakdown[$row['day']] = (int)$row['cnt'];
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -240,7 +263,10 @@ $weeklyStats = $stmt->fetch(PDO::FETCH_ASSOC);
 
         <?= render_top_bar($currentUser, $isStaff, $isAdmin) ?>
 
-
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <small class="text-muted">Last updated: <span id="dashboard-refresh-status"></span> (refresh in <span id="dashboard-countdown">60</span>s)</small>
+            <button class="btn btn-sm btn-outline-secondary" onclick="window.location.reload()"><i class="bi bi-arrow-clockwise me-1"></i>Refresh now</button>
+        </div>
 
         <!-- Fleet Status Cards -->
         <div class="row g-3 mb-4">
@@ -285,6 +311,34 @@ $weeklyStats = $stmt->fetch(PDO::FETCH_ASSOC);
                             <div>Out of Service</div>
                         </div>
                         <i class="bi bi-tools stat-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header"><h6 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Fleet Status</h6></div>
+                    <div class="card-body d-flex align-items-center justify-content-center" style="height:250px;">
+                        <?php if ($statusCounts['total'] > 0): ?>
+                            <canvas id="fleetDonutChart"></canvas>
+                        <?php else: ?>
+                            <span class="text-muted">No data</span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header"><h6 class="mb-0"><i class="bi bi-bar-chart me-2"></i>This Week's Reservations</h6></div>
+                    <div class="card-body d-flex align-items-center justify-content-center" style="height:250px;">
+                        <?php if (array_sum($dailyBreakdown) > 0): ?>
+                            <canvas id="weeklyBarChart"></canvas>
+                        <?php else: ?>
+                            <span class="text-muted">No data</span>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -557,6 +611,59 @@ $userEmail = $currentUser['email'] ?? '';
 echo render_announcements_modal($userEmail, $pdo); 
 ?>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Donut chart
+    var donutEl = document.getElementById('fleetDonutChart');
+    if (donutEl) {
+        new Chart(donutEl, {
+            type: 'doughnut',
+            data: {
+                labels: ['Available', 'Reserved', 'In Service', 'Out of Service'],
+                datasets: [{
+                    data: [<?= (int)$statusCounts['available'] ?>, <?= (int)$statusCounts['reserved'] ?>, <?= (int)$statusCounts['in_service'] ?>, <?= (int)$statusCounts['out_of_service'] ?>],
+                    backgroundColor: ['#62a744', '#0078b9', '#ec7c1f', '#ef3824']
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+        });
+    }
+    // Bar chart
+    var barEl = document.getElementById('weeklyBarChart');
+    if (barEl) {
+        var days = <?= json_encode(array_map(function($d){ return date('D', strtotime($d)); }, array_keys($dailyBreakdown))) ?>;
+        var counts = <?= json_encode(array_values($dailyBreakdown)) ?>;
+        new Chart(barEl, {
+            type: 'bar',
+            data: {
+                labels: days,
+                datasets: [{
+                    label: 'Reservations',
+                    data: counts,
+                    backgroundColor: '#0078b9'
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } }
+        });
+    }
+
+    // Auto-refresh
+    var refreshInterval = 60;
+    var countdown = refreshInterval;
+    var statusEl = document.getElementById('dashboard-refresh-status');
+    var countdownEl = document.getElementById('dashboard-countdown');
+    function updateCountdown() {
+        countdown--;
+        if (countdownEl) countdownEl.textContent = countdown;
+        if (countdown <= 0) { window.location.reload(); }
+    }
+    if (statusEl) {
+        statusEl.textContent = new Date().toLocaleTimeString();
+        setInterval(updateCountdown, 1000);
+    }
+});
+</script>
 <?php layout_footer(); ?>
 </body>
 </html>

@@ -1218,7 +1218,10 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Primary colour (hex)</label>
-                                <input type="text" name="app_primary_color" class="form-control" value="<?= h($cfg(['app', 'primary_color'], '#660000')) ?>">
+                                <div class="input-group">
+                                    <input type="color" id="app_primary_color_picker" class="form-control form-control-color" value="<?= h($cfg(['app', 'primary_color'], '#660000')) ?>">
+                                    <input type="text" name="app_primary_color" id="app_primary_color_text" class="form-control" value="<?= h($cfg(['app', 'primary_color'], '#660000')) ?>" pattern="^#[0-9a-fA-F]{6}$" maxlength="7">
+                                </div>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Missed cutoff minutes</label>
@@ -1490,6 +1493,19 @@ function testTeamsFromSettings(audience) {
                     btn.disabled = false;
                 });
         });
+    });
+})();
+
+// Color picker bidirectional sync
+(function() {
+    const picker = document.getElementById('app_primary_color_picker');
+    const text = document.getElementById('app_primary_color_text');
+    if (!picker || !text) return;
+    picker.addEventListener('input', function() { text.value = this.value; });
+    text.addEventListener('input', function() {
+        if (/^#[0-9a-fA-F]{6}$/.test(this.value)) {
+            picker.value = this.value;
+        }
     });
 })();
 </script>

@@ -23,11 +23,11 @@ $categories = get_categories_with_requestable_assets();
 
 // Get assets based on filters
 if (!empty($searchQuery)) {
-    $assets = search_requestable_assets($searchQuery, 100);
+    $assets = search_requestable_assets($searchQuery, 500);
 } elseif ($categoryFilter) {
-    $assets = get_requestable_assets(100, $categoryFilter);
+    $assets = get_requestable_assets(500, $categoryFilter);
 } else {
-    $assets = get_requestable_assets(100);
+    $assets = get_requestable_assets(500);
 }
 
 // Apply company filtering

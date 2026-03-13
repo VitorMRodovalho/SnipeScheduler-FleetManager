@@ -5,6 +5,7 @@ require_once SRC_PATH . '/snipeit_client.php';
 require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/activity_log.php';
 require_once SRC_PATH . '/layout.php';
+require_once SRC_PATH . '/notification_service.php';
 
 function load_asset_labels(PDO $pdo, array $assetIds): array
 {
@@ -146,6 +147,7 @@ if ($forceRefresh) {
 
 // Handle renew actions (all/overdue tabs)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_check();
     // Renew single
     if (isset($_POST['renew_asset_id'])) {
         $renewId = (int)$_POST['renew_asset_id'];
@@ -173,6 +175,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } else {
             $error = 'Select a valid date/time for renewal.';
+        }
+    }
+
+    // Force check-in an overdue asset
+    if (isset($_POST['force_checkin_asset_id'])) {
+        $fcId = (int)$_POST['force_checkin_asset_id'];
+        if ($fcId > 0) {
+            try {
+                checkin_asset($fcId, 'Force check-in by staff');
+                // Update any confirmed reservation for this asset
+                $stmt = $pdo->prepare("UPDATE reservations SET status = 'completed', updated_at = NOW() WHERE asset_id = :aid AND status = 'confirmed' ORDER BY end_datetime DESC LIMIT 1");
+                $stmt->execute([':aid' => $fcId]);
+                $labels = load_asset_labels($pdo, [$fcId]);
+                $label = $labels[$fcId] ?? ('Asset #' . $fcId);
+                activity_log_event('force_checkin', 'Staff force check-in', [
+                    'subject_type' => 'asset',
+                    'subject_id'   => $fcId,
+                    'metadata'     => ['assets' => [$label]],
+                ]);
+                NotificationService::fire('force_checkin', ['asset_id' => $fcId, 'asset_label' => $label]);
+                $messages[] = "Force check-in completed for {$label}.";
+            } catch (Throwable $e) {
+                $error = 'Force check-in failed: ' . $e->getMessage();
+            }
         }
     }
 
@@ -475,6 +501,7 @@ function layout_checked_out_url(string $base, array $params): string
             </div>
         <?php else: ?>
             <form method="post">
+                <?= csrf_field() ?>
                 <input type="hidden" name="view" value="<?= h($view) ?>">
                 <?php if ($search !== ''): ?>
                     <input type="hidden" name="q" value="<?= h($search) ?>">
@@ -557,7 +584,7 @@ function layout_checked_out_url(string $base, array $params): string
                                                name="renew_expected[<?= $aid ?>]"
                                                class="form-control form-control-sm">
                                     </td>
-                                    <td>
+                                    <td class="d-flex gap-1">
                                         <button type="submit"
                                                 name="renew_asset_id"
                                                 value="<?= $aid ?>"
@@ -565,6 +592,15 @@ function layout_checked_out_url(string $base, array $params): string
                                                 <?php if ($aid <= 0): ?>disabled<?php endif; ?>>
                                             Renew
                                         </button>
+                                        <?php if ($isOverdue): ?>
+                                        <button type="submit"
+                                                name="force_checkin_asset_id"
+                                                value="<?= $aid ?>"
+                                                class="btn btn-sm btn-outline-danger"
+                                                onclick="return confirm('Force check-in this asset? This will mark it as returned in Snipe-IT without mileage.');">
+                                            Force Check-In
+                                        </button>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
