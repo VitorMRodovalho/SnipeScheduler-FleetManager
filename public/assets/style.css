@@ -112,10 +112,13 @@ a.btn.btn-link:visited {
 -------------------------------------------------- */
 
 .app-nav-shell {
+    position: relative;
+    z-index: 1100;
     margin-bottom: 1rem;
 }
 
 .app-nav {
+    overflow: visible !important;
     display: flex;
     flex-wrap: wrap;
     gap: 0.35rem;
@@ -129,6 +132,7 @@ a.btn.btn-link:visited {
 }
 
 .app-nav-shell .app-nav {
+    overflow: visible !important;
     margin-bottom: 0;
 }
 
@@ -1495,6 +1499,7 @@ form .form-select {
     }
 
     .app-nav-shell.has-toggle .app-nav {
+    overflow: visible !important;
         display: none;
         width: 100%;
         flex-direction: column;
@@ -1507,6 +1512,7 @@ form .form-select {
     }
 
     .app-nav-shell.has-toggle.is-open .app-nav {
+    overflow: visible !important;
         display: flex;
     }
 
@@ -1556,6 +1562,7 @@ form .form-select {
     }
 
     .app-nav {
+    overflow: visible !important;
         flex-wrap: wrap;
     }
 
@@ -1671,11 +1678,9 @@ form .form-select {
 
 /* Fix modal z-index stacking context */
 .modal {
-    position: fixed !important;
     z-index: 1055 !important;
 }
 .modal-backdrop {
-    position: fixed !important;
     z-index: 1050 !important;
 }
 
@@ -1848,6 +1853,7 @@ form .form-select {
 
 /* Nav bar - subtle navy border and slightly darker background */
 .app-nav {
+    overflow: visible !important;
     background: rgba(0, 45, 93, 0.07) !important;
     border: 1px solid #C5CBD3 !important;
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.06) !important;

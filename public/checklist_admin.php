@@ -558,7 +558,7 @@ if ($editProfileId > 0 && $tab === 'edit') {
 <?php elseif ($tab === 'assignments'): ?>
         <!-- ═══ ASSIGNMENTS TAB ═══ -->
         <?php
-        $models = get_models(200);
+        $models = get_models(200, '', 8);
         $existingAssignments = [];
         if (checklist_tables_exist($pdo)) {
             $aStmt = $pdo->query("SELECT snipeit_model_id, profile_id FROM checklist_profile_assignments WHERE snipeit_model_id IS NOT NULL");

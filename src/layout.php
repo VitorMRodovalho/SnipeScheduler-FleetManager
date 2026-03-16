@@ -173,30 +173,27 @@ if (!function_exists('layout_render_nav')) {
             $html .= '<a href="' . $href . '" class="' . $classes . '">' . $label . '</a>';
         }
 
-        // Admin dropdown (replaces single Admin link)
+        // Admin link
         if ($isAdmin) {
             $adminActive = in_array($active, $adminPages, true);
-            $ddClass = 'app-nav-link dropdown-toggle' . ($adminActive ? ' active' : '');
-            $html .= '<div class="d-inline-block position-relative">';
-            $html .= '<a href="#" class="' . $ddClass . '" data-bs-toggle="dropdown" aria-expanded="false">Admin</a>';
-            $html .= '<ul class="dropdown-menu">';
-            $html .= '<li><a class="dropdown-item" href="help"><i class="bi bi-question-circle me-2"></i>Help & Guide</a></li>';
-            $html .= '<li><hr class="dropdown-divider"></li>';
-            $html .= '<li><a class="dropdown-item" href="vehicles"><i class="bi bi-truck me-2"></i>Vehicles</a></li>';
-            $html .= '<li><a class="dropdown-item" href="users"><i class="bi bi-people me-2"></i>Users</a></li>';
-            $html .= '<li><a class="dropdown-item" href="activity_log"><i class="bi bi-journal-text me-2"></i>Activity Log</a></li>';
-            $html .= '<li><a class="dropdown-item" href="notifications"><i class="bi bi-bell me-2"></i>Notifications</a></li>';
-            $html .= '<li><a class="dropdown-item" href="announcements"><i class="bi bi-megaphone me-2"></i>Announcements</a></li>';
-            $html .= '<li><a class="dropdown-item" href="booking_rules"><i class="bi bi-sliders me-2"></i>Booking Rules</a></li>';
-            $html .= '<li><a class="dropdown-item" href="checklist_admin"><i class="bi bi-list-check me-2"></i>Checklists</a></li>';
-            $html .= '<li><hr class="dropdown-divider"></li>';
-            $html .= '<li><a class="dropdown-item" href="security"><i class="bi bi-shield-lock me-2"></i>Security</a></li>';
-            $html .= '<li><a class="dropdown-item" href="settings"><i class="bi bi-gear me-2"></i>Settings</a></li>';
-            $html .= '</ul></div>';
+            $cls = 'app-nav-link' . ($adminActive ? ' active' : '');
+            $html .= '<a href="vehicles" class="' . $cls . '">Admin</a>';
         }
-
         $html .= '</nav>';
 
+        $html .= '<script>document.addEventListener("DOMContentLoaded",function(){var b=document.getElementById("adminDropdownBtn"),m=document.getElementById("adminDropdownMenu");if(!b||!m)return;b.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();if(m.classList.contains("show")){m.classList.remove("show");m.style.display="none";return;}var r=b.getBoundingClientRect();document.body.appendChild(m);m.style.position="fixed";m.style.top=(r.bottom+2)+"px";m.style.right=(window.innerWidth-r.right)+"px";m.style.left="auto";m.style.zIndex="99999";m.style.display="block";m.classList.add("show");function cl(ev){if(!m.contains(ev.target)&&ev.target!==b){m.classList.remove("show");m.style.display="none";document.removeEventListener("click",cl);}}setTimeout(function(){document.addEventListener("click",cl);},10);});});</script>';
+        $html .= '<script>
+document.addEventListener("shown.bs.dropdown",function(e){
+    var m=e.target.nextElementSibling;
+    if(!m||!m.classList.contains("dropdown-menu"))return;
+    var r=e.target.getBoundingClientRect();
+    m.style.position="fixed";
+    m.style.top=Math.round(r.bottom+2)+"px";
+    m.style.right=Math.round(window.innerWidth-r.right)+"px";
+    m.style.left="auto";
+    m.style.zIndex="99999";
+});
+</script>';
         return $html;
     }
 }
