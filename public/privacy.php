@@ -43,6 +43,8 @@ try { $config = load_config(); } catch (Throwable $e) { $config = []; }
                     <li><strong>Photos:</strong> Optional vehicle condition photographs captured during inspections</li>
                     <li><strong>Training records:</strong> Driver safety training completion dates and expiration status</li>
                     <li><strong>Login activity:</strong> Authentication timestamps, session data, and system actions</li>
+                    <li><strong>Session data:</strong> Login timestamps, IP addresses, and session duration</li>
+                    <li><strong>Company affiliation:</strong> Your assigned company or department (when multi-entity mode is active)</li>
                 </ul>
             </div>
         </div>
@@ -96,8 +98,10 @@ try { $config = load_config(); } catch (Throwable $e) { $config = []; }
                 <h5>5. Your Rights</h5>
                 <ul>
                     <li><strong>Access:</strong> You can request a copy of all your personal data at any time using the <strong>"Download My Data"</strong> feature available from the My Reservations page</li>
+                    <li><strong>Self-service data export:</strong> You can download all your personal data at any time via "Download My Data" in My Reservations (available in JSON and CSV formats)</li>
                     <li><strong>Correction:</strong> Contact your Fleet Administrator to request correction of inaccurate personal data</li>
-                    <li><strong>Deletion:</strong> Contact your Fleet Administrator to request deletion of your personal data, subject to legal and operational retention requirements</li>
+                    <li><strong>Deletion:</strong> You may request deletion of your personal data by contacting your Fleet Administrator. Requests are tracked and processed in accordance with applicable privacy regulations</li>
+                    <li><strong>CCPA:</strong> If you are a California resident, you have additional rights under the California Consumer Privacy Act (CCPA), including the right to know, access, and delete your personal information</li>
                 </ul>
             </div>
         </div>
@@ -118,7 +122,32 @@ try { $config = load_config(); } catch (Throwable $e) { $config = []; }
 
         <div class="card mb-4">
             <div class="card-body">
-                <h5>7. Contact</h5>
+                <h5>7. Cookies &amp; Sessions</h5>
+                <p>This system uses session cookies to maintain your login state. Cookies are configured with security protections:</p>
+                <ul>
+                    <li><strong>HttpOnly</strong> — Not accessible to JavaScript, preventing cross-site scripting attacks from reading your session</li>
+                    <li><strong>Secure</strong> — Transmitted only over HTTPS connections</li>
+                    <li><strong>SameSite=Lax</strong> — Prevents cross-site request forgery by restricting when cookies are sent</li>
+                </ul>
+                <p>Sessions expire after a configurable idle period (default: 30 minutes). Session IDs are regenerated after each successful login to prevent session fixation attacks.</p>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5>8. Data Export</h5>
+                <p>You can export all your personal data at any time through the <strong>"Download My Data"</strong> feature accessible from My Reservations.</p>
+                <ul>
+                    <li><strong>JSON format:</strong> Complete data export including your profile, all reservations, inspection responses, activity log entries, and notification history</li>
+                    <li><strong>CSV format:</strong> Reservation history in a spreadsheet-compatible format</li>
+                </ul>
+                <p class="text-muted small">All data exports are logged for audit purposes.</p>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5>9. Contact</h5>
                 <p>For privacy concerns, data requests, or questions about this notice, contact your Fleet Administrator or system administrator.</p>
             </div>
         </div>
