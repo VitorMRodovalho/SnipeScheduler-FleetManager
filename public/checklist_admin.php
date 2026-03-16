@@ -757,3 +757,11 @@ if ($editProfileId > 0 && $tab === 'edit') {
 <?php layout_footer(); ?>
 </body>
 </html>
+<script>
+document.addEventListener('show.bs.modal', function(e) {
+    var modal = e.target;
+    if (modal.parentElement !== document.body) {
+        document.body.appendChild(modal);
+    }
+});
+</script>

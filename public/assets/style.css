@@ -2089,3 +2089,11 @@ footer, footer a {
         height: 60px;
     }
 }
+
+/* Fix Bootstrap modal backdrop covering modal content */
+.modal-backdrop {
+    z-index: 1040 !important;
+}
+.modal {
+    z-index: 1050 !important;
+}
