@@ -324,6 +324,7 @@ foreach ($allUsers as $user) {
             <?php if (!empty($currentUser['is_super_admin'])): ?>
             <li class="nav-item">
                 <a class="nav-link" href="booking_rules">Booking Rules</a></li>
+            <li class="nav-item"><a class="nav-link" href="checklist_admin">Checklists</a></li>
             <li class="nav-item"><a class="nav-link" href="security">Security</a>
             </li>
             <li class="nav-item">

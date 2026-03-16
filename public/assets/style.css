@@ -132,6 +132,15 @@ a.btn.btn-link:visited {
     margin-bottom: 0;
 }
 
+.app-nav .dropdown-menu {
+    z-index: 1050;
+}
+
+.app-nav .d-inline-block {
+    position: relative;
+    z-index: 1050;
+}
+
 .app-nav-link {
     padding: 0.4rem 0.75rem;
     border-radius: 999px;

@@ -217,6 +217,7 @@ $customHolidays = array_filter($allHolidays, fn($h) => $h['holiday_type'] === 'c
             <li class="nav-item"><a class="nav-link" href="notifications">Notifications</a></li>
             <li class="nav-item"><a class="nav-link" href="announcements">Announcements</a></li>
             <li class="nav-item"><a class="nav-link active" href="booking_rules">Booking Rules</a></li>
+            <li class="nav-item"><a class="nav-link" href="checklist_admin">Checklists</a></li>
             <li class="nav-item"><a class="nav-link" href="security">Security</a></li>
             <li class="nav-item"><a class="nav-link" href="settings">Settings</a></li>
         </ul>

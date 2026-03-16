@@ -257,6 +257,19 @@ if ($editProfileId > 0 && $tab === 'edit') {
         <?= layout_render_nav($active, $isStaff, $isAdmin) ?>
         <?= render_top_bar($currentUser, $isStaff, $isAdmin) ?>
 
+        <!-- Admin sub-tabs -->
+        <ul class="nav nav-tabs reservations-subtabs mb-3">
+            <li class="nav-item"><a class="nav-link" href="vehicles">Vehicles</a></li>
+            <li class="nav-item"><a class="nav-link" href="users">Users</a></li>
+            <li class="nav-item"><a class="nav-link" href="activity_log">Activity Log</a></li>
+            <li class="nav-item"><a class="nav-link" href="notifications">Notifications</a></li>
+            <li class="nav-item"><a class="nav-link" href="announcements">Announcements</a></li>
+            <li class="nav-item"><a class="nav-link" href="booking_rules">Booking Rules</a></li>
+            <li class="nav-item"><a class="nav-link active" href="checklist_admin">Checklists</a></li>
+            <li class="nav-item"><a class="nav-link" href="security">Security</a></li>
+            <li class="nav-item"><a class="nav-link" href="settings">Settings</a></li>
+        </ul>
+
         <?php if ($success): ?>
             <div class="alert alert-success alert-dismissible fade show"><i class="bi bi-check-circle me-2"></i><?= h($success) ?><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
         <?php endif; ?>

@@ -700,6 +700,7 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="booking_rules">Booking Rules</a></li>
+            <li class="nav-item"><a class="nav-link" href="checklist_admin">Checklists</a></li>
             <li class="nav-item"><a class="nav-link" href="security">Security</a>
             </li>
             <li class="nav-item">
