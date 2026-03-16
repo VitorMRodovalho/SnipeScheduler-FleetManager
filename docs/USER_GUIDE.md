@@ -301,6 +301,8 @@ Navigate to **Booking Rules**. Configure:
   - **Off** — No inspection form, only mileage required
 - **Photo Upload** — Enable or disable optional photo capture during checkout/checkin. When enabled, drivers can photograph vehicle condition using their device camera
 
+> **Feature prerequisites:** Inspection Mode, Photo Upload, and Training Enforcement are independent toggles. Each can be enabled or disabled without affecting the others. Changes take effect immediately for all new checkout/checkin sessions.
+
 ### C6. Publish Announcements
 
 Navigate to **Announcements**. Create system-wide notices with title, message body, urgency level (Info, Warning, Critical), display dates, and dismissible toggle. Release announcements are auto-generated on version updates and auto-deactivated on new releases. Users created after an announcement will not see it.
@@ -331,7 +333,7 @@ This verifies all required groups, status labels, and custom fields exist in the
 
 ### C10. Configure Multi-Entity Fleet (Super Admin)
 
-Multi-entity fleet partitioning allows different user groups to see only vehicles belonging to their assigned company.
+Multi-entity fleet partitioning allows different user groups to see only vehicles belonging to their assigned company. Company filtering is controlled in **Settings** (Super Admin only) and can be set to Auto-detect, Always On, or Always Off. Companies and user/vehicle assignments are managed in Snipe-IT.
 
 **When to use companies:** Enable multi-entity when your fleet serves multiple organizations, departments, or projects that need separate vehicle pools. If all users share the same fleet, leave this disabled.
 
@@ -397,6 +399,8 @@ When an employee leaves the organization, follow these steps to ensure proper ac
 
 ### C13. Configure Inspection Checklists
 
+**Important:** The full customizable checklist is only active when Inspection Mode is set to **Full** in Booking Rules (see C5). In **Quick** mode, drivers see a simplified 4-category inspection. In **Off** mode, only mileage is collected. The Checklist Management page displays a banner showing the current mode and a link to change it.
+
 Navigate to **Admin → Checklists** to manage inspection profiles:
 
 - **Profiles tab:** Create inspection profiles (e.g., "Standard Fleet", "Heavy Vehicle"). One profile must be marked as default. Duplicate existing profiles as a starting point.
@@ -404,8 +408,6 @@ Navigate to **Admin → Checklists** to manage inspection profiles:
 - **Safety-Critical toggle:** Mark items that should trigger warnings if failed (e.g., brakes, steering, seatbelts). When a driver marks a safety-critical item as "No" during checkout, a warning modal appears and staff are notified.
 - **Assignments tab:** Assign profiles to vehicle models/categories. Unassigned vehicles use the default profile. This allows different vehicle types to have different inspection requirements.
 - **Analytics tab:** View top failed inspection items and safety-critical failure trends over 30/90/365 day periods.
-
-> **Note:** The inspection mode must be set to "Full" in Booking Rules for the detailed checklist to appear during checkout/checkin.
 
 ### C14. Manage Data Compliance
 

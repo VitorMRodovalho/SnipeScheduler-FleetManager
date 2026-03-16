@@ -464,6 +464,7 @@ if (!isset($tabs[$activeTab])) {
     '); ?>
     <?php help_section('accRules', 'br3', 'Training Requirements', '
         <p>Enable or disable the training requirement for booking. When enabled, drivers must have valid, non-expired training to create reservations. Configure the validity period (in months).</p>
+        <div class="alert alert-info"><i class="bi bi-info-circle me-2"></i><strong>Prerequisite:</strong> Training enforcement is controlled here. When disabled, all drivers can book regardless of training status. Training records are preserved when toggling — re-enabling restores enforcement with existing data intact.</div>
     '); ?>
     <?php help_section('accRules', 'br4', 'Inspection Mode Configuration', '
         <p>Choose one of three inspection modes:</p>
@@ -475,6 +476,7 @@ if (!isset($tabs[$activeTab])) {
     '); ?>
     <?php help_section('accRules', 'br5', 'Photo Upload Toggle', '
         <p>Enable or disable the ability for drivers to upload photos during inspections. When enabled, drivers can upload up to 5 photos per inspection event.</p>
+        <div class="alert alert-info"><i class="bi bi-info-circle me-2"></i><strong>Prerequisite:</strong> Photo upload is only available to drivers when this setting is enabled. When disabled, the photo upload section does not appear during checkout or checkin.</div>
     '); ?>
     <?php help_section('accRules', 'br6', 'Missed Reservation Workflow', '
         <p>Configure how long after a reservation start time the system waits before marking it as missed. Also set a release buffer to hold the vehicle before returning it to the available pool.</p>
@@ -512,7 +514,7 @@ if (!isset($tabs[$activeTab])) {
     <?php help_section('accChecklists', 'cl1', 'Overview', '
         <p>The Checklist Management system allows Fleet Admins to create and customize inspection checklists that drivers complete during vehicle checkout and checkin.</p>
         <p>Go to <strong>Admin > Checklists</strong> to manage profiles, categories, items, and vehicle assignments.</p>
-        <p><strong>Note:</strong> The inspection mode must be set to "Full" in Booking Rules for the detailed checklist to appear.</p>
+        <div class="alert alert-info"><i class="bi bi-info-circle me-2"></i><strong>Mode awareness:</strong> The customizable full checklist is only shown to drivers when Inspection Mode is set to <strong>Full</strong> in Booking Rules. In <strong>Quick</strong> mode, drivers see a simplified 4-category checklist. In <strong>Off</strong> mode, drivers only enter mileage. The Checklist Management page shows the current mode status and links to Booking Rules for changes.</div>
     '); ?>
     <?php help_section('accChecklists', 'cl2', 'Profiles', '
         <p>A <strong>profile</strong> is a complete inspection checklist containing categories and items. You can create multiple profiles for different vehicle types.</p>
@@ -605,6 +607,7 @@ if (!isset($tabs[$activeTab])) {
     <?php help_section('accMulti', 'me1', 'When to Use Companies', '
         <p>Multi-entity fleet partitioning is useful when your organization has multiple subsidiaries, departments, or business units that each manage their own vehicle fleet.</p>
         <p>Each company sees only its own vehicles, while Fleet Admins retain full visibility across all entities.</p>
+        <div class="alert alert-info"><i class="bi bi-info-circle me-2"></i><strong>Prerequisite:</strong> Company filtering is controlled in <strong>System Settings</strong> (Super Admin). The mode can be set to Auto-detect, Always On, or Always Off. Companies and user/vehicle assignments are managed in Snipe-IT.</div>
     '); ?>
     <?php help_section('accMulti', 'me2', 'Setup in Snipe-IT', '
         <ol>
