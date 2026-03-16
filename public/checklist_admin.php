@@ -277,6 +277,38 @@ if ($editProfileId > 0 && $tab === 'edit') {
             <div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-triangle me-2"></i><?= h($error) ?><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
         <?php endif; ?>
 
+        <?php
+        // Show inspection mode status banner
+        $modeStmt = $pdo->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'inspection_mode'");
+        $modeStmt->execute();
+        $currentMode = $modeStmt->fetchColumn() ?: 'quick';
+        if ($currentMode === 'full'): ?>
+            <div class="alert alert-success d-flex align-items-center mb-3">
+                <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                <div>
+                    <strong>Full Inspection Mode is ACTIVE.</strong> Drivers will see the customizable checklist below during checkout and checkin.
+                    Changes made here take effect immediately.
+                    <br><small class="text-muted">To change the inspection mode, go to <a href="booking_rules">Booking Rules</a> → Vehicle Inspection Settings. Requires Fleet Admin or Super Admin.</small>
+                </div>
+            </div>
+        <?php elseif ($currentMode === 'quick'): ?>
+            <div class="alert alert-warning d-flex align-items-center mb-3">
+                <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                <div>
+                    <strong>Quick Inspection Mode is active.</strong> The customizable checklist below is <strong>NOT currently shown</strong> to drivers.
+                    Drivers see only the 4-category quick inspection.
+                    <br><small class="text-muted">To enable the full checklist, change the mode to <strong>Full</strong> in <a href="booking_rules">Booking Rules</a> → Vehicle Inspection Settings. Requires Fleet Admin or Super Admin.</small>
+                </div>
+            </div>
+        <?php else: ?>
+            <div class="alert alert-secondary d-flex align-items-center mb-3">
+                <i class="bi bi-dash-circle me-2 fs-5"></i>
+                <div>
+                    <strong>Inspections are OFF.</strong> The checklist below is <strong>not active</strong>. Drivers only enter mileage during checkout.
+                    <br><small class="text-muted">To enable inspections, change the mode in <a href="booking_rules">Booking Rules</a> → Vehicle Inspection Settings. Requires Fleet Admin or Super Admin.</small>
+                </div>
+            </div>
+        <?php endif; ?>
         <!-- Tabs -->
         <ul class="nav nav-tabs mb-4">
             <li class="nav-item"><a class="nav-link <?= $tab === 'profiles' ? 'active' : '' ?>" href="checklist_admin?tab=profiles">Profiles</a></li>
