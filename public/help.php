@@ -324,6 +324,24 @@ if (!isset($tabs[$activeTab])) {
         </ul>
         <p>Expired vehicles are flagged on the compliance report and should be taken out of service.</p>
     '); ?>
+    <?php help_section('accMaint', 'mt4', 'Force Check-In', '
+        <p>When a driver is unreachable and a vehicle is overdue, Fleet Staff can force the vehicle back into the system.</p>
+        <ol>
+            <li>Navigate to <strong>Reservations &gt; Checked Out Reservations</strong>.</li>
+            <li>Find the overdue vehicle and click <strong>Force Check-In</strong>.</li>
+            <li>The vehicle is checked in to Snipe-IT, set to Available, and the driver is notified.</li>
+            <li>The action is logged in the activity log and admin is notified.</li>
+        </ol>
+        <div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i>Use when: driver is unreachable and the vehicle is needed for another reservation.</div>
+    '); ?>
+    <?php help_section('accMaint', 'mt5', 'Key Tracking', '
+        <p>The <strong>Key Given</strong> toggle on the Staff Checkout page (Today\'s Reservations) tracks physical key custody independently from digital checkout.</p>
+        <ul>
+            <li>When a driver collects a vehicle, toggle &quot;Key Given&quot; to <strong>Yes</strong>.</li>
+            <li>If the reservation is later marked as <strong>missed</strong> and the key was marked as given (<code>key_collected=1</code>), the system sends an <strong>urgent notification</strong> to staff.</li>
+            <li>This helps distinguish between drivers who never showed up (no key) and drivers who have a key but failed to check out digitally.</li>
+        </ul>
+    '); ?>
 </div>
 
 <?php elseif ($activeTab === 'reports' && $isStaff): ?>
@@ -458,17 +476,33 @@ if (!isset($tabs[$activeTab])) {
     <?php help_section('accRules', 'br5', 'Photo Upload Toggle', '
         <p>Enable or disable the ability for drivers to upload photos during inspections. When enabled, drivers can upload up to 5 photos per inspection event.</p>
     '); ?>
-    <?php help_section('accRules', 'br6', 'Missed Reservation Settings', '
+    <?php help_section('accRules', 'br6', 'Missed Reservation Workflow', '
         <p>Configure how long after a reservation start time the system waits before marking it as missed. Also set a release buffer to hold the vehicle before returning it to the available pool.</p>
-    '); ?>
-    <?php help_section('accRules', 'br7', 'Data Retention Settings', '
-        <p>Configure how long the system retains:</p>
+        <p><strong>Full workflow:</strong></p>
+        <ol>
+            <li>CRON job (<code>cron_mark_missed.php</code>) marks reservations as missed after the configured <strong>cutoff minutes</strong> past the scheduled start time.</li>
+            <li>The vehicle is automatically checked in to Snipe-IT and its location is reset to home.</li>
+            <li>The <strong>driver is notified</strong> that their reservation was missed.</li>
+            <li>Fleet <strong>staff are notified</strong> of the missed reservation.</li>
+            <li>A <strong>&quot;Missed — Action Required&quot;</strong> card appears on the Staff Dashboard.</li>
+            <li>Staff reviews the card — if the key was given, contact the driver urgently.</li>
+            <li>Staff clicks the <strong>checkmark to dismiss</strong> after verifying key return.</li>
+            <li>The vehicle is automatically released after the configured <strong>release buffer hours</strong>.</li>
+        </ol>
+        <p><strong>Configurable settings</strong> (Booking Rules page):</p>
         <ul>
-            <li><strong>Activity logs:</strong> 90 / 180 / 365 / 730 days.</li>
-            <li><strong>Inspection photos:</strong> 1 / 2 / 3 years or indefinitely.</li>
-            <li><strong>Email queue:</strong> 7 / 14 / 30 / 60 days.</li>
+            <li><strong>Cutoff minutes:</strong> Time after reservation start before marking as missed.</li>
+            <li><strong>Release buffer hours:</strong> How long to hold the vehicle before returning it to the available pool.</li>
         </ul>
-        <p>A weekly CRON job automatically purges expired data.</p>
+    '); ?>
+    <?php help_section('accRules', 'br7', 'Data Retention Configuration', '
+        <p>Configure how long the system retains data. Navigate to <strong>Booking Rules &gt; Data Retention</strong> card.</p>
+        <ul>
+            <li><strong>Activity logs:</strong> 90 / 180 / 365 / 730 days (default: 365).</li>
+            <li><strong>Inspection photos:</strong> 1 / 2 / 3 years or indefinitely (default: 2 years).</li>
+            <li><strong>Email queue:</strong> 7 / 14 / 30 / 60 days (default: 30).</li>
+        </ul>
+        <p>A weekly CRON job (<code>cron_data_retention.php</code>) runs Sunday at 3:00 AM to purge expired data automatically. The last purge date is displayed on the Booking Rules page.</p>
     '); ?>
 </div>
 
@@ -636,8 +670,25 @@ if (!isset($tabs[$activeTab])) {
     <?php help_section('accSysSettings', 'ss4', 'Theme and Color Customization', '
         <p>Set your organization\'s primary brand color in System Settings. This color is applied to the navigation bar, buttons, and accent elements throughout the application. Enter a hex color code (e.g., #0078B9).</p>
     '); ?>
-    <?php help_section('accSysSettings', 'ss5', 'Session Timeout', '
-        <p>Configure the idle session timeout: 15, 30, 60, or 120 minutes. Users are automatically logged out after this period of inactivity. The setting is cached in the session for 5 minutes to minimize database queries.</p>
+    <?php help_section('accSysSettings', 'ss5', 'Session & Security Settings', '
+        <p><strong>Session Timeout:</strong> Configure the idle session timeout: 15, 30, 60, or 120 minutes. Users are automatically logged out after this period of inactivity.</p>
+        <p><strong>Session Cookie Hardening:</strong> All session cookies are configured with security protections:</p>
+        <ul>
+            <li><code>HttpOnly</code> — Not accessible to JavaScript (prevents XSS cookie theft)</li>
+            <li><code>Secure</code> — Transmitted only over HTTPS</li>
+            <li><code>SameSite=Lax</code> — Prevents cross-site request forgery</li>
+        </ul>
+        <p>Configure session settings on the <strong>Settings</strong> page under Session &amp; Security.</p>
+    '); ?>
+    <?php help_section('accSysSettings', 'ss6', 'Onboarding Checklist', '
+        <p>The top of the <strong>Settings</strong> page displays a <strong>10-point system configuration status</strong> checklist with color-coded indicators:</p>
+        <ul>
+            <li><span class="badge bg-success">Green</span> — Configured and working correctly.</li>
+            <li><span class="badge bg-warning text-dark">Yellow</span> — Optional configuration, not yet set up.</li>
+            <li><span class="badge bg-danger">Red</span> — Required configuration missing, action needed.</li>
+        </ul>
+        <p><strong>Checks include:</strong> Snipe-IT API connection, SMTP email, OAuth provider, CRON jobs running, Backup schedule, Snipe-IT groups configured, Business days set, Holidays loaded, Teams webhook (optional), and Multi-entity mode.</p>
+        <p>Address all red items before going live. Yellow items can be configured later as needed.</p>
     '); ?>
 </div>
 
@@ -667,6 +718,18 @@ if (!isset($tabs[$activeTab])) {
     <?php help_section('accSecurity', 'sec4', 'Incident Response', '
         <p>A formal Incident Response Plan is documented in <code>docs/INCIDENT_RESPONSE.md</code>. It covers incident classification, detection sources, response team roles, and a 5-phase response procedure.</p>
         <p>Key contacts and escalation procedures should be reviewed quarterly.</p>
+    '); ?>
+    <?php help_section('accSecurity', 'sec5', 'ClamAV / Upload Scanning', '
+        <p>The system uses <strong>ClamAV</strong> to scan uploaded files (inspection photos) for malware.</p>
+        <ul>
+            <li>A <strong>CRON job runs hourly</strong> to scan the uploads directory.</li>
+            <li>Infected files are <strong>quarantined automatically</strong> and removed from the accessible uploads directory.</li>
+            <li>Scan status is visible on the <strong>Security Dashboard</strong>.</li>
+        </ul>
+        <p><strong>Installation:</strong></p>
+        <pre><code>sudo apt install clamav clamav-daemon
+sudo freshclam</code></pre>
+        <p class="text-muted">The ClamAV virus database updates automatically via <code>freshclam</code>. Ensure the <code>clamav</code> user has read access to the uploads directory.</p>
     '); ?>
 </div>
 
@@ -698,6 +761,26 @@ if (!isset($tabs[$activeTab])) {
     '); ?>
     <?php help_section('accCompliance', 'dc4', 'Employee Offboarding', '
         <p>When an employee leaves the organization, follow the offboarding procedure in <strong>User Management > Employee Offboarding Procedure</strong>. Ensure all active reservations are resolved and access is revoked at both the fleet system and identity provider levels.</p>
+    '); ?>
+    <?php help_section('accCompliance', 'dc5', 'Data Deletion (CCPA/DSAR)', '
+        <p>The <strong>Data Deletion</strong> tool allows administrators to permanently remove a user\'s personal data in compliance with CCPA and Data Subject Access Requests (DSAR).</p>
+        <ol>
+            <li>Navigate to <strong>Admin &gt; Settings &gt; Data Deletion Tool</strong>.</li>
+            <li>Search by the user\'s <strong>email address</strong>.</li>
+            <li>Preview all data found across <strong>9 tables</strong> (users, reservations, inspections, inspection photos, activity logs, email queue, training records, notification preferences, data requests).</li>
+            <li>Review the data summary and click <strong>Confirm Deletion</strong>.</li>
+            <li>All matching records are permanently removed. This action cannot be undone.</li>
+        </ol>
+        <p><strong>When to use:</strong> Employee departure, privacy request from a user, or CCPA right-to-delete request.</p>
+    '); ?>
+    <?php help_section('accCompliance', 'dc6', 'DSAR Tracking', '
+        <p>The <code>data_requests</code> table tracks all data access exports and deletion requests. This log is visible at the <strong>bottom of the Data Deletion page</strong>.</p>
+        <ul>
+            <li>Each entry records: request type (export or deletion), user email, timestamp, and status.</li>
+            <li>Data exports via &quot;Download My Data&quot; are <strong>automatically logged</strong>.</li>
+            <li>Data deletions via the admin tool are <strong>automatically logged</strong>.</li>
+            <li>This provides an audit trail for regulatory compliance.</li>
+        </ul>
     '); ?>
 </div>
 

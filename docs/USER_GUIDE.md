@@ -124,6 +124,15 @@ If involved in a vehicle incident:
 4. Use the check-in form to document condition changes
 5. Refer to the Accident Instruction Sheet in the vehicle binder
 
+### A10. Download Your Personal Data
+
+Navigate to **My Reservations** and click **"Download My Data"** at the bottom of the page. Choose your preferred format:
+
+- **JSON** — Complete data export including your profile, all reservations, inspection responses, activity log entries, and notification history
+- **CSV** — Reservation history in a spreadsheet-compatible format
+
+The download is generated on demand and includes all personal data the system holds about you. Exports are logged for audit purposes.
+
 ---
 
 ## Procedure B: Fleet Staff (Group 3)
@@ -195,6 +204,41 @@ Navigate to the **Security Dashboard** (Admin tab). The CRON Sync Health card sh
 - **Alert Threshold:** How many minutes of staleness triggers an alert
 
 If the sync status shows "Stale," verify that the CRON jobs are running on the server. Check `/var/log/snipescheduler/` for error logs.
+
+### B10. Handle Missed Reservations
+
+The dashboard shows a **"Missed — Action Required"** card when reservations are missed. Each card displays the vehicle, driver, scheduled time, and key status.
+
+**Workflow:**
+
+1. Review the missed reservation card on your dashboard
+2. Check the **Key** status:
+   - **Key: Yes** — The driver was given a physical key. Contact them urgently to arrange key return
+   - **Key: No** — The vehicle was likely never collected. Verify and dismiss
+3. Click the **envelope icon** to email the driver directly
+4. Click the **checkmark** to dismiss the card (marks the missed reservation as resolved)
+5. Vehicles are automatically released back to the available pool after the configured buffer period
+
+### B11. Force Check-In a Vehicle
+
+When a driver is unreachable and a vehicle is overdue:
+
+1. Navigate to **Reservations → Checked Out Reservations**
+2. Find the overdue vehicle
+3. Click **Force Check-In**
+4. The vehicle is checked in to Snipe-IT, set to Available, and the driver is notified
+5. The action is logged in the activity log
+
+**When to use:** The driver is unreachable and the vehicle is needed for another reservation, or the driver has left the organization without returning the vehicle.
+
+### B12. Key Handover Tracking
+
+On the **Staff Checkout page** (Today's Reservations), each approved reservation has a **"Key Given"** toggle:
+
+1. When you physically hand the vehicle key to a driver, mark the toggle as **Yes**
+2. The system records `key_collected=1` for that reservation
+3. If the reservation is later marked as **missed** and the key was given, the system sends an **URGENT notification** to staff
+4. This helps track physical key custody independently from the digital checkout process
 
 ### Maintenance Intervals Reference
 
@@ -351,9 +395,65 @@ When an employee leaves the organization, follow these steps to ensure proper ac
 
 6. **Data retention:** The employee's historical data (reservations, activity logs, inspection photos) will be automatically purged per the configured retention policy (Admin > Booking Rules > Data Retention). No manual cleanup is required. Default retention: activity logs 365 days, inspection photos 730 days.
 
+### C13. Configure Inspection Checklists
+
+Navigate to **Admin → Checklists** to manage inspection profiles:
+
+- **Profiles tab:** Create inspection profiles (e.g., "Standard Fleet", "Heavy Vehicle"). One profile must be marked as default. Duplicate existing profiles as a starting point.
+- **Edit Profile tab:** Add/remove categories and items within a profile. Categories group related inspection items (e.g., "Tires", "Lights", "Interior").
+- **Safety-Critical toggle:** Mark items that should trigger warnings if failed (e.g., brakes, steering, seatbelts). When a driver marks a safety-critical item as "No" during checkout, a warning modal appears and staff are notified.
+- **Assignments tab:** Assign profiles to vehicle models/categories. Unassigned vehicles use the default profile. This allows different vehicle types to have different inspection requirements.
+- **Analytics tab:** View top failed inspection items and safety-critical failure trends over 30/90/365 day periods.
+
+> **Note:** The inspection mode must be set to "Full" in Booking Rules for the detailed checklist to appear during checkout/checkin.
+
+### C14. Manage Data Compliance
+
+- **Data Retention:** Navigate to Booking Rules → Data Retention card. Configure purge periods for activity logs (90–730 days), inspection photos (1–3 years), and email queue (7–60 days). A weekly CRON job runs Sunday at 3:00 AM to purge expired data. The last purge date is displayed on the card.
+- **Data Deletion (CCPA):** Navigate to Settings → Data Deletion Tool. Search by email address, preview all data across 9 tables, and permanently delete with confirmation. All deletions are tracked in the DSAR log.
+- **DSAR Tracking:** The bottom of the Data Deletion page shows all data access requests (exports) and deletion requests with timestamps and status. Entries are auto-logged when users export their data or when admins perform deletions.
+- **Privacy Notice:** A publicly accessible privacy notice is available at `/booking/privacy` (no authentication required). Link to it from Settings → View Privacy Notice.
+
+### C15. Configure Session & Security
+
+- **Session Timeout:** Navigate to Settings → Session & Security. Configure the idle timeout: 15, 30, 60, or 120 minutes. Users are automatically logged out after this period of inactivity.
+- **Onboarding Checklist:** The top of the Settings page shows a 10-point configuration status panel with color-coded indicators:
+  - **Green** = Configured and working (e.g., API connected, SMTP configured)
+  - **Yellow** = Optional, not yet configured (e.g., Teams webhook)
+  - **Red** = Required, action needed (e.g., CRON not running, no backup detected)
+  - Checks include: Snipe-IT API, SMTP, OAuth, CRON jobs, Backup, Groups, Business Days, Holidays, Teams webhook, Multi-entity mode
+- **Upload Scanning:** The Security Dashboard shows ClamAV scan status. Install ClamAV: `sudo apt install clamav clamav-daemon && sudo freshclam`. A CRON job runs hourly to scan uploaded files. Infected files are quarantined automatically.
+
+### C16. Use the Admin Dropdown
+
+The **Admin** button in the navigation bar is a dropdown menu providing quick access to all administrative pages:
+
+- Help, Vehicles, Users, Activity Log, Notifications, Announcements, Booking Rules, Security, Settings
+
+Available to Fleet Admin and Super Admin roles. The dropdown organizes all admin functions in one place, eliminating the need to navigate through sub-tabs.
+
+### C17. Access In-App Help
+
+Click the **question mark icon (?)** in the top-right of any page to access the Help system. Content is filtered by your role:
+
+| Role | Tabs Visible |
+|------|-------------|
+| Driver | Booking, Checkout & Checkin, My Reservations, FAQ |
+| Fleet Staff | + Approvals, Maintenance, Reports, Training Management |
+| Fleet Admin | + Vehicle Management, User Management, Booking Rules, Checklists, Notifications, Announcements, Multi-Entity Fleet |
+| Super Admin | + System Settings, Security, Data Compliance, Deployment |
+
+Use the **search box** at the top to find specific topics across all visible tabs.
+
 ---
 
 ## Security Requirements
+
+### Session Security
+
+- Sessions expire after a configurable idle period (default 30 minutes)
+- Session cookies are hardened: HttpOnly, Secure (HTTPS), SameSite=Lax
+- Session IDs are regenerated after each successful login
 
 ### Multi-Factor Authentication (MFA)
 
