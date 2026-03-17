@@ -127,7 +127,7 @@ function get_company_badge($asset, $pdo = null): string
     if (!$enabled) return '';
 
     $company = $asset['company'] ?? null;
-    if (!$company || empty($company['name'])) return ' <span class="badge bg-warning text-dark" title="No company assigned — user sees all fleets"><i class="bi bi-exclamation-triangle-fill me-1"></i>All Fleets</span>';
+    if (!$company || empty($company['name'])) return '';
 
     $companyId = (int)($company['id'] ?? 0);
     $meta = $companyMeta[$companyId] ?? [];
