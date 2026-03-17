@@ -2097,3 +2097,10 @@ footer, footer a {
 .modal {
     z-index: 1050 !important;
 }
+
+/* Users table: smaller font for Company, Email, Username columns */
+.table td:nth-child(2),
+.table td:nth-child(3),
+.table td:nth-child(4) {
+    font-size: 0.85rem;
+}
