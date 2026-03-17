@@ -2628,16 +2628,22 @@ function check_license_plate_exists(string $plate): bool
  * Get email addresses of all active users belonging to specified Snipe-IT groups.
  * Used by NotificationService to resolve recipients dynamically.
  *
- * @param array $groupIds Array of group IDs, e.g. [SNIPEIT_GROUP_FLEET_STAFF]
+ * @param array    $groupIds  Array of group IDs, e.g. [SNIPEIT_GROUP_FLEET_STAFF]
+ * @param int|null $companyId Optional company filter. When set, Fleet Staff (group 3)
+ *                            are only included if their Snipe-IT company matches.
+ *                            Admins (group 1) and Fleet Admin (group 4) always included.
  * @return array List of email addresses
  */
-function get_emails_by_snipeit_groups(array $groupIds): array
+function get_emails_by_snipeit_groups(array $groupIds, ?int $companyId = null): array
 {
     static $cache = [];
-    $cacheKey = implode(',', $groupIds);
+    $cacheKey = implode(',', $groupIds) . ':' . ($companyId ?? 'all');
     if (isset($cache[$cacheKey])) {
         return $cache[$cacheKey];
     }
+
+    // Groups with cross-entity visibility (always receive regardless of company)
+    $crossEntityGroups = [SNIPEIT_GROUP_ADMINS, SNIPEIT_GROUP_FLEET_ADMIN];
 
     $emails = [];
     try {
@@ -2654,9 +2660,22 @@ function get_emails_by_snipeit_groups(array $groupIds): array
             }
 
             // Check if user belongs to any of the requested groups
-            if (!empty(array_intersect($groupIds, $userGroupIds))) {
-                $emails[] = strtolower(trim($user['email']));
+            if (empty(array_intersect($groupIds, $userGroupIds))) {
+                continue;
             }
+
+            // Company filter: skip staff-only users from other companies
+            if ($companyId !== null) {
+                $hasCrossEntity = !empty(array_intersect($crossEntityGroups, $userGroupIds));
+                if (!$hasCrossEntity) {
+                    $userCompanyId = (int)($user['company']['id'] ?? 0);
+                    if ($userCompanyId > 0 && $userCompanyId !== $companyId) {
+                        continue;
+                    }
+                }
+            }
+
+            $emails[] = strtolower(trim($user['email']));
         }
     } catch (Exception $e) {
         error_log('get_emails_by_snipeit_groups error: ' . $e->getMessage());

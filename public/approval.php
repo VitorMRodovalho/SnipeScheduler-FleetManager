@@ -23,6 +23,14 @@ if (!$isStaff) {
     exit;
 }
 
+// Multi-entity: staff see only their company's reservations; admins see all
+$multiCompany = is_multi_company_enabled($pdo);
+$staffCompanyName = null;
+if ($multiCompany && !$isAdmin) {
+    $staffCompanyName = $currentUser['company']['name'] ?? null;
+    // If staff has no company, they see all (backward compatible)
+}
+
 $error = '';
 $success = '';
 
@@ -38,12 +46,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $reservation = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($reservation && $reservation['approval_status'] === 'pending_approval') {
+            // Multi-entity authorization: staff can only process their own company's reservations
+            if ($staffCompanyName !== null) {
+                $resCompany = trim($reservation['company_name'] ?? '');
+                if ($resCompany !== '' && $resCompany !== $staffCompanyName) {
+                    $error = 'You do not have authority to process reservations for another company.';
+                }
+            }
+
             $userName = trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''));
             $userEmail = $currentUser['email'] ?? '';
 
-            
-
-if ($action === 'approve') {
+if (!empty($error)) {
+    // Authorization failed — skip processing
+} elseif ($action === 'approve') {
                 // Check if vehicle is currently In Service (already checked out)
                 if (!empty($reservation['asset_id'])) {
                     $assetInfo = get_asset($reservation['asset_id']);
@@ -104,15 +120,32 @@ if ($action === 'approve') {
     }
 }
 
-// Get pending reservations
-$stmt = $pdo->query("SELECT r.*, ah.notes as submission_notes FROM reservations r
-    LEFT JOIN approval_history ah ON ah.reservation_id = r.id AND ah.action = 'submitted'
-    WHERE r.approval_status = 'pending_approval' ORDER BY r.created_at ASC");
+// Get pending reservations (company-filtered for staff)
+if ($staffCompanyName !== null) {
+    $stmt = $pdo->prepare("SELECT r.*, ah.notes as submission_notes FROM reservations r
+        LEFT JOIN approval_history ah ON ah.reservation_id = r.id AND ah.action = 'submitted'
+        WHERE r.approval_status = 'pending_approval'
+        AND (r.company_name = ? OR r.company_name IS NULL OR r.company_name = '')
+        ORDER BY r.created_at ASC");
+    $stmt->execute([$staffCompanyName]);
+} else {
+    $stmt = $pdo->query("SELECT r.*, ah.notes as submission_notes FROM reservations r
+        LEFT JOIN approval_history ah ON ah.reservation_id = r.id AND ah.action = 'submitted'
+        WHERE r.approval_status = 'pending_approval' ORDER BY r.created_at ASC");
+}
 $pendingReservations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Get recently processed
-$stmt = $pdo->query("SELECT * FROM reservations WHERE approval_status IN ('approved', 'rejected', 'auto_approved')
-    AND approved_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) ORDER BY approved_at DESC LIMIT 50");
+// Get recently processed (company-filtered for staff)
+if ($staffCompanyName !== null) {
+    $stmt = $pdo->prepare("SELECT * FROM reservations WHERE approval_status IN ('approved', 'rejected', 'auto_approved')
+        AND approved_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+        AND (company_name = ? OR company_name IS NULL OR company_name = '')
+        ORDER BY approved_at DESC LIMIT 50");
+    $stmt->execute([$staffCompanyName]);
+} else {
+    $stmt = $pdo->query("SELECT * FROM reservations WHERE approval_status IN ('approved', 'rejected', 'auto_approved')
+        AND approved_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) ORDER BY approved_at DESC LIMIT 50");
+}
 $recentReservations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>

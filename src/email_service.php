@@ -58,7 +58,19 @@ class FleetEmailService
         // Dynamic: resolve from Snipe-IT group membership (no hardcoded emails)
         return get_emails_by_snipeit_groups([SNIPEIT_GROUP_FLEET_STAFF, SNIPEIT_GROUP_FLEET_ADMIN]);
     }
-    
+
+    /**
+     * Get staff/admin emails filtered by company.
+     * Admins and Fleet Admins always receive (cross-entity).
+     * Fleet Staff only receive if same company.
+     *
+     * @param int|null $companyId  Null = no filtering (backward compatible)
+     */
+    public function getStaffEmailsByCompany(?int $companyId = null): array
+    {
+        return get_emails_by_snipeit_groups([SNIPEIT_GROUP_FLEET_STAFF, SNIPEIT_GROUP_FLEET_ADMIN], $companyId);
+    }
+
     /**
      * Get admin emails only (for critical alerts)
      */
@@ -69,13 +81,21 @@ class FleetEmailService
     }
 
     /**
-     * Get staff/admin recipients based on notification settings (excludes requester)
+     * Get staff/admin recipients based on notification settings (excludes requester).
+     * When $context contains reservation data with a company, staff emails are filtered
+     * so that Fleet Staff only receive notifications for their own company's reservations.
+     *
+     * @param array $settings  Notification settings row
+     * @param array $context   Optional reservation context for company filtering
      */
-    public function getSettingsBasedRecipients(array $settings): array
+    public function getSettingsBasedRecipients(array $settings, array $context = []): array
     {
+        // Extract company ID for multi-entity filtering
+        $companyId = $this->resolveCompanyId($context);
+
         $emails = [];
         if (!empty($settings['notify_staff'])) {
-            $emails = array_merge($emails, $this->getStaffEmails());
+            $emails = array_merge($emails, $this->getStaffEmailsByCompany($companyId));
         }
         if (!empty($settings['notify_admin'])) {
             $emails = array_merge($emails, $this->getAdminEmails());
@@ -87,6 +107,57 @@ class FleetEmailService
             }
         }
         return array_unique(array_filter($emails));
+    }
+
+    /**
+     * Resolve company ID from reservation context for notification filtering.
+     * Returns null if multi-company is disabled or no company data available.
+     */
+    private function resolveCompanyId(array $context): ?int
+    {
+        if (empty($context)) {
+            return null;
+        }
+
+        // Check if multi-company is enabled
+        try {
+            if (!is_multi_company_enabled($this->pdo)) {
+                return null;
+            }
+        } catch (Throwable $e) {
+            return null;
+        }
+
+        // Direct company_id in context
+        if (!empty($context['company_id'])) {
+            return (int)$context['company_id'];
+        }
+
+        // Lookup by company_name from reservation data
+        $companyName = trim($context['company_name'] ?? '');
+        if ($companyName !== '') {
+            $companies = get_all_companies();
+            foreach ($companies as $co) {
+                if ($co['name'] === $companyName) {
+                    return (int)$co['id'];
+                }
+            }
+        }
+
+        // Lookup from asset data if asset_id is present
+        if (!empty($context['asset_id'])) {
+            try {
+                $asset = get_asset($context['asset_id']);
+                $assetCompanyId = $asset['company']['id'] ?? null;
+                if ($assetCompanyId) {
+                    return (int)$assetCompanyId;
+                }
+            } catch (Throwable $e) {
+                // Fall through
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -112,31 +183,33 @@ class FleetEmailService
     /**
      * Get recipients for an event based on settings
      */
-    public function getEventRecipients(string $eventKey, ?string $requesterEmail = null, ?string $requesterName = null): array
+    public function getEventRecipients(string $eventKey, ?string $requesterEmail = null, ?string $requesterName = null, array $context = []): array
     {
         $recipients = [];
         $settings = $this->getNotificationSettings($eventKey);
-        
+
         if (!$settings || !$settings['enabled']) {
             return $recipients;
         }
-        
+
+        $companyId = $this->resolveCompanyId($context);
+
         if ($settings['notify_requester'] && $requesterEmail) {
             $recipients[] = ['email' => $requesterEmail, 'name' => $requesterName ?? ''];
         }
-        
+
         if ($settings['notify_staff']) {
-            foreach ($this->getStaffEmails() as $email) {
+            foreach ($this->getStaffEmailsByCompany($companyId) as $email) {
                 $recipients[] = ['email' => $email, 'name' => ''];
             }
         }
-        
+
         if ($settings['notify_admin']) {
             foreach ($this->getAdminEmails() as $email) {
                 $recipients[] = ['email' => $email, 'name' => ''];
             }
         }
-        
+
         if (!empty($settings['custom_emails'])) {
             $customEmails = array_map('trim', explode(',', $settings['custom_emails']));
             foreach ($customEmails as $email) {
@@ -145,7 +218,7 @@ class FleetEmailService
                 }
             }
         }
-        
+
         return $recipients;
     }
 
@@ -409,8 +482,8 @@ class FleetEmailService
             }
         }
 
-        // Email to staff/admin based on DB settings
-        $notifyEmails = $this->getSettingsBasedRecipients($settings);
+        // Email to staff/admin based on DB settings (company-filtered)
+        $notifyEmails = $this->getSettingsBasedRecipients($settings, $reservation);
         if (!empty($notifyEmails)) {
             try {
                 $mail = $this->createMailer();
@@ -653,7 +726,7 @@ class FleetEmailService
 
         $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
         $assetName = $this->vehicleDisplay($reservation);
-        $staffEmails = $this->getSettingsBasedRecipients($settings);
+        $staffEmails = $this->getSettingsBasedRecipients($settings, $reservation);
         
         if (empty($staffEmails)) return true;
         
@@ -767,8 +840,8 @@ class FleetEmailService
             error_log("Overdue email to user failed: " . $e->getMessage());
         }
         
-        // Email to staff
-        $staffEmails = $this->getSettingsBasedRecipients($settings);
+        // Email to staff (company-filtered)
+        $staffEmails = $this->getSettingsBasedRecipients($settings, $reservation);
         if (!empty($staffEmails)) {
             try {
                 $mail = $this->createMailer();
@@ -831,7 +904,7 @@ class FleetEmailService
             }
         }
 
-        $notifyEmails = $this->getSettingsBasedRecipients($settings);
+        $notifyEmails = $this->getSettingsBasedRecipients($settings, $reservation);
         if (!empty($notifyEmails)) {
             try {
                 $mail = $this->createMailer();
@@ -867,7 +940,7 @@ class FleetEmailService
         if (!$settings || !$settings['enabled']) return true;
 
         $assetName = $this->vehicleDisplay($reservation);
-        $notifyEmails = $this->getSettingsBasedRecipients($settings);
+        $notifyEmails = $this->getSettingsBasedRecipients($settings, $reservation);
         if (empty($notifyEmails)) return true;
 
         try {
@@ -914,7 +987,7 @@ class FleetEmailService
         if ($companyName !== '') {
             $assetName .= ' (' . $companyName . ')';
         }
-        $notifyEmails = $this->getSettingsBasedRecipients($settings);
+        $notifyEmails = $this->getSettingsBasedRecipients($settings, $asset);
         if (empty($notifyEmails)) return true;
 
         $urgency = $daysRemaining <= 7 ? 'danger-box' : 'warning-box';
@@ -985,7 +1058,8 @@ class FleetEmailService
             $recipients = $this->getEventRecipients(
                 'reservation_redirected',
                 $reservation['user_email'] ?? null,
-                $userName
+                $userName,
+                $reservation
             );
 
             $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
@@ -1036,7 +1110,8 @@ class FleetEmailService
             $recipients = $this->getEventRecipients(
                 'reservation_redirect_failed',
                 $reservation['user_email'] ?? null,
-                $userName
+                $userName,
+                $reservation
             );
 
             $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
@@ -1083,7 +1158,7 @@ class FleetEmailService
                 <p>Please follow up with {$userName} to ensure the vehicle is returned promptly.</p>
             ";
 
-            $recipients = $this->getEventRecipients('overdue_redirect_staff');
+            $recipients = $this->getEventRecipients('overdue_redirect_staff', null, null, $reservation);
 
             $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
             foreach ($recipients as $r) {
@@ -1111,7 +1186,7 @@ class FleetEmailService
     {
         $settings = $this->getNotificationSettings('force_checkin');
         if (!$settings || !$settings['enabled']) return true;
-        $notifyEmails = $this->getSettingsBasedRecipients($settings);
+        $notifyEmails = $this->getSettingsBasedRecipients($settings, $context);
         if (empty($notifyEmails)) return true;
 
         $assetLabel = $context['asset_label'] ?? ('Asset #' . ($context['asset_id'] ?? '?'));
@@ -1212,7 +1287,7 @@ class FleetEmailService
         $pickup = date('M j, Y g:i A', strtotime($reservation['start_datetime']));
         $baseUrl = rtrim($this->config['app']['base_url'] ?? '', '/');
         $keyCollected = !empty($reservation['key_collected']);
-        $notifyEmails = $this->getSettingsBasedRecipients($settings);
+        $notifyEmails = $this->getSettingsBasedRecipients($settings, $reservation);
         if (empty($notifyEmails)) return true;
 
         $keyWarning = $keyCollected
