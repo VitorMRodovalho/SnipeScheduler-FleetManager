@@ -1486,6 +1486,24 @@ function update_asset_location(int $assetId, int $locationId): bool
 
 
 /**
+ * Get all fleet-relevant locations (children of pickup or destination parents)
+ */
+function get_fleet_locations(): array
+{
+    $locations = get_locations();
+    $fleet = [];
+    foreach ($locations as $loc) {
+        $parentId = $loc['parent']['id'] ?? 0;
+        // Include children of pickup parent (9) and destination parent (10)
+        if ($parentId == 9 || $parentId == 10) {
+            $fleet[] = $loc;
+        }
+    }
+    usort($fleet, fn($a, $b) => ($a['name'] ?? '') <=> ($b['name'] ?? ''));
+    return $fleet;
+}
+
+/**
  * Get all maintenance records from Snipe-IT
  */
 function get_maintenances(int $limit = 100, int $assetId = null): array

@@ -12,6 +12,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     csrf_check();
 }
 require_once SRC_PATH . '/snipeit_client.php';
+require_once SRC_PATH . '/activity_log.php';
 require_once SRC_PATH . '/layout.php';
 require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/company_filter.php';
@@ -147,6 +148,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         $tab = 'create';
+
+    } elseif ($action === 'update_location') {
+        $assetId = (int)($_POST['asset_id'] ?? 0);
+        $newLocationId = (int)($_POST['new_location_id'] ?? 0);
+        $oldLocationName = trim($_POST['old_location_name'] ?? 'Unknown');
+
+        if ($assetId <= 0 || $newLocationId <= 0) {
+            $error = 'Invalid asset or location.';
+        } else {
+            $assetInfo = get_asset($assetId);
+            $assetName = $assetInfo['name'] ?? "Asset #{$assetId}";
+
+            if (update_asset_location($assetId, $newLocationId)) {
+                // Find new location name
+                $fleetLocations = get_fleet_locations();
+                $newLocationName = 'Unknown';
+                foreach ($fleetLocations as $fl) {
+                    if ($fl['id'] == $newLocationId) {
+                        $newLocationName = $fl['name'];
+                        break;
+                    }
+                }
+
+                // Clear location cache so the table refreshes
+                $cachePath = snipeit_cache_path('locations_100_' . md5(''));
+                if (is_file($cachePath)) { @unlink($cachePath); }
+
+                activity_log_event('vehicle_location_change', "Vehicle {$assetName} location changed from {$oldLocationName} to {$newLocationName} by {$userName}", [
+                    'subject_type' => 'vehicle',
+                    'subject_id' => $assetId,
+                    'metadata' => [
+                        'old_location' => $oldLocationName,
+                        'new_location' => $newLocationName,
+                        'new_location_id' => $newLocationId,
+                    ],
+                ]);
+
+                $success = "Location updated for {$assetName}: {$oldLocationName} → {$newLocationName}";
+            } else {
+                $error = "Failed to update location for {$assetName}. Check Snipe-IT connection.";
+            }
+        }
 
     } elseif ($action === 'create_model') {
         $modelName = trim($_POST['model_name'] ?? '');
@@ -288,7 +331,7 @@ $vehicles = get_fleet_vehicles(200);
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
-                            <tr><th>Asset Tag</th><th>Name</th><th>Model</th><th>Status</th><th>Assigned To</th><th>Actions</th></tr>
+                            <tr><th>Asset Tag</th><th>Name</th><th>Model</th><th>Status</th><th>Location</th><th>Assigned To</th><th>Actions</th></tr>
                         </thead>
                         <tbody>
                             <?php foreach ($vehicles as $v): ?>
@@ -297,12 +340,23 @@ $vehicles = get_fleet_vehicles(200);
                                 $isAvailable = stripos($statusName, 'Available') !== false;
                                 $isCheckedOut = !empty($v['assigned_to']);
                                 $statusClass = $isAvailable ? 'success' : ($isCheckedOut ? 'warning' : 'secondary');
+                                $locationName = $v['location']['name'] ?? ($v['rtd_location']['name'] ?? '-');
                             ?>
                             <tr>
                                 <td><code><?= h($v['asset_tag'] ?? '-') ?></code></td>
                                 <td><strong><?= h($v['name'] ?? '-') ?></strong><?= get_company_badge($v, $pdo) ?></td>
                                 <td><?= h($v['model']['name'] ?? '-') ?></td>
                                 <td><span class="badge bg-<?= $statusClass ?>"><?= h($statusName) ?></span></td>
+                                <td>
+                                    <?= h($locationName) ?>
+                                    <button type="button" class="btn btn-sm btn-link p-0 ms-1" title="Change location"
+                                            data-bs-toggle="modal" data-bs-target="#locationModal"
+                                            data-asset-id="<?= $v['id'] ?>"
+                                            data-asset-name="<?= h($v['name'] ?? '-') ?>"
+                                            data-current-location="<?= h($locationName) ?>">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
+                                </td>
                                 <td><?= $isCheckedOut ? h($v['assigned_to']['name'] ?? '-') : '<span class="text-muted">-</span>' ?></td>
                                 <td>
                                     <a href="<?= htmlspecialchars($config['snipeit']['base_url']) ?>/hardware/<?= $v['id'] ?>" target="_blank"
@@ -846,6 +900,53 @@ document.addEventListener('DOMContentLoaded', function() {
         form.submit();
     });
 });
+</script>
+<!-- Location Edit Modal -->
+<div class="modal fade" id="locationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="update_location">
+                <input type="hidden" name="asset_id" id="locModalAssetId">
+                <input type="hidden" name="old_location_name" id="locModalOldName">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-geo-alt me-2"></i>Change Vehicle Location</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2"><strong>Vehicle:</strong> <span id="locModalVehicleName"></span></p>
+                    <p class="mb-3"><strong>Current Location:</strong> <span id="locModalCurrentLoc" class="text-muted"></span></p>
+                    <div class="mb-3">
+                        <label class="form-label">New Location</label>
+                        <select name="new_location_id" class="form-select" required>
+                            <option value="">Select location...</option>
+                            <?php $fleetLocs = get_fleet_locations(); foreach ($fleetLocs as $fl): ?>
+                                <option value="<?= $fl['id'] ?>"><?= h($fl['name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Update Location</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+// Populate location modal with vehicle data
+const locModal = document.getElementById('locationModal');
+if (locModal) {
+    locModal.addEventListener('show.bs.modal', function(e) {
+        const btn = e.relatedTarget;
+        document.getElementById('locModalAssetId').value = btn.getAttribute('data-asset-id');
+        document.getElementById('locModalOldName').value = btn.getAttribute('data-current-location');
+        document.getElementById('locModalVehicleName').textContent = btn.getAttribute('data-asset-name');
+        document.getElementById('locModalCurrentLoc').textContent = btn.getAttribute('data-current-location');
+    });
+}
 </script>
 <?php layout_footer(); ?>
 </body>
