@@ -171,9 +171,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
 
-                // Clear location cache so the table refreshes
-                $cachePath = snipeit_cache_path('locations_100_' . md5(''));
-                if (is_file($cachePath)) { @unlink($cachePath); }
+                // Clear ALL API cache so the table refreshes immediately
+                array_map('unlink', glob(CONFIG_PATH . '/cache/*.json'));
 
                 activity_log_event('vehicle_location_change', "Vehicle {$assetName} location changed from {$oldLocationName} to {$newLocationName} by {$userName}", [
                     'subject_type' => 'vehicle',
@@ -185,7 +184,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ],
                 ]);
 
-                $success = "Location updated for {$assetName}: {$oldLocationName} → {$newLocationName}";
+                $success = "Location updated successfully for {$assetName}: {$oldLocationName} → {$newLocationName}";
             } else {
                 $error = "Failed to update location for {$assetName}. Check Snipe-IT connection.";
             }
