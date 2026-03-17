@@ -279,7 +279,7 @@ function render_field($fieldName, $fieldData, $isReadOnly = false) {
                 $options = ['Exterior', 'Tires', 'Undercarriage', 'Interior']; // fallback
             }
             $isConditionField = (stripos($dbColumn, 'condition') !== false || stripos($fieldName, 'issues with the condition') !== false);
-            $currentValues = array_map('trim', explode(',', $currentValue));
+            $currentValues = $forceEmpty ? [] : array_map('trim', explode(',', $currentValue));
             foreach ($options as $opt) {
                 $checked = in_array($opt, $currentValues) ? ' checked' : '';
                 $condClass = $isConditionField ? ' condition-checkbox' : '';

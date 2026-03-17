@@ -190,12 +190,13 @@ for ($d = 0; $d < 7; $d++) {
 $stmt = $pdo->prepare("
     SELECT DATE(start_datetime) as day, COUNT(*) as cnt
     FROM reservations r
-    WHERE DATE(start_datetime) >= :week_start
-    AND DATE(start_datetime) < DATE_ADD(:week_start2, INTERVAL 7 DAY)
+    WHERE DATE(start_datetime) >= ?
+    AND DATE(start_datetime) < DATE_ADD(?, INTERVAL 7 DAY)
     {$companyClause}
     GROUP BY DATE(start_datetime)
 ");
-$params = array_merge([':week_start' => $weekStart, ':week_start2' => $weekStart], $companyParams);
+$params = [$weekStart, $weekStart];
+if (!empty($companyParams)) { $params = array_merge($params, $companyParams); }
 $stmt->execute($params);
 foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
     if (isset($dailyBreakdown[$row['day']])) {
