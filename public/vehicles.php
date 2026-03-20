@@ -89,9 +89,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors[] = "A vehicle with License Plate '{$licensePlate}' already exists in Snipe-IT.";
         }
 
-        // Generate tag if empty
+        // Generate tag from fleet_tag_config for the selected company
         if (empty($assetTag)) {
-            $assetTag = get_next_vehicle_asset_tag();
+            $tagConfig = $pdo->prepare("SELECT prefix, next_number, zero_pad FROM fleet_tag_config WHERE company_id = ? LIMIT 1");
+            $tagConfig->execute([$companyId ?: 1]);
+            $tc = $tagConfig->fetch(PDO::FETCH_ASSOC);
+            if ($tc) {
+                $assetTag = $tc['prefix'] . str_pad($tc['next_number'], $tc['zero_pad'], '0', STR_PAD_LEFT);
+            } else {
+                $assetTag = 'VEH-' . str_pad(1, 3, '0', STR_PAD_LEFT);
+            }
         }
 
         if (!empty($errors)) {
@@ -120,6 +127,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($result && isset($result['id'])) {
                 $createdTag = $result['asset_tag'] ?? $assetTag;
+                // Increment fleet_tag_config counter for this company
+                $pdo->prepare("UPDATE fleet_tag_config SET next_number = next_number + 1 WHERE company_id = ?")->execute([$companyId ?: 1]);
                 update_vehicle_tag_high_water_mark($createdTag);
                 $success = "Vehicle created successfully (Asset Tag: " . h($createdTag) . ").";
                 header('Location: vehicles?tab=list&success=' . urlencode($success));
@@ -458,8 +467,8 @@ try {
                             <div class="col-md-6">
                                 <label class="form-label">Vehicle Name <i class="bi bi-lock-fill text-muted small" title="Auto-generated"></i></label>
                                 <input type="text" name="name" id="vehicleName" class="form-control bg-light"
-                                       readonly placeholder="Auto-generated: Year Manufacturer Model Plate">
-                                <small class="text-muted">From Year + Manufacturer + Model + License Plate</small>
+                                       readonly placeholder="Auto-generated: Year Manufacturer Model">
+                                <small class="text-muted">From Year + Manufacturer + Model</small>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Asset Tag <i class="bi bi-lock-fill text-muted small" title="Auto-generated"></i></label>
@@ -592,11 +601,11 @@ try {
                     <hr>
                     <p class="small text-muted mb-2"><strong>Naming Convention:</strong></p>
                     <p class="small">Vehicle names follow:<br>
-                        <code>[Year] [Manufacturer] [Model] [Plate]</code><br>
-                        Example: <em>2024 Ford Escape ABC-1234</em></p>
+                        <code>[Year] [Manufacturer] [Model]</code><br>
+                        Example: <em>2024 Ford Escape</em></p>
                     <hr>
                     <p class="small text-muted mb-2"><strong>Asset Tag Format:</strong></p>
-                    <p class="small">Tags follow: <code><?= htmlspecialchars(get_asset_tag_prefix()) ?>###</code><br>
+                    <p class="small">Tags follow the fleet prefix configured per company (e.g., FDT-17).<br>
                         Sequential and never reused, even if a vehicle is deleted.</p>
                 </div>
             </div>
@@ -804,26 +813,32 @@ document.addEventListener('DOMContentLoaded', function() {
     let vinChecking = false, plateChecking = false;
     let vinDebounce = null, plateDebounce = null;
 
-    // 1. Fetch next asset tag
-    fetch('api/vehicle_check?action=next_tag')
-        .then(r => r.json())
-        .then(data => { assetTag.value = (data.success && data.tag) ? data.tag : '<?= htmlspecialchars(get_asset_tag_prefix()) ?>???'; })
-        .catch(() => { assetTag.value = '<?= htmlspecialchars(get_asset_tag_prefix()) ?>???'; });
+    // 1. Fetch next asset tag (company-aware)
+    const companySelect = document.getElementById('companySelect');
+    function fetchNextTag() {
+        const cid = companySelect ? companySelect.value : '';
+        const url = 'api/vehicle_check?action=next_tag' + (cid ? '&company_id=' + encodeURIComponent(cid) : '');
+        fetch(url)
+            .then(r => r.json())
+            .then(data => { assetTag.value = (data.success && data.tag) ? data.tag : 'VEH-???'; })
+            .catch(() => { assetTag.value = 'VEH-???'; });
+    }
+    fetchNextTag();
+    if (companySelect) companySelect.addEventListener('change', fetchNextTag);
 
-    // 2. Auto-generate Vehicle Name
+    // 2. Auto-generate Vehicle Name (Year + Manufacturer + Model)
     function updateVehicleName() {
         const opt = modelSelect.options[modelSelect.selectedIndex];
         const mfr = opt ? (opt.dataset.manufacturer || '') : '';
         const mdl = opt ? (opt.dataset.modelName || '') : '';
         const yr  = yearField.value.trim();
-        const plt = plateField.value.trim().toUpperCase();
-        const parts = [yr, mfr, mdl, plt].filter(p => p !== '');
+        const parts = [yr, mfr, mdl].filter(p => p !== '');
         vehicleName.value = parts.join(' ');
     }
 
     modelSelect.addEventListener('change', updateVehicleName);
     yearField.addEventListener('input', updateVehicleName);
-    plateField.addEventListener('input', function() { this.value = this.value.toUpperCase(); updateVehicleName(); });
+    plateField.addEventListener('input', function() { this.value = this.value.toUpperCase(); });
     vinField.addEventListener('input', function() { this.value = this.value.toUpperCase(); });
 
     // 3. Duplicate checks (debounced)

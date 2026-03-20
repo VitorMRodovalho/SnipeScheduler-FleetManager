@@ -25,8 +25,18 @@ try {
     switch ($action) {
 
         case 'next_tag':
-            // Get next available sequential asset tag
-            $nextTag = get_next_vehicle_asset_tag();
+            // Get next tag from fleet_tag_config for the selected company
+            require_once SRC_PATH . '/db.php';
+            global $pdo;
+            $companyId = (int)($_GET['company_id'] ?? 1);
+            $tagStmt = $pdo->prepare("SELECT prefix, next_number, zero_pad FROM fleet_tag_config WHERE company_id = ? LIMIT 1");
+            $tagStmt->execute([$companyId ?: 1]);
+            $tc = $tagStmt->fetch(PDO::FETCH_ASSOC);
+            if ($tc) {
+                $nextTag = $tc['prefix'] . str_pad($tc['next_number'], $tc['zero_pad'], '0', STR_PAD_LEFT);
+            } else {
+                $nextTag = 'VEH-' . str_pad(1, 3, '0', STR_PAD_LEFT);
+            }
             echo json_encode(['success' => true, 'tag' => $nextTag]);
             break;
 
