@@ -45,7 +45,7 @@ This project was born from a real need in **large-scale infrastructure programs*
 * **Maintenance Tracking** - Flag issues, track maintenance history
 * **Training Expiration Tracking** - Color-coded driver training status (green/yellow/red), date picker for completion dates, weekly expiration alerts via CRON
 * **Reports** - Utilization, compliance, and usage reports with Chart.js visualizations
-* **Vehicle Assignment Management** - Assign primary and secondary drivers per vehicle with labels (Safety, Quality, Pool)
+* **Vehicle Assignment Management** - Assign primary and secondary drivers per vehicle with configurable labels
 
 ### For Administrators
 
