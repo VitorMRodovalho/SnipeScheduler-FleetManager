@@ -466,6 +466,7 @@ $customHolidays = array_filter($allHolidays, fn($h) => $h['holiday_type'] === 'c
                                     <option value="0" <?= $trainingValidityMonths === 0 ? 'selected' : '' ?>>No expiration (manual management only)</option>
                                     <option value="6" <?= $trainingValidityMonths === 6 ? 'selected' : '' ?>>6 months</option>
                                     <option value="12" <?= $trainingValidityMonths === 12 ? 'selected' : '' ?>>12 months (annual renewal)</option>
+                                    <option value="36" <?= $trainingValidityMonths === 36 ? 'selected' : '' ?>>36 months (3-year renewal)</option>
                                     <option value="24" <?= $trainingValidityMonths === 24 ? 'selected' : '' ?>>24 months</option>
                                 </select>
                                 <small class="text-muted">After this period, drivers must renew their training to continue booking.</small>
@@ -659,7 +660,8 @@ $customHolidays = array_filter($allHolidays, fn($h) => $h['holiday_type'] === 'c
                                 <option value="1" <?= $missedBufferHours === 1 ? 'selected' : '' ?>>1 hour after marked missed</option>
                                 <option value="2" <?= $missedBufferHours === 2 ? 'selected' : '' ?>>2 hours after marked missed</option>
                                 <option value="4" <?= $missedBufferHours === 4 ? 'selected' : '' ?>>4 hours after marked missed</option>
-                                <option value="24" <?= $missedBufferHours === 24 ? 'selected' : '' ?>>24 hours (next day)</option>
+                                <option value="36" <?= $trainingValidityMonths === 36 ? 'selected' : '' ?>>36 months (3-year renewal)</option>
+                                    <option value="24" <?= $missedBufferHours === 24 ? 'selected' : '' ?>>24 hours (next day)</option>
                             </select>
                             <div class="form-text">Grace period before releasing the vehicle in Snipe-IT. Allows drivers to still show up late.</div>
                         </div>
