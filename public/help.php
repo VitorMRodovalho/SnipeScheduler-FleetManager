@@ -223,6 +223,14 @@ if (!isset($tabs[$activeTab])) {
         </ol>
         <p class="text-muted">This supports CCPA/privacy compliance requirements.</p>
     '); ?>
+    <?php help_section('accMyRes', 'mr5', 'Vehicle Assignments', '
+        <ul>
+            <li>If you have an <strong>assigned vehicle</strong>, you will see it prominently in the catalogue along with available pool vehicles.</li>
+            <li>If your assigned vehicle is in maintenance, you will see a notification banner directing you to contact Fleet Staff for a pool vehicle.</li>
+            <li>If you do <strong>not</strong> have an assigned vehicle, you can book any available pool vehicle.</li>
+        </ul>
+        <p class="text-muted">Vehicle assignment enforcement depends on the mode set by your Fleet Admin (Off, Soft Warning, or Enforced).</p>
+    '); ?>
 </div>
 
 <?php elseif ($activeTab === 'faq'): ?>
@@ -396,6 +404,18 @@ if (!isset($tabs[$activeTab])) {
     '); ?>
     <?php help_section('accTraining', 'tr3', 'Weekly Training Alerts', '
         <p>The system sends weekly notifications to staff listing drivers whose training is expiring within 30 days or has already expired. This helps you proactively schedule renewals.</p>
+    '); ?>
+    <?php help_section('accTraining', 'tr4', 'Managing Vehicle Assignments', '
+        <ol>
+            <li>Navigate to <strong>Admin &gt; Vehicles</strong> to see the <strong>Assigned Driver</strong> column.</li>
+            <li>Click the <strong>pencil icon</strong> to open the assignment management modal.</li>
+            <li>Search for a driver by name or email, then click <strong>Add</strong>.</li>
+            <li>Set one driver as <strong>Primary</strong> using the radio button.</li>
+            <li>Optionally add a <strong>label</strong> (e.g., Safety, Quality, Pool) and notes.</li>
+            <li>Click <strong>Save Assignments</strong> to apply changes.</li>
+        </ol>
+        <p>When <strong>booking on behalf</strong>: if the selected vehicle is assigned to a different driver, you will see a confirmation warning. Staff override always proceeds.</p>
+        <p>Assignment changes are logged in the <strong>Activity Log</strong> with event type <code>vehicle_assignment_changed</code>.</p>
     '); ?>
 </div>
 
@@ -699,6 +719,15 @@ if (!isset($tabs[$activeTab])) {
             <li><code>SameSite=Lax</code> — Prevents cross-site request forgery</li>
         </ul>
         <p>Configure session settings on the <strong>Settings</strong> page under Session &amp; Security.</p>
+    '); ?>
+    <?php help_section('accSysSettings', 'ss5b', 'Vehicle Assignment Settings', '
+        <p>Navigate to <strong>Admin &gt; Settings</strong> to find the <strong>Vehicle Assignment</strong> card.</p>
+        <ul>
+            <li><strong>Off:</strong> No assignment enforcement. Assignments are tracked but all drivers can book any vehicle. This is the default.</li>
+            <li><strong>Soft Warning:</strong> All vehicles are visible to all drivers. Assigned vehicles show a warning badge; drivers can still proceed.</li>
+            <li><strong>Enforced:</strong> Drivers see only their assigned vehicle(s) and pool vehicles (those with no assignment). Recommended once assignments are fully loaded.</li>
+        </ul>
+        <p class="text-muted">Start with <strong>Soft Warning</strong> to validate assignments before switching to Enforced mode.</p>
     '); ?>
     <?php help_section('accSysSettings', 'ss6', 'Onboarding Checklist', '
         <p>The top of the <strong>Settings</strong> page displays a <strong>10-point system configuration status</strong> checklist with color-coded indicators:</p>
