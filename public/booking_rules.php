@@ -151,7 +151,7 @@ if ($action === 'save_inspection_settings') {
         if ($action === 'save_training_settings') {
             $trainingRequired = isset($_POST['training_required']) ? '1' : '0';
             $validityMonths = (int)($_POST['training_validity_months'] ?? 12);
-            if (!in_array($validityMonths, [0, 6, 12, 24])) $validityMonths = 12;
+            if (!in_array($validityMonths, [0, 6, 12, 24, 36])) $validityMonths = 12;
 
             $stmtSave = $pdo->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
             $stmtSave->execute(['training_required', $trainingRequired]);
