@@ -21,7 +21,7 @@ description: >
 - **Auth:** Microsoft OAuth SSO (multi-tenant: `organizations`)
 - **URL:** `inventory.amtrakfdt.com/booking`
 - **Repo:** `github.com/VitorMRodovalho/SnipeScheduler-FleetManager`
-- **Current version:** v2.0.0 (check `version.txt` for truth)
+- **Current version:** v2.0.0 + BL-008 Phase 1 (check `version.txt` for truth)
 
 ### Directory Layout
 ```
@@ -99,9 +99,10 @@ Layer 3: config/config.example.php (COMMITTED)
 ### Key Tables
 - `reservations` — Core booking data. `user_id` is OAuth ID (string), NOT Snipe-IT ID
 - `users` — Local user cache. Has both `user_id` (OAuth) and `snipeit_user_id`
+- `vehicle_assignments` — Driver-to-vehicle hard lock. Stores both `user_id` + `snipeit_user_id`
 - `inspection_results` — 50-item checklist results, linked to reservation_id
 - `inspection_photos` — Photo uploads linked to inspection_results
-- `system_settings` — Key-value runtime config
+- `system_settings` — Key-value runtime config (includes `vehicle_assignment_mode`)
 - `activity_log` — Audit trail for all actions
 - `checklist_items` — Configurable inspection checklist (admin-managed)
 - `email_queue` — Outbound email queue, processed by CRON every 2 min
@@ -301,16 +302,61 @@ git push origin main
 | Maintenance API 404 | Called `/hardware/{id}/maintenances` (doesn't exist) | Use `/maintenances?asset_id={id}` |
 | reservation crash | `company_abbr` VARCHAR(10) too short | ALTER TABLE to VARCHAR(50) |
 | Checkout checkboxes pre-populated | Snipe-IT custom field values loaded into form | Use `$forceEmpty` flag |
+| Basket assigns wrong unit to assigned driver | Model-based resolution picks any unit of same model | Prioritize assigned asset in basket_checkout.php |
+| Redirect engine ignores assignments | `find_alternate_vehicle()` picks ANY available vehicle | Constrain to pool vehicles only |
+| Offboarded driver's vehicle permanently locked | Assignment rows not deleted on offboard | CASCADE delete in users.php offboarding handler |
 
-## 13. Current Backlog (as of v2.0.0)
+## 13. Vehicle Assignment Architecture (BL-008)
+
+### Data Model
+```sql
+vehicle_assignments (
+    id, asset_id, asset_tag, asset_name,
+    snipeit_user_id, user_id, user_name, user_email,
+    is_primary, assignment_label, assigned_by, assigned_at, notes
+)
+-- UNIQUE KEY on (asset_id, user_id)
+```
+
+### Kill Switch
+`system_settings.vehicle_assignment_mode` = `off` | `soft` | `enforced`
+- `off` (default): Assignments tracked but not enforced. Current booking behavior unchanged.
+- `soft`: Warning shown when driver books an assigned vehicle. Booking proceeds.
+- `enforced`: Hard block. Driver sees only assigned vehicle(s) + pool vehicles.
+
+### Assignment Rules (from Pete Wray, confirmed 2026-03-19)
+- Hard lock: only assigned driver(s) can reserve their assigned vehicle
+- Pool vehicles (no rows in vehicle_assignments): open to any driver
+- "Safety", "Quality", "Pool" are labels on VEHICLES (assignment_label column), NOT user groups
+- Fleet Staff + Fleet Admin can manage assignments
+- Fallback for assigned vehicle in maintenance: Fleet Staff uses Book on Behalf for pool vehicle
+
+### Phased Delivery
+- **Phase 1 (COMMITTED, pending deploy):** Table + migration + CRUD UI on vehicles.php + kill switch + offboarding/CCPA cascades
+- **Phase 2 (NOT BUILT):** Catalogue filtering + basket resolution (F1) + reservation validation
+- **Phase 3 (NOT BUILT):** Redirect engine update (F4) + notification for assigned vehicle maintenance
+- **Phase 4 (NOT BUILT):** Dashboard KPIs + reports assignment column + help docs update
+
+### Critical Integration Points (from impact analysis)
+- `basket_checkout.php` resolves MODEL → specific asset. Must prioritize assigned asset, fallback to pool only
+- `find_alternate_vehicle()` in scheduled_tasks.php must skip assigned vehicles when redirecting
+- Offboarding (`users.php`) and CCPA deletion (`admin_data_delete.php`) cascade to vehicle_assignments
+- Assignment changes between reservation submission and approval → approver sees warning
+
+## 14. Current Backlog
 
 - [ ] `&amp;` double-encoding fix in layout.php company badge
+- [ ] BL-008 Phase 1 deploy (pull + lint + migrate on production)
+- [ ] BL-008 Phase 2: Catalogue filtering + basket resolution + reservation validation
+- [ ] BL-008 Phase 3: Redirect engine + maintenance notification for assigned vehicles
+- [ ] BL-008 Phase 4: Dashboard KPIs + reports column
 - [ ] Vehicle onboarding: 16 vehicles (FDT-01 to FDT-16) + 35 drivers
-- [ ] BL-008: Restrictive vehicle assignment (Pete confirmed: hard lock, not preference)
-- [ ] Training dates loading for 30 drivers (expiration dates received, back-calculate issuance)
-- [ ] Mileage in/out fields at checkout/checkin (Pete confirmed: no fuel log needed)
+- [ ] Training dates loading for 30 drivers (issuance dates calculated, CSV ready)
+- [ ] Mileage in/out fields at checkout/checkin (Pete confirmed: odometer only, no fuel log)
+- [ ] Shawn Cummings training expires April 6, 2026 — flag to Pete for re-certification
+- [ ] F9: Confirm if Yvette (AMTRAK) can manage Advance DP vehicle assignments (asked Pete)
 
-## 14. Testing Checklist (Before Any Deploy)
+## 15. Testing Checklist (Before Any Deploy)
 
 ```bash
 # 1. PHP lint — ALL files
@@ -329,7 +375,15 @@ ls -la version.txt        # Should be www-data:www-data
 # - Reserve a vehicle → approve → checkout → checkin
 # - Check approval queue filters by company
 # - Verify CRON: sudo tail -20 /var/log/syslog | grep CRON
+# - Vehicles admin → Assigned To column visible, modal works
 
 # 5. Clear cache after deploy
 rm -f config/cache/*.json
+
+# 6. After BL-008 Phase 2 deploy (when enforcement goes live)
+# - Assigned driver sees only their vehicle + pool in catalogue
+# - Unassigned driver sees only pool vehicles
+# - Staff Book on Behalf bypasses assignment filter
+# - Offboarding clears assignments
+# - Settings toggle changes vehicle_assignment_mode
 ```
