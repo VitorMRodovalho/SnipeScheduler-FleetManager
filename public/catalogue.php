@@ -5,6 +5,7 @@ require_once SRC_PATH . '/snipeit_client.php';
 require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/layout.php';
 require_once SRC_PATH . '/company_filter.php';
+require_once SRC_PATH . '/vehicle_assignment_helpers.php';
 
 $config   = load_config();
 $authCfg  = $config['auth'] ?? [];
@@ -901,6 +902,13 @@ if (($_GET['ajax'] ?? '') === 'model_details') {
                 $assets = filter_assets_by_company($assets, $mcCompanyIds);
             }
 
+            // Apply vehicle assignment filtering
+            $assignMode = get_assignment_mode($pdo);
+            if ($assignMode !== 'off') {
+                $activeUserId = $_SESSION['user_id'] ?? '';
+                $assets = filter_assets_by_assignment($pdo, $assets, $activeUserId, $isStaff);
+            }
+
             foreach ($assets as $asset) {
                 $assetId = (int)($asset['id'] ?? 0);
                 if ($assetId > 0) {
@@ -1192,6 +1200,29 @@ if (!empty($allowedCategoryMap) && !empty($categories)) {
                 <?= h($overdueErr) ?>
             </div>
         <?php endif; ?>
+
+        <?php
+        // Assignment mode banners
+        $catAssignMode = get_assignment_mode($pdo);
+        if ($catAssignMode === 'enforced' && !$isStaff):
+            $catDriverAssign = get_driver_assignments($pdo, $_SESSION['user_id'] ?? '');
+            if (!empty($catDriverAssign)):
+                $outOfService = [];
+                foreach ($catDriverAssign as $da) {
+                    $aInfo = get_asset((int)$da['asset_id']);
+                    $stName = $aInfo['status_label']['name'] ?? '';
+                    if (stripos($stName, 'Out of Service') !== false) {
+                        $outOfService[] = $da['asset_name'];
+                    }
+                }
+                if (!empty($outOfService)):
+        ?>
+            <div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>Your assigned vehicle <strong><?= h(implode(', ', $outOfService)) ?></strong> is currently in maintenance. Contact Fleet Staff to book a pool vehicle on your behalf.</div>
+        <?php   endif; ?>
+            <div class="alert alert-secondary small"><i class="bi bi-person-badge me-2"></i>Showing your assigned vehicle(s) and available pool vehicles.</div>
+        <?php else: ?>
+            <div class="alert alert-secondary small"><i class="bi bi-person-badge me-2"></i>Showing available pool vehicles. You have no vehicle assignment — contact Fleet Staff if you need a dedicated vehicle.</div>
+        <?php endif; endif; ?>
 
         <!-- Top bar -->
         <?= render_top_bar($currentUser, $isStaff, $isAdmin, '<a href="basket" class="btn btn-primary btn-sm" id="view-basket-btn">View basket' . ($basketCount > 0 ? ' (' . $basketCount . ')' : '') . '</a>') ?>

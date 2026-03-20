@@ -13,6 +13,7 @@ require_once SRC_PATH . '/layout.php';
 require_once SRC_PATH . '/email_service.php';
 require_once SRC_PATH . '/notification_service.php';
 require_once SRC_PATH . '/company_filter.php';
+require_once SRC_PATH . '/vehicle_assignment_helpers.php';
 
 $active = 'approval';
 $isAdmin = !empty($currentUser['is_admin']);
@@ -214,7 +215,18 @@ $recentReservations = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     <tr>
                                         <td><strong>#<?= $res['id'] ?></strong></td>
                                         <td><strong><?= h($res['user_name']) ?></strong><br><small class="text-muted"><?= h($res['user_email']) ?></small></td>
-                                        <td><?= h($res['asset_name_cache'] ?: 'N/A') ?><?= get_company_badge_from_row($res) ?></td>
+                                        <td>
+                                            <?= h($res['asset_name_cache'] ?: 'N/A') ?><?= get_company_badge_from_row($res) ?>
+                                            <?php
+                                            $apAssignMode = get_assignment_mode($pdo);
+                                            if ($apAssignMode !== 'off' && !empty($res['asset_id'])):
+                                                $apAssetId = (int)$res['asset_id'];
+                                                if ($apAssetId > 0 && is_asset_assigned($pdo, $apAssetId) && !is_asset_assigned_to_driver($pdo, $apAssetId, $res['user_id'] ?? '')):
+                                                    $apAssignedTo = get_assigned_driver_name($pdo, $apAssetId);
+                                            ?>
+                                                <br><span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i>Assigned to <?= h($apAssignedTo ?? 'another driver') ?></span>
+                                            <?php endif; endif; ?>
+                                        </td>
                                         <td>
                                             <i class="bi bi-calendar me-1"></i><?= date('M j, Y', strtotime($res['start_datetime'])) ?><br>
                                             <small><?= date('g:i A', strtotime($res['start_datetime'])) ?> - <?= date('g:i A', strtotime($res['end_datetime'])) ?></small>

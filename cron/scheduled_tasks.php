@@ -20,6 +20,7 @@ require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/snipeit_client.php';
 require_once SRC_PATH . '/email_service.php';
 require_once SRC_PATH . '/notification_service.php';
+require_once SRC_PATH . '/vehicle_assignment_helpers.php';
 
 // Get config
 $config = require CONFIG_PATH . '/config.php';
@@ -372,9 +373,23 @@ try {
         $allVehicles = get_fleet_vehicles(500);
         $alternateVehicle = null;
 
+        // BL-008: Constrain redirect to pool vehicles + driver's own assigned vehicles
+        $rdAssignMode = get_assignment_mode($pdo);
+        $rdExcludeIds = [];
+        if ($rdAssignMode !== 'off') {
+            $rdAllAssigned = get_all_assigned_asset_ids($pdo);
+            $rdDriverAssign = get_driver_assignments($pdo, $nextReservation['user_id'] ?? '');
+            $rdDriverAssetIds = array_map('intval', array_column($rdDriverAssign, 'asset_id'));
+            // Exclude assets assigned to OTHER drivers (not pool, not driver's own)
+            $rdExcludeIds = array_diff($rdAllAssigned, $rdDriverAssetIds);
+        }
+
         foreach ($allVehicles as $vehicle) {
             // Skip the overdue vehicle
             if ($vehicle['id'] == $assetId) continue;
+
+            // Skip vehicles assigned to other drivers
+            if (!empty($rdExcludeIds) && in_array((int)$vehicle['id'], $rdExcludeIds, true)) continue;
 
             // Check location match
             $vehLocationId = $vehicle['rtd_location']['id'] ?? ($vehicle['location']['id'] ?? 0);

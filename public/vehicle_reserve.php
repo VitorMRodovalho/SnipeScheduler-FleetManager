@@ -16,6 +16,7 @@ require_once SRC_PATH . '/notification_service.php';
 require_once SRC_PATH . '/reservation_validator.php';
 require_once SRC_PATH . '/business_days.php';
 require_once SRC_PATH . '/company_filter.php';
+require_once SRC_PATH . '/vehicle_assignment_helpers.php';
 
 $active = 'vehicle_reserve';
 $isAdmin = !empty($currentUser['is_admin']);
@@ -77,6 +78,14 @@ if ($selectedPickupId > 0 && $selectedStartDate && $selectedEndDate) {
     // Apply company filtering
     if (!empty($userCompanyIds)) {
         $assetList = filter_assets_by_company($assetList, $userCompanyIds);
+    }
+
+    // Apply vehicle assignment filtering
+    $vrAssignMode = get_assignment_mode($pdo);
+    if ($vrAssignMode !== 'off') {
+        $vrUserId = $_SESSION['user_id'] ?? '';
+        $vrIsStaffOverride = $isStaff && !empty($bookingForOther);
+        $assetList = filter_assets_by_assignment($pdo, $assetList, $vrUserId, $vrIsStaffOverride || $isStaff);
     }
 
     foreach ($assetList as $asset) {

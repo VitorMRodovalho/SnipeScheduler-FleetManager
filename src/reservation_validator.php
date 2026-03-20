@@ -85,7 +85,23 @@ function validate_reservation(
             $errors[] = "Reason: {$blackout['reason']}";
         }
     }
-    
+
+    // 5. Vehicle assignment enforcement (BL-008)
+    if ($assetId && function_exists('get_assignment_mode')) {
+        $vaMode = get_assignment_mode($pdo);
+        if ($vaMode === 'enforced') {
+            // Derive the booking user's OAuth ID from email
+            $vaStmt = $pdo->prepare("SELECT user_id FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1");
+            $vaStmt->execute([$userEmail]);
+            $vaOAuthUserId = $vaStmt->fetchColumn() ?: '';
+
+            if ($vaOAuthUserId && is_asset_assigned($pdo, $assetId) && !is_asset_assigned_to_driver($pdo, $assetId, $vaOAuthUserId)) {
+                $vaAssignedTo = get_assigned_driver_name($pdo, $assetId);
+                $errors[] = "This vehicle is assigned to {$vaAssignedTo}. Please select a pool vehicle or contact Fleet Staff.";
+            }
+        }
+    }
+
     return [
         'valid' => empty($errors),
         'errors' => $errors

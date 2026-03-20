@@ -9,6 +9,7 @@ require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/activity_log.php';
 require_once SRC_PATH . '/email.php';
 require_once SRC_PATH . '/layout.php';
+require_once SRC_PATH . '/vehicle_assignment_helpers.php';
 
 $now = new DateTime();
 $defaultStart = $now->format('Y-m-d\TH:i');
@@ -146,6 +147,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 if (!$isRequestable) {
                     throw new Exception('This asset is not requestable in Snipe-IT.');
+                }
+
+                // BL-008: Assignment check for quick checkout
+                $qcAssignMode = get_assignment_mode($pdo);
+                if ($qcAssignMode === 'enforced') {
+                    $qcUserId = $_SESSION['user_id'] ?? '';
+                    $qcIsStaff = !empty($currentUser['is_staff']) || !empty($currentUser['is_admin']);
+                    if (!$qcIsStaff && is_asset_assigned($pdo, $assetId) && !is_asset_assigned_to_driver($pdo, $assetId, $qcUserId)) {
+                        $qcAssignedTo = get_assigned_driver_name($pdo, $assetId);
+                        throw new Exception("This vehicle is assigned to {$qcAssignedTo}. You cannot check it out.");
+                    }
                 }
 
                 $checkoutAssets[$assetId] = [

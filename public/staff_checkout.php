@@ -14,6 +14,7 @@ require_once SRC_PATH . '/booking_helpers.php';
 require_once SRC_PATH . '/snipeit_client.php';
 require_once SRC_PATH . '/email.php';
 require_once SRC_PATH . '/layout.php';
+require_once SRC_PATH . '/vehicle_assignment_helpers.php';
 
 $config     = load_config();
 $timezone   = $config['app']['timezone'] ?? 'Europe/Jersey';
@@ -534,6 +535,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $currentModelCounts[$modelId] = ($currentModelCounts[$modelId] ?? 0) + 1;
 
                 $checkoutMessages[] = "Added asset {$assetTag} ({$assetName}) to checkout list.";
+
+                // BL-008: Soft warning if asset is assigned to a different driver
+                $scAssignMode = get_assignment_mode($pdo);
+                if ($scAssignMode !== 'off' && is_asset_assigned($pdo, $assetId)) {
+                    $scReservationUserId = $selectedReservation['user_id'] ?? '';
+                    if (!is_asset_assigned_to_driver($pdo, $assetId, $scReservationUserId)) {
+                        $scAssignedTo = get_assigned_driver_name($pdo, $assetId);
+                        $scBookingFor = $selectedReservation['user_name'] ?? 'this driver';
+                        $checkoutMessages[] = "<strong>Note:</strong> This vehicle is assigned to {$scAssignedTo}. You are checking it out for {$scBookingFor}.";
+                        activity_log_event('assignment_override', "Staff override: checking out assigned vehicle {$assetName} for different driver", [
+                            'subject_type' => 'vehicle',
+                            'subject_id' => (string)$assetId,
+                            'metadata' => [
+                                'assigned_to' => $scAssignedTo,
+                                'booking_for' => $scBookingFor,
+                            ],
+                        ]);
+                    }
+                }
             } catch (Throwable $e) {
                 $checkoutErrors[] = 'Could not add asset: ' . $e->getMessage();
             }

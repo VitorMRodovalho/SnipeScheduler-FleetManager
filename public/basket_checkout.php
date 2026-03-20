@@ -5,6 +5,7 @@ require_once SRC_PATH . '/db.php';
 require_once SRC_PATH . '/activity_log.php';
 require_once SRC_PATH . '/snipeit_client.php';
 require_once SRC_PATH . '/layout.php';
+require_once SRC_PATH . '/vehicle_assignment_helpers.php';
 
 $userOverride = $_SESSION['booking_user_override'] ?? null;
 $user   = $userOverride ?: $currentUser;
@@ -81,6 +82,41 @@ try {
         $totalRequestable = count_requestable_assets_by_model($modelId);
         $activeCheckedOut = count_checked_out_assets_by_model($modelId);
         $availableNow = $totalRequestable > 0 ? max(0, $totalRequestable - $activeCheckedOut) : 0;
+
+        // Assignment enforcement: check if driver can book this model
+        $bcAssignMode = get_assignment_mode($pdo);
+        $bcUserId = (string)($user['id'] ?? $_SESSION['user_id'] ?? '');
+        // Use local OAuth user_id from users table if available
+        $bcLocalStmt = $pdo->prepare("SELECT user_id FROM users WHERE email = ? OR id = ? LIMIT 1");
+        $bcLocalStmt->execute([$user['email'] ?? '', $bcUserId]);
+        $bcOAuthUserId = $bcLocalStmt->fetchColumn() ?: $bcUserId;
+
+        $bcIsStaff = !empty($currentUser['is_staff']) || !empty($currentUser['is_admin']);
+        $bcIsOverride = !empty($userOverride);
+
+        if ($bcAssignMode === 'enforced' && !$bcIsStaff && !$bcIsOverride) {
+            // Get all assets of this model to check assignment rules
+            $bcModelAssets = list_assets_by_model($modelId, 500);
+            $bcAssignedIds = get_all_assigned_asset_ids($pdo);
+            $bcDriverAssign = get_driver_assignments($pdo, $bcOAuthUserId);
+            $bcDriverAssetIds = array_map('intval', array_column($bcDriverAssign, 'asset_id'));
+
+            // Count assets this driver can actually use (own assigned + pool)
+            $bcAllowedCount = 0;
+            foreach ($bcModelAssets as $bcA) {
+                $bcAId = (int)($bcA['id'] ?? 0);
+                if (in_array($bcAId, $bcDriverAssetIds, true) || !in_array($bcAId, $bcAssignedIds, true)) {
+                    $bcAllowedCount++;
+                }
+            }
+
+            if ($bcAllowedCount < $qty) {
+                throw new Exception(
+                    'Not enough vehicles available for "' . ($model['name'] ?? 'this model')
+                    . '". You can only book vehicles assigned to you or pool vehicles.'
+                );
+            }
+        }
 
         if ($totalRequestable > 0 && $existingBooked + $qty > $availableNow) {
             throw new Exception(
