@@ -133,6 +133,18 @@ Navigate to **My Reservations** and click **"Download My Data"** at the bottom o
 
 The download is generated on demand and includes all personal data the system holds about you. Exports are logged for audit purposes.
 
+### A11. Understanding Vehicle Assignments
+
+When vehicle assignment mode is active (Soft Warning or Enforced), the catalogue shows vehicles filtered by your assignment:
+
+- **Assigned vehicle(s):** Your assigned vehicle appears prominently. Book it through the standard flow.
+- **Pool vehicles:** Vehicles with no driver assignment are available to all drivers.
+- **Other assigned vehicles:** In Enforced mode, vehicles assigned to other drivers are hidden. In Soft Warning mode, they are visible with a warning badge.
+
+If your assigned vehicle is unavailable (maintenance, already booked), a banner informs you to contact Fleet Staff, who can book a pool vehicle on your behalf.
+
+When assignment mode is Off (the default), all drivers see all vehicles — no filtering is applied.
+
 ---
 
 ## Procedure B: Fleet Staff (Group 3)
@@ -239,6 +251,19 @@ On the **Staff Checkout page** (Today's Reservations), each approved reservation
 2. The system records `key_collected=1` for that reservation
 3. If the reservation is later marked as **missed** and the key was given, the system sends an **URGENT notification** to staff
 4. This helps track physical key custody independently from the digital checkout process
+
+### B13. Managing Vehicle Assignments
+
+Access via **Admin > Vehicles**. The **Assigned Driver** column shows each vehicle's assignment status:
+
+1. Click the **pencil icon** next to any vehicle to open the assignment modal
+2. **Add drivers:** Search by name or email, click Add
+3. **Set primary driver:** Use the radio button to mark one driver as primary (shown in bold on the vehicle list)
+4. **Labels:** Optionally add a descriptive label (e.g., Safety, Quality) — these are display labels, not permission groups
+5. **Remove:** Click the X button to remove an assignment
+6. **Save:** Click Save Assignments — changes take effect immediately
+
+**Book on Behalf:** When booking a pool vehicle for a driver whose assigned vehicle is in maintenance, use the standard Book on Behalf flow. Staff override bypasses assignment restrictions; a soft warning is shown and logged in the Activity Log.
 
 ### Maintenance Intervals Reference
 
@@ -446,6 +471,21 @@ Click the **question mark icon (?)** in the top-right of any page to access the 
 | Super Admin | + System Settings, Security, Data Compliance, Deployment |
 
 Use the **search box** at the top to find specific topics across all visible tabs.
+
+### C18. Configure Vehicle Assignment Mode
+
+Navigate to **Admin > Settings** and find the **Vehicle Assignment** card:
+
+| Mode | Behavior |
+|------|----------|
+| **Off** (default) | Assignments are tracked but not enforced. All drivers see all vehicles. |
+| **Soft Warning** | All vehicles visible. Assigned vehicles show a warning badge when another driver tries to book them. |
+| **Enforced** | Drivers see only their assigned vehicle(s) and pool vehicles. Assigned vehicles are hidden from other drivers. |
+
+**Recommended rollout:**
+1. Start with **Off** — load all vehicle assignments via the Vehicles admin page
+2. Switch to **Soft Warning** — validate assignments are correct by monitoring warnings
+3. Switch to **Enforced** — once assignments are verified, enable hard enforcement
 
 ---
 
