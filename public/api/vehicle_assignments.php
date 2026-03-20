@@ -13,15 +13,9 @@ require_once SRC_PATH . '/activity_log.php';
 
 header('Content-Type: application/json');
 
-$config = require CONFIG_PATH . '/config.php';
-$userGroup = $_SESSION['snipeit_group_id'] ?? 0;
-$canManage = in_array($userGroup, [
-    $config['snipeit_groups']['admins'] ?? 0,
-    $config['snipeit_groups']['fleet_staff'] ?? 0,
-    $config['snipeit_groups']['fleet_admin'] ?? 0,
-]);
-
-if (!$canManage) {
+$isAdmin = !empty($currentUser['is_admin']);
+$isStaff = !empty($currentUser['is_staff']);
+if (!$isAdmin && !$isStaff) {
     http_response_code(403);
     echo json_encode(['error' => 'Unauthorized']);
     exit;
