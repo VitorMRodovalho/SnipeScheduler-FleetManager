@@ -7,7 +7,7 @@ const puppeteer = require('puppeteer');
 const fs = require('fs');
 const path = require('path');
 
-const BASE_URL = 'https://inventory.amtrakfdt.com/booking';
+const BASE_URL = 'https://your-instance.example.com/booking';
 const SCREENSHOT_DIR = path.join(__dirname, '../docs/screenshots');
 
 const PAGES = [
@@ -46,8 +46,8 @@ const NAMES_TO_REPLACE = [
 
 // Location/address patterns to anonymize
 const LOCATIONS_TO_REPLACE = [
-    ['inventory.amtrakfdt.com', 'yoursite.com'],
-    ['amtrakfdt.com', 'yoursite.com'],
+    ['your-instance.example.com', 'yoursite.com'],
+    ['example.com', 'yoursite.com'],
     ['@amtrak.com', '@email.com'],
     ['BPTR', 'FLEET'],
     ['B&P Office', 'Main Office'],
@@ -169,7 +169,7 @@ async function takeScreenshots(sessionId) {
         await page.setCookie({
             name: 'PHPSESSID',
             value: sessionId,
-            domain: 'inventory.amtrakfdt.com',
+            domain: 'your-instance.example.com',
             path: '/',
             httpOnly: true,
             secure: true
@@ -181,9 +181,9 @@ async function takeScreenshots(sessionId) {
         try {
             // For non-auth pages (login), clear session to show real SSO screen
             if (!pageInfo.auth && sessionId) {
-                await page.deleteCookie({ name: "PHPSESSID", domain: "inventory.amtrakfdt.com" });
+                await page.deleteCookie({ name: "PHPSESSID", domain: "your-instance.example.com" });
             } else if (pageInfo.auth && sessionId) {
-                await page.setCookie({ name: "PHPSESSID", value: sessionId, domain: "inventory.amtrakfdt.com", path: "/", httpOnly: true, secure: true });
+                await page.setCookie({ name: "PHPSESSID", value: sessionId, domain: "your-instance.example.com", path: "/", httpOnly: true, secure: true });
             }
             const url = BASE_URL + pageInfo.path;
             console.log(`Capturing: ${pageInfo.name}`);

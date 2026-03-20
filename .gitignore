@@ -24,6 +24,9 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Claude Code (contains project-specific context with sensitive data)
+.claude/
+
 # Archived legacy files
 archive/
 
