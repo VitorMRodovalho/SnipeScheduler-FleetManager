@@ -36,6 +36,7 @@ This project was born from a real need in **large-scale infrastructure programs*
 * **Photo Upload** - Optional camera-first photo capture during checkout and checkin for vehicle condition documentation
 * **Digital Inspections** - Complete checkout/checkin forms on any device
 * **Email & Teams Notifications** - Confirmation, reminders, and approvals via email or Microsoft Teams
+* **Vehicle Assignments** - See your assigned vehicle prominently in the catalogue alongside available pool vehicles
 
 ### For Fleet Staff
 
@@ -44,6 +45,7 @@ This project was born from a real need in **large-scale infrastructure programs*
 * **Maintenance Tracking** - Flag issues, track maintenance history
 * **Training Expiration Tracking** - Color-coded driver training status (green/yellow/red), date picker for completion dates, weekly expiration alerts via CRON
 * **Reports** - Utilization, compliance, and usage reports with Chart.js visualizations
+* **Vehicle Assignment Management** - Assign primary and secondary drivers per vehicle with labels (Safety, Quality, Pool)
 
 ### For Administrators
 
@@ -58,6 +60,7 @@ This project was born from a real need in **large-scale infrastructure programs*
 * **Announcements** - Display system-wide notices to users
 * **Security Dashboard** - Monitor backup status, security checks, and CRON sync health
 * **Booking Rules** - Set booking rules (min notice, max duration, blackouts, training requirements)
+* **Vehicle Assignment Enforcement** - Configurable modes: Off (track only), Soft Warning (visible badges), Enforced (hard lock to assigned vehicle + pool)
 * **Activity Log** - Full audit trail of all system actions
 * **API Resilience** - Exponential backoff retry on 429 (rate limit) and 5xx (server error) API responses
 
