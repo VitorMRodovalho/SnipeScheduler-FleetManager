@@ -65,6 +65,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $assetName = $input['asset_name'] ?? '';
     $actorId = $_SESSION['user_id'] ?? '';
 
+    // Get vehicle's company from Snipe-IT for cross-entity validation
+    require_once SRC_PATH . '/snipeit_client.php';
+    $asset = snipeit_request('GET', '/hardware/' . $assetId);
+    $vehicleCompanyId = $asset['company']['id'] ?? null;
+
+    // Validate each driver's company matches the vehicle's company
+    if ($vehicleCompanyId && !empty($assignments)) {
+        $rejectedDrivers = [];
+        foreach ($assignments as $a) {
+            $driverEmail = $a['user_email'] ?? '';
+            if ($driverEmail) {
+                $driverUser = get_snipeit_user_by_email($driverEmail);
+                $driverCompanyId = $driverUser['company']['id'] ?? null;
+                if ($driverCompanyId && $driverCompanyId != $vehicleCompanyId) {
+                    $rejectedDrivers[] = ($a['user_name'] ?? $driverEmail) . ' (different company)';
+                }
+            }
+        }
+        if (!empty($rejectedDrivers)) {
+            http_response_code(422);
+            echo json_encode([
+                'error' => 'Company mismatch: ' . implode(', ', $rejectedDrivers) . '. Drivers must belong to the same company as the vehicle.'
+            ]);
+            exit;
+        }
+    }
+
     // Get existing assignments for diff logging
     $existingStmt = $pdo->prepare("SELECT user_name, user_email FROM vehicle_assignments WHERE asset_id = ?");
     $existingStmt->execute([$assetId]);
