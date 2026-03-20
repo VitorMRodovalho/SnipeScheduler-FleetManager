@@ -51,11 +51,11 @@ if (!$tabFile || !is_file($tabFile)) {
     <?= layout_theme_styles() ?>
     <style>
         /* Make reservations tabs more prominent */
-        .reservations-tabs {
+        .reservations-subtabs {
             border-bottom: 3px solid var(--primary-strong);
             gap: 0.25rem;
         }
-        .reservations-tabs .nav-link {
+        .reservations-subtabs .nav-link {
             border: 1px solid transparent;
             color: var(--primary-strong);
             font-weight: 600;
@@ -64,12 +64,12 @@ if (!$tabFile || !is_file($tabFile)) {
             background: linear-gradient(180deg, rgba(var(--primary-soft-rgb),0.18), rgba(255,255,255,0));
             transition: all 120ms ease;
         }
-        .reservations-tabs .nav-link:hover {
+        .reservations-subtabs .nav-link:hover {
             color: var(--primary);
             background: linear-gradient(180deg, rgba(var(--primary-soft-rgb),0.36), rgba(255,255,255,0.08));
             border-color: rgba(var(--primary-rgb),0.25);
         }
-        .reservations-tabs .nav-link.active {
+        .reservations-subtabs .nav-link.active {
             color: #000000;
             background: linear-gradient(135deg, var(--primary), var(--primary-strong));
             border-color: var(--primary-strong) var(--primary-strong) #fff;
@@ -98,7 +98,7 @@ if (!$tabFile || !is_file($tabFile)) {
 
         <?= render_top_bar($currentUser, $isStaff, $isAdmin) ?>
 
-        <ul class="nav nav-tabs reservations-tabs">
+        <ul class="nav nav-tabs reservations-subtabs">
             <li class="nav-item">
                 <a class="nav-link <?= $tab === 'today' ? 'active' : '' ?>"
                    href="reservations?tab=today">Today’s Reservations (Checkout)</a>
