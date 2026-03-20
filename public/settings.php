@@ -13,7 +13,7 @@ require_once SRC_PATH . '/email.php';
 require_once SRC_PATH . '/notification_service.php';
 require_once SRC_PATH . '/db.php';
 
-$active  = 'activity_log';
+$active  = 'settings';
 $isAdmin = !empty($currentUser['is_admin']);
 $isStaff = !empty($currentUser['is_staff']) || $isAdmin;
 $isSuperAdmin = !empty($currentUser['is_super_admin']);
@@ -1151,7 +1151,7 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
                             <code>sig=</code> token that authorises delivery — keep it secret.</span>
                         </div>
 
-                        <form method="post" id="teams-settings-form">
+                        <div id="teams-settings-form">
                             <?= csrf_field() ?>
                             <input type="hidden" name="action" value="save_teams_config">
 
@@ -1242,7 +1242,7 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
                             <span class="text-muted small ms-2">
                                 Saved separately from main settings. Leave URL blank to keep existing value.
                             </span>
-                        </form>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -35,6 +35,27 @@ if (!empty($userCompanyIds)) {
     $assets = filter_assets_by_company($assets, $userCompanyIds);
 }
 
+// Filter by vehicle assignment (BL-008)
+require_once SRC_PATH . '/vehicle_assignment_helpers.php';
+$assignmentMode = get_assignment_mode($pdo);
+if ($assignmentMode !== 'off' && !$isStaff && !$isAdmin) {
+    $activeUserId = $_SESSION['user']['id'] ?? $_SESSION['user_id'] ?? '';
+    $assets = filter_assets_by_assignment($pdo, $assets, $activeUserId, false);
+}
+
+// Build assignment lookup for badges (Staff/Admin see "Assigned" tags)
+$assignedAssetIds = [];
+$assignmentLabels = [];
+if ($assignmentMode !== 'off') {
+    $allAssigned = get_all_assigned_asset_ids($pdo);
+    $assignedAssetIds = $allAssigned;
+    // Get labels for display
+    $labelStmt = $pdo->query("SELECT asset_id, user_name, assignment_label FROM vehicle_assignments WHERE is_primary = 1");
+    foreach ($labelStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $assignmentLabels[$row['asset_id']] = $row['assignment_label'] ?: $row['user_name'];
+    }
+}
+
 // Filter out already checked out assets
 $availableAssets = array_filter($assets, function($asset) {
     return !isset($asset['assigned_to']) || $asset['assigned_to'] === null;
@@ -161,6 +182,12 @@ $availableAssets = array_filter($assets, function($asset) {
                                 <?php endif; ?>
                                 <span class="badge bg-success mt-2">
                                     <i class="bi bi-check-circle"></i> Available
+                                </span>
+                                <?php if (in_array($asset['id'], $assignedAssetIds)): ?>
+                                    <span class="badge bg-warning text-dark mt-2 ms-1"><i class="bi bi-person-fill"></i> <?= htmlspecialchars($assignmentLabels[$asset['id']] ?? 'Assigned') ?></span>
+                                <?php else: ?>
+                                    <span class="badge bg-secondary mt-2 ms-1"><i class="bi bi-people"></i> Pool</span>
+                                <?php endif; ?>
                                 </span>
                             </div>
                             <div class="card-footer bg-transparent">
