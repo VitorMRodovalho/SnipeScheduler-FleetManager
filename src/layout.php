@@ -206,7 +206,7 @@ if (!function_exists('layout_footer')) {
     {
         // Dynamically read the version from version.txt
         $versionFile = __DIR__ . '/../version.txt';
-        $version = '2.0.0'; // Default fallback
+        $version = '2.1.0'; // Default fallback
 
         if (file_exists($versionFile)) {
             $fileContent = trim(file_get_contents($versionFile));
@@ -227,6 +227,23 @@ if (!function_exists('layout_footer')) {
             . 'Powered by <a href="https://snipeitapp.com" target="_blank" rel="noopener noreferrer">Snipe-IT</a>'
             . '</div>'
             . '</footer>';
+
+        // Render announcements modal on every page (shows once per session via dismiss)
+        global $pdo, $currentUser;
+        if (isset($pdo) && isset($currentUser)) {
+            if (!function_exists('render_announcements_modal')) {
+                $annFile = (defined('SRC_PATH') ? SRC_PATH : __DIR__) . '/announcements.php';
+                if (file_exists($annFile)) {
+                    require_once $annFile;
+                }
+            }
+            if (function_exists('render_announcements_modal')) {
+                $footerEmail = $currentUser['email'] ?? '';
+                if ($footerEmail) {
+                    echo render_announcements_modal($footerEmail, $pdo);
+                }
+            }
+        }
     }
 }
 

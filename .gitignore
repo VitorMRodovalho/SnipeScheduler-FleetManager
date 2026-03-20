@@ -38,6 +38,9 @@ scripts/package-lock.json
 docs/PROJECT_CONTEXT.md
 config/security_terms.json
 
+# Data load scripts (contain PII — names, emails)
+scripts/onboard_fleet.php
+
 # Backup / temp files
 *.bak
 *.bak.*

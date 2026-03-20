@@ -1,5 +1,54 @@
 # Changelog
 
+## [2.1.0] - 2026-03-20
+
+### Added
+- BL-008: Vehicle Assignment System (Phase 1 + Phase 2)
+  - vehicle_assignments table with per-vehicle driver assignment (primary + secondary)
+  - Assignment enforcement modes: Off / Soft Warning / Enforced (system_settings toggle)
+  - Catalogue filtering: enforced mode shows only assigned + pool vehicles for drivers
+  - Staff/Admin see all vehicles with assignment badges
+  - Cross-company validation prevents assigning drivers from different companies
+  - Offboarding and CCPA deletion cascade to vehicle_assignments
+  - DSAR export includes assignment data
+  - Backend safety net: reservation validator rejects unauthorized bookings
+  - Approval queue shows warning when vehicle was reassigned post-submission
+  - Redirect engine constrained to pool vehicles in enforced/soft mode
+  - QR quick checkout validates assignment in enforced mode
+  - Book on Behalf: soft warning for cross-assignment, staff override preserved
+- Vehicle assignment badges on catalogue and booking pages
+  - Label + primary name with tag icon
+  - Primary name with person icon for unlabeled assignments
+  - +N count badge for vehicles with multiple authorized drivers
+  - Gray Pool badge for unassigned vehicles
+- Vehicle Assignment modal with vehicle-level label editing
+- fleet_tag_config table: per-company asset tag prefix with auto-increment
+- Asset tags migrated from license plates to unit numbers
+- Add Vehicle form: auto-generates tags from fleet_tag_config
+- 34 drivers onboarded via Snipe-IT API (30 new + 4 updated)
+- 16 vehicles registered with full custom field data (VIN, plate, year, mileage, insurance, maintenance intervals)
+- 17 vehicle assignments loaded with primary drivers and labels
+- Training validity period: 36-month option added to Booking Rules
+- Help page: badge guide, assignment management, asset tag format sections
+- User Guide: A11, B13, C18, C19 sections for assignment workflow
+- Announcement popup moved from dashboard-only to layout footer (shows on first page after login)
+
+### Fixed
+- Company badge double-encoding (Snipe-IT returns pre-encoded HTML entities)
+- Settings form POST action pointing to activity_log instead of settings
+- Settings form nested form tag breaking save button
+- Vehicle assignments API auth using wrong session variable pattern
+- Training validity whitelist missing 36-month option
+- Color picker placeholder #YOURHEX replaced with valid hex
+- vehicle_catalogue.php missing assignment filtering for drivers
+
+### Changed
+- Asset tag pattern: replaced (configurable per-company via fleet_tag_config)
+- Vehicle name format: [Year] [Manufacturer] [Model] (removed plate from name)
+- Quick Reference sidebar updated with new naming convention
+
+---
+
 ## v1.5.1 (2026-03-12)
 
 Epic 2-3: Fleet Health Dashboard, Reports CXO overhaul, driver typeahead, behalf booking fix

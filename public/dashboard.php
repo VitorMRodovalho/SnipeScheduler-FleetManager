@@ -688,11 +688,7 @@ foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         </div>
     </div><!-- page-shell -->
 </div>
-<!-- Announcements Modal -->
-<?php 
-$userEmail = $currentUser['email'] ?? '';
-echo render_announcements_modal($userEmail, $pdo); 
-?>
+<!-- Announcements rendered via layout_footer() -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
