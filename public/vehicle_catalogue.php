@@ -43,17 +43,19 @@ if ($assignmentMode !== 'off' && !$isStaff && !$isAdmin) {
     $assets = filter_assets_by_assignment($pdo, $assets, $activeUserId, false);
 }
 
-// Build assignment lookup for badges (Staff/Admin see "Assigned" tags)
-$assignedAssetIds = [];
-$assignmentLabels = [];
-if ($assignmentMode !== 'off') {
-    $allAssigned = get_all_assigned_asset_ids($pdo);
-    $assignedAssetIds = $allAssigned;
-    // Get labels for display
-    $labelStmt = $pdo->query("SELECT asset_id, user_name, assignment_label FROM vehicle_assignments WHERE is_primary = 1");
-    foreach ($labelStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-        $assignmentLabels[$row['asset_id']] = $row['assignment_label'] ?: $row['user_name'];
+// Build assignment display data for all vehicles (one query)
+$assignmentDisplay = [];
+$aStmt = $pdo->query("SELECT asset_id, user_name, is_primary, assignment_label FROM vehicle_assignments ORDER BY asset_id, is_primary DESC");
+foreach ($aStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+    $aid = $row['asset_id'];
+    if (!isset($assignmentDisplay[$aid])) {
+        $assignmentDisplay[$aid] = ['primary' => '', 'label' => '', 'count' => 0];
     }
+    if ($row['is_primary']) {
+        $assignmentDisplay[$aid]['primary'] = $row['user_name'];
+        $assignmentDisplay[$aid]['label'] = $row['assignment_label'] ?? '';
+    }
+    $assignmentDisplay[$aid]['count']++;
 }
 
 // Filter out already checked out assets
@@ -183,12 +185,19 @@ $availableAssets = array_filter($assets, function($asset) {
                                 <span class="badge bg-success mt-2">
                                     <i class="bi bi-check-circle"></i> Available
                                 </span>
-                                <?php if (in_array($asset['id'], $assignedAssetIds)): ?>
-                                    <span class="badge bg-warning text-dark mt-2 ms-1"><i class="bi bi-person-fill"></i> <?= htmlspecialchars($assignmentLabels[$asset['id']] ?? 'Assigned') ?></span>
+                                <?php
+                                $ad = $assignmentDisplay[$asset['id']] ?? null;
+                                if ($ad):
+                                    $extra = $ad['count'] > 1 ? ' <span class="badge bg-dark bg-opacity-25 ms-1">+' . ($ad['count'] - 1) . '</span>' : '';
+                                    if ($ad['label']):
+                                ?>
+                                    <span class="badge bg-warning text-dark mt-2 ms-1"><i class="bi bi-tag-fill"></i> <?= h($ad['label']) ?> &middot; <?= h($ad['primary']) ?></span><?= $extra ?>
+                                <?php else: ?>
+                                    <span class="badge bg-warning text-dark mt-2 ms-1"><i class="bi bi-person-fill"></i> <?= h($ad['primary']) ?></span><?= $extra ?>
+                                <?php endif; ?>
                                 <?php else: ?>
                                     <span class="badge bg-secondary mt-2 ms-1"><i class="bi bi-people"></i> Pool</span>
                                 <?php endif; ?>
-                                </span>
                             </div>
                             <div class="card-footer bg-transparent">
                                 <a href="vehicle_reserve?asset_id=<?= $asset['id'] ?>" class="btn btn-primary w-100">

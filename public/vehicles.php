@@ -967,6 +967,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 <input type="hidden" id="assignModalAssetTag">
                 <input type="hidden" id="assignModalAssetName">
 
+                <!-- Vehicle Label (applies to all assignments) -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Vehicle Label</label>
+                    <input type="text" id="assignLabel" class="form-control" placeholder="Optional — e.g., Safety, Quality, Operations" maxlength="50">
+                    <small class="text-muted">Applies to all drivers assigned to this vehicle</small>
+                </div>
+                <hr>
+
                 <!-- Current Assignments -->
                 <h6 class="mb-2">Current Assignments</h6>
                 <div id="assignmentList" class="mb-3">
@@ -976,15 +984,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 <!-- Add Driver -->
                 <h6 class="mb-2">Add Driver</h6>
                 <div class="row g-2 mb-2">
-                    <div class="col-md-5">
+                    <div class="col-md-6">
                         <input type="text" id="assignDriverSearch" class="form-control" placeholder="Search by name or email..." autocomplete="off">
                         <div id="assignDriverResults" class="list-group position-absolute" style="z-index:1060;max-height:200px;overflow-y:auto;display:none;"></div>
                     </div>
-                    <div class="col-md-3">
-                        <input type="text" id="assignLabel" class="form-control" placeholder="Label (optional)" maxlength="50">
-                    </div>
-                    <div class="col-md-2">
-                        <input type="text" id="assignNotes" class="form-control" placeholder="Notes" maxlength="255">
+                    <div class="col-md-4">
+                        <input type="text" id="assignNotes" class="form-control" placeholder="Notes (optional)" maxlength="255">
                     </div>
                     <div class="col-md-2">
                         <button type="button" class="btn btn-outline-primary w-100" id="assignAddBtn" disabled>
@@ -1099,6 +1104,9 @@ if (locModal) {
                     assignment_label: a.assignment_label || '',
                     notes: a.notes || ''
                 }));
+                // Pre-fill vehicle label from first assignment that has one
+                const existingLabel = assignments.find(a => a.assignment_label)?.assignment_label || '';
+                document.getElementById('assignLabel').value = existingLabel;
                 renderList();
             })
             .catch(() => { assignments = []; renderList(); });
@@ -1120,7 +1128,6 @@ if (locModal) {
                 '<div class="flex-grow-1">' +
                     '<strong>' + escHtml(a.user_name) + '</strong> ' +
                     '<span class="text-muted small">' + escHtml(a.user_email) + '</span>' +
-                    (a.assignment_label ? ' <span class="badge bg-info bg-opacity-25 text-info">' + escHtml(a.assignment_label) + '</span>' : '') +
                     (a.notes ? ' <span class="text-muted small">(' + escHtml(a.notes) + ')</span>' : '') +
                 '</div>' +
                 '<div class="d-flex align-items-center gap-2">' +
@@ -1205,12 +1212,11 @@ if (locModal) {
             user_name: selectedDriver.name,
             user_email: selectedDriver.email,
             is_primary: assignments.length === 0,
-            assignment_label: document.getElementById('assignLabel').value.trim(),
+            assignment_label: '',
             notes: document.getElementById('assignNotes').value.trim()
         });
 
         searchInput.value = '';
-        document.getElementById('assignLabel').value = '';
         document.getElementById('assignNotes').value = '';
         selectedDriver = null;
         addBtn.disabled = true;
@@ -1221,6 +1227,10 @@ if (locModal) {
         saveBtn.disabled = true;
         saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
         errorEl.style.display = 'none';
+
+        // Apply vehicle-level label to all assignments before saving
+        const vehicleLabel = document.getElementById('assignLabel').value.trim();
+        assignments.forEach(a => { a.assignment_label = vehicleLabel; });
 
         const assetId = document.getElementById('assignModalAssetId').value;
         const payload = {

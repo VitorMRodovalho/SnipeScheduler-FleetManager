@@ -88,6 +88,21 @@ if ($selectedPickupId > 0 && $selectedStartDate && $selectedEndDate) {
         $assetList = filter_assets_by_assignment($pdo, $assetList, $vrUserId, $vrIsStaffOverride || $isStaff);
     }
 
+    // Build assignment display data for badges (one query)
+    $assignmentDisplay = [];
+    $aStmt = $pdo->query("SELECT asset_id, user_name, is_primary, assignment_label FROM vehicle_assignments ORDER BY asset_id, is_primary DESC");
+    foreach ($aStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $aid = $row['asset_id'];
+        if (!isset($assignmentDisplay[$aid])) {
+            $assignmentDisplay[$aid] = ['primary' => '', 'label' => '', 'count' => 0];
+        }
+        if ($row['is_primary']) {
+            $assignmentDisplay[$aid]['primary'] = $row['user_name'];
+            $assignmentDisplay[$aid]['label'] = $row['assignment_label'] ?? '';
+        }
+        $assignmentDisplay[$aid]['count']++;
+    }
+
     foreach ($assetList as $asset) {
         // Get location IDs
         $assetLocationId = $asset['location']['id'] ?? 0;
@@ -604,6 +619,21 @@ function get_location_name($locations, $id) {
                                                                 <strong>Model:</strong> <?= h($asset['model']['name'] ?? 'N/A') ?><br>
                                                                 <strong>Plate:</strong> <?= h($asset['custom_fields']['License Plate']['value'] ?? 'N/A') ?>
                                                             </small>
+                                                            <div class="mt-1">
+                                                            <?php
+                                                            $ad = $assignmentDisplay[$asset['id']] ?? null;
+                                                            if ($ad):
+                                                                $extra = $ad['count'] > 1 ? ' <span class="badge bg-dark bg-opacity-25 ms-1">+' . ($ad['count'] - 1) . '</span>' : '';
+                                                                if ($ad['label']):
+                                                            ?>
+                                                                <span class="badge bg-warning text-dark"><i class="bi bi-tag-fill"></i> <?= h($ad['label']) ?> &middot; <?= h($ad['primary']) ?></span><?= $extra ?>
+                                                            <?php else: ?>
+                                                                <span class="badge bg-warning text-dark"><i class="bi bi-person-fill"></i> <?= h($ad['primary']) ?></span><?= $extra ?>
+                                                            <?php endif; ?>
+                                                            <?php else: ?>
+                                                                <span class="badge bg-secondary"><i class="bi bi-people"></i> Pool</span>
+                                                            <?php endif; ?>
+                                                            </div>
                                                         </label>
                                                     </div>
                                                 </div>
@@ -647,6 +677,7 @@ function get_location_name($locations, $id) {
 // Disabled dates from PHP (non-business days + blackouts)
 const disabledDates = <?= json_encode(array_values($disabledDates)) ?>;
 const pickupLocationId = <?= $selectedPickupId ?>;
+const assignmentData = <?= json_encode($assignmentDisplay ?? [], JSON_HEX_TAG) ?>;
 
 // Flatpickr configuration
 const fpConfig = {
@@ -776,6 +807,18 @@ function renderVehicles(container, vehicles, errorMsg) {
     vehicles.forEach(v => {
         const col = document.createElement('div');
         col.className = 'col-md-6 mb-3';
+        const ad = assignmentData[v.id] || null;
+        let badgeHtml = '';
+        if (ad) {
+            const extra = ad.count > 1 ? ' <span class="badge bg-dark bg-opacity-25 ms-1">+' + (ad.count - 1) + '</span>' : '';
+            if (ad.label) {
+                badgeHtml = '<span class="badge bg-warning text-dark"><i class="bi bi-tag-fill"></i> ' + escHtml(ad.label) + ' &middot; ' + escHtml(ad.primary) + '</span>' + extra;
+            } else {
+                badgeHtml = '<span class="badge bg-warning text-dark"><i class="bi bi-person-fill"></i> ' + escHtml(ad.primary) + '</span>' + extra;
+            }
+        } else {
+            badgeHtml = '<span class="badge bg-secondary"><i class="bi bi-people"></i> Pool</span>';
+        }
         col.innerHTML = `
             <div class="card h-100 border-2 vehicle-card" style="cursor: pointer;" onclick="selectVehicle(${v.id}, this)">
                 <div class="card-body">
@@ -793,6 +836,7 @@ function renderVehicles(container, vehicles, errorMsg) {
                                 <strong>Model:</strong> ${escHtml(v.model)}<br>
                                 <strong>Plate:</strong> ${escHtml(v.license_plate)}
                             </small>
+                            <div class="mt-1">${badgeHtml}</div>
                         </label>
                     </div>
                 </div>
