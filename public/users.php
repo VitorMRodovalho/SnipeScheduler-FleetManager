@@ -179,7 +179,19 @@ if (set_user_vip_status($userId, $newVip)) {
             $offboardErrors[] = 'Failed to query checked-out assets: ' . $e->getMessage();
         }
 
-        // 3. Deactivate in Snipe-IT
+        // 3. Remove vehicle assignments
+        try {
+            $delAssignStmt = $pdo->prepare("DELETE FROM vehicle_assignments WHERE user_id = ? OR user_email = ?");
+            $delAssignStmt->execute([(string)$userId, $offboardUserEmail]);
+            $removedAssignments = $delAssignStmt->rowCount();
+            if ($removedAssignments > 0) {
+                $offboardActions[] = "Removed {$removedAssignments} vehicle assignment(s)";
+            }
+        } catch (Throwable $e) {
+            // Table may not exist yet
+        }
+
+        // 4. Deactivate in Snipe-IT
         if (deactivate_snipeit_user($userId)) {
             $offboardActions[] = 'Deactivated user in Snipe-IT';
         } else {
@@ -889,6 +901,7 @@ foreach ($allUsers as $user) {
                     <ul class="list-group mb-3">
                         <li class="list-group-item"><i class="bi bi-x-circle text-danger me-2"></i>Cancel all pending and confirmed reservations</li>
                         <li class="list-group-item"><i class="bi bi-arrow-return-left text-warning me-2"></i>Force check-in any currently checked-out vehicles</li>
+                        <li class="list-group-item"><i class="bi bi-car-front text-info me-2"></i>Remove all vehicle assignments</li>
                         <li class="list-group-item"><i class="bi bi-pause-circle text-secondary me-2"></i>Deactivate user in Snipe-IT</li>
                     </ul>
                     <p class="text-muted small mb-0">This action is logged in the Activity Log. The user's historical data (completed reservations, inspections) is preserved for audit purposes.</p>

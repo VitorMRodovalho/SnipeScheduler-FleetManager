@@ -33,7 +33,7 @@ if (strlen($query) < 2) {
 try {
     $searchTerm = '%' . $query . '%';
     $stmt = $pdo->prepare("
-        SELECT name, email
+        SELECT user_id, name, email
         FROM users
         WHERE (name LIKE :q1 OR email LIKE :q2)
         ORDER BY name ASC

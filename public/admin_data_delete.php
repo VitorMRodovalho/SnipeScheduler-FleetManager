@@ -103,6 +103,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
             // Table may not exist
         }
 
+        // Delete vehicle assignments
+        try {
+            $delAssignStmt = $pdo->prepare("DELETE FROM vehicle_assignments WHERE user_email = ?");
+            $delAssignStmt->execute([$deleteEmail]);
+            $totalRecords += $delAssignStmt->rowCount();
+        } catch (Throwable $e) {
+            // Table may not exist
+        }
+
         // Delete from each table
         foreach ($tables as $t) {
             try {
@@ -219,6 +228,13 @@ if ($searchEmail !== '' && $success === '') {
         $stmt->execute([$searchEmail]);
         $preview['tables']['announcement_dismissals'] = ['label' => 'Announcement dismissals', 'count' => (int)$stmt->fetchColumn()];
     } catch (Throwable $e) { $preview['tables']['announcement_dismissals'] = ['label' => 'Announcement dismissals', 'count' => 0]; }
+
+    // Vehicle assignments
+    try {
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM vehicle_assignments WHERE user_email = ?");
+        $stmt->execute([$searchEmail]);
+        $preview['tables']['vehicle_assignments'] = ['label' => 'Vehicle assignments', 'count' => (int)$stmt->fetchColumn()];
+    } catch (Throwable $e) { $preview['tables']['vehicle_assignments'] = ['label' => 'Vehicle assignments', 'count' => 0]; }
 
     $preview['total'] = array_sum(array_column($preview['tables'], 'count'));
 }

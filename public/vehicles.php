@@ -223,6 +223,17 @@ if (isset($_GET['success'])) {
 }
 
 $vehicles = get_fleet_vehicles(200);
+
+// Load vehicle assignments indexed by asset_id
+$assignmentsByAsset = [];
+try {
+    $aStmt = $pdo->query("SELECT * FROM vehicle_assignments ORDER BY is_primary DESC, user_name ASC");
+    foreach ($aStmt->fetchAll(PDO::FETCH_ASSOC) as $a) {
+        $assignmentsByAsset[(int)$a['asset_id']][] = $a;
+    }
+} catch (Throwable $e) {
+    // Table may not exist yet
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -330,7 +341,7 @@ $vehicles = get_fleet_vehicles(200);
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
-                            <tr><th>Asset Tag</th><th>Name</th><th>Model</th><th>Status</th><th>Location</th><th>Assigned To</th><th>Actions</th></tr>
+                            <tr><th>Asset Tag</th><th>Name</th><th>Model</th><th>Status</th><th>Location</th><th>Assigned Driver</th><th>Actions</th></tr>
                         </thead>
                         <tbody>
                             <?php foreach ($vehicles as $v): ?>
@@ -356,7 +367,35 @@ $vehicles = get_fleet_vehicles(200);
                                         <i class="bi bi-pencil-square"></i>
                                     </button>
                                 </td>
-                                <td><?= $isCheckedOut ? h($v['assigned_to']['name'] ?? '-') : '<span class="text-muted">-</span>' ?></td>
+                                <td>
+                                    <?php
+                                    $vAssignments = $assignmentsByAsset[(int)$v['id']] ?? [];
+                                    if (empty($vAssignments)): ?>
+                                        <span class="text-muted">Pool</span>
+                                    <?php else:
+                                        $primary = null;
+                                        foreach ($vAssignments as $va) {
+                                            if ($va['is_primary']) { $primary = $va; break; }
+                                        }
+                                        if (!$primary) $primary = $vAssignments[0];
+                                        $extraCount = count($vAssignments) - 1;
+                                    ?>
+                                        <strong><?= h($primary['user_name']) ?></strong>
+                                        <?php if (!empty($primary['assignment_label'])): ?>
+                                            <span class="badge bg-info bg-opacity-25 text-info ms-1"><?= h($primary['assignment_label']) ?></span>
+                                        <?php endif; ?>
+                                        <?php if ($extraCount > 0): ?>
+                                            <span class="badge bg-secondary ms-1">+<?= $extraCount ?></span>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
+                                    <button type="button" class="btn btn-sm btn-link p-0 ms-1" title="Manage assignments"
+                                            data-bs-toggle="modal" data-bs-target="#assignmentModal"
+                                            data-asset-id="<?= $v['id'] ?>"
+                                            data-asset-tag="<?= h($v['asset_tag'] ?? '') ?>"
+                                            data-asset-name="<?= h($v['name'] ?? '') ?>">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
+                                </td>
                                 <td>
                                     <a href="<?= htmlspecialchars($config['snipeit']['base_url']) ?>/hardware/<?= $v['id'] ?>" target="_blank"
                                        class="btn btn-sm btn-outline-secondary" title="View in Snipe-IT">
@@ -900,6 +939,56 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+<!-- Vehicle Assignment Modal -->
+<div class="modal fade" id="assignmentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-person-badge me-2"></i>Manage Assignments — <span id="assignModalVehicleName"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="assignModalAssetId">
+                <input type="hidden" id="assignModalAssetTag">
+                <input type="hidden" id="assignModalAssetName">
+
+                <!-- Current Assignments -->
+                <h6 class="mb-2">Current Assignments</h6>
+                <div id="assignmentList" class="mb-3">
+                    <p class="text-muted" id="assignmentEmpty">No drivers assigned (pool vehicle)</p>
+                </div>
+
+                <!-- Add Driver -->
+                <h6 class="mb-2">Add Driver</h6>
+                <div class="row g-2 mb-2">
+                    <div class="col-md-5">
+                        <input type="text" id="assignDriverSearch" class="form-control" placeholder="Search by name or email..." autocomplete="off">
+                        <div id="assignDriverResults" class="list-group position-absolute" style="z-index:1060;max-height:200px;overflow-y:auto;display:none;"></div>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" id="assignLabel" class="form-control" placeholder="Label (optional)" maxlength="50">
+                    </div>
+                    <div class="col-md-2">
+                        <input type="text" id="assignNotes" class="form-control" placeholder="Notes" maxlength="255">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-outline-primary w-100" id="assignAddBtn" disabled>
+                            <i class="bi bi-plus-lg me-1"></i>Add
+                        </button>
+                    </div>
+                </div>
+                <div id="assignError" class="text-danger small mb-2" style="display:none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="assignSaveBtn">
+                    <i class="bi bi-check-lg me-1"></i>Save Assignments
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Location Edit Modal -->
 <div class="modal fade" id="locationModal" tabindex="-1">
     <div class="modal-dialog">
@@ -948,5 +1037,216 @@ if (locModal) {
 }
 </script>
 <?php layout_footer(); ?>
+<script>
+// Assignment Modal
+(function() {
+    const modal = document.getElementById('assignmentModal');
+    if (!modal) return;
+
+    let assignments = [];
+    let selectedDriver = null;
+    let searchDebounce = null;
+    const csrfToken = document.querySelector('[name="csrf_token"]')?.value || '';
+
+    const listEl = document.getElementById('assignmentList');
+    const emptyEl = document.getElementById('assignmentEmpty');
+    const searchInput = document.getElementById('assignDriverSearch');
+    const resultsEl = document.getElementById('assignDriverResults');
+    const addBtn = document.getElementById('assignAddBtn');
+    const saveBtn = document.getElementById('assignSaveBtn');
+    const errorEl = document.getElementById('assignError');
+
+    modal.addEventListener('show.bs.modal', function(e) {
+        const btn = e.relatedTarget;
+        const assetId = btn.getAttribute('data-asset-id');
+        document.getElementById('assignModalAssetId').value = assetId;
+        document.getElementById('assignModalAssetTag').value = btn.getAttribute('data-asset-tag');
+        document.getElementById('assignModalAssetName').value = btn.getAttribute('data-asset-name');
+        document.getElementById('assignModalVehicleName').textContent = btn.getAttribute('data-asset-name');
+        assignments = [];
+        selectedDriver = null;
+        searchInput.value = '';
+        document.getElementById('assignLabel').value = '';
+        document.getElementById('assignNotes').value = '';
+        addBtn.disabled = true;
+        errorEl.style.display = 'none';
+        resultsEl.style.display = 'none';
+
+        fetch('api/vehicle_assignments?asset_id=' + assetId)
+            .then(r => r.json())
+            .then(data => {
+                assignments = (data.assignments || []).map(a => ({
+                    snipeit_user_id: parseInt(a.snipeit_user_id) || 0,
+                    user_id: a.user_id || '',
+                    user_name: a.user_name || '',
+                    user_email: a.user_email || '',
+                    is_primary: parseInt(a.is_primary) === 1,
+                    assignment_label: a.assignment_label || '',
+                    notes: a.notes || ''
+                }));
+                renderList();
+            })
+            .catch(() => { assignments = []; renderList(); });
+    });
+
+    function renderList() {
+        if (assignments.length === 0) {
+            emptyEl.style.display = '';
+            listEl.querySelectorAll('.assign-row').forEach(r => r.remove());
+            return;
+        }
+        emptyEl.style.display = 'none';
+        listEl.querySelectorAll('.assign-row').forEach(r => r.remove());
+
+        assignments.forEach(function(a, idx) {
+            const row = document.createElement('div');
+            row.className = 'assign-row d-flex align-items-center gap-2 mb-2 p-2 border rounded';
+            row.innerHTML =
+                '<div class="flex-grow-1">' +
+                    '<strong>' + escHtml(a.user_name) + '</strong> ' +
+                    '<span class="text-muted small">' + escHtml(a.user_email) + '</span>' +
+                    (a.assignment_label ? ' <span class="badge bg-info bg-opacity-25 text-info">' + escHtml(a.assignment_label) + '</span>' : '') +
+                    (a.notes ? ' <span class="text-muted small">(' + escHtml(a.notes) + ')</span>' : '') +
+                '</div>' +
+                '<div class="d-flex align-items-center gap-2">' +
+                    '<div class="form-check">' +
+                        '<input class="form-check-input" type="radio" name="primaryDriver" data-idx="' + idx + '"' + (a.is_primary ? ' checked' : '') + '>' +
+                        '<label class="form-check-label small">Primary</label>' +
+                    '</div>' +
+                    '<button type="button" class="btn btn-sm btn-outline-danger" data-idx="' + idx + '" title="Remove"><i class="bi bi-x-lg"></i></button>' +
+                '</div>';
+            listEl.appendChild(row);
+
+            row.querySelector('input[type=radio]').addEventListener('change', function() {
+                assignments.forEach((x, i) => x.is_primary = (i === idx));
+                renderList();
+            });
+            row.querySelector('button').addEventListener('click', function() {
+                assignments.splice(idx, 1);
+                if (assignments.length > 0 && !assignments.some(x => x.is_primary)) {
+                    assignments[0].is_primary = true;
+                }
+                renderList();
+            });
+        });
+    }
+
+    // Driver search typeahead
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchDebounce);
+        selectedDriver = null;
+        addBtn.disabled = true;
+        const q = this.value.trim();
+        if (q.length < 2) { resultsEl.style.display = 'none'; return; }
+        searchDebounce = setTimeout(function() {
+            fetch('api/search_drivers?q=' + encodeURIComponent(q))
+                .then(r => r.json())
+                .then(function(results) {
+                    resultsEl.innerHTML = '';
+                    if (!results.length) {
+                        resultsEl.innerHTML = '<div class="list-group-item text-muted">No results</div>';
+                        resultsEl.style.display = '';
+                        return;
+                    }
+                    results.forEach(function(r) {
+                        const item = document.createElement('a');
+                        item.href = '#';
+                        item.className = 'list-group-item list-group-item-action';
+                        item.textContent = r.name + ' (' + r.email + ')';
+                        item.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            selectedDriver = r;
+                            searchInput.value = r.name;
+                            resultsEl.style.display = 'none';
+                            addBtn.disabled = false;
+                        });
+                        resultsEl.appendChild(item);
+                    });
+                    resultsEl.style.display = '';
+                });
+        }, 300);
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!resultsEl.contains(e.target) && e.target !== searchInput) {
+            resultsEl.style.display = 'none';
+        }
+    });
+
+    addBtn.addEventListener('click', function() {
+        if (!selectedDriver) return;
+        errorEl.style.display = 'none';
+
+        // Check for duplicate
+        if (assignments.some(a => a.user_email === selectedDriver.email)) {
+            errorEl.textContent = 'This driver is already assigned.';
+            errorEl.style.display = '';
+            return;
+        }
+
+        assignments.push({
+            snipeit_user_id: selectedDriver.snipeit_user_id || 0,
+            user_id: selectedDriver.user_id || '',
+            user_name: selectedDriver.name,
+            user_email: selectedDriver.email,
+            is_primary: assignments.length === 0,
+            assignment_label: document.getElementById('assignLabel').value.trim(),
+            notes: document.getElementById('assignNotes').value.trim()
+        });
+
+        searchInput.value = '';
+        document.getElementById('assignLabel').value = '';
+        document.getElementById('assignNotes').value = '';
+        selectedDriver = null;
+        addBtn.disabled = true;
+        renderList();
+    });
+
+    saveBtn.addEventListener('click', function() {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
+        errorEl.style.display = 'none';
+
+        const assetId = document.getElementById('assignModalAssetId').value;
+        const payload = {
+            asset_id: parseInt(assetId),
+            asset_tag: document.getElementById('assignModalAssetTag').value,
+            asset_name: document.getElementById('assignModalAssetName').value,
+            assignments: assignments,
+            csrf_token: csrfToken
+        };
+
+        fetch('api/vehicle_assignments?asset_id=' + assetId, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: JSON.stringify(payload),
+            credentials: 'same-origin'
+        })
+        .then(r => r.json())
+        .then(function(data) {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                errorEl.textContent = data.error || 'Save failed.';
+                errorEl.style.display = '';
+            }
+        })
+        .catch(function() {
+            errorEl.textContent = 'Network error. Please try again.';
+            errorEl.style.display = '';
+        })
+        .finally(function() {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Save Assignments';
+        });
+    });
+
+    function escHtml(s) {
+        const d = document.createElement('div');
+        d.textContent = s;
+        return d.innerHTML;
+    }
+})();
+</script>
 </body>
 </html>

@@ -526,6 +526,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $mcStmt->execute(['multi_company_mode', $mcModeInput]);
         }
 
+        // Save vehicle assignment mode
+        $vaModeInput = $_POST['vehicle_assignment_mode'] ?? '';
+        if (in_array($vaModeInput, ['off', 'soft', 'enforced'], true)) {
+            $vaStmt = $pdo->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES (?,?) ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value)");
+            $vaStmt->execute(['vehicle_assignment_mode', $vaModeInput]);
+        }
+
         // Save session timeout
         $stVal = $_POST['session_timeout_minutes'] ?? '';
         if ($stVal !== '' && in_array((int)$stVal, [0, 15, 30, 60, 120], true)) {
@@ -1435,6 +1442,38 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
                                             <?php endif; ?>
                                         </span>
                                     <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vehicle Assignment -->
+            <div class="col-12">
+                <div class="card" id="vehicle-assignment">
+                    <div class="card-body">
+                        <h5 class="card-title mb-1">Vehicle Assignment</h5>
+                        <p class="text-muted small mb-3">Control whether assigned vehicles are enforced during booking. Assignments are managed on the Vehicles page.</p>
+                        <?php
+                            $vaStmt = $pdo->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'vehicle_assignment_mode' LIMIT 1");
+                            $vaStmt->execute();
+                            $vaMode = $vaStmt->fetchColumn() ?: 'off';
+                        ?>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Assignment Mode</label>
+                                <select name="vehicle_assignment_mode" class="form-select">
+                                    <option value="off" <?= $vaMode === 'off' ? 'selected' : '' ?>>Off</option>
+                                    <option value="soft" <?= $vaMode === 'soft' ? 'selected' : '' ?>>Soft Warning</option>
+                                    <option value="enforced" <?= $vaMode === 'enforced' ? 'selected' : '' ?>>Enforced</option>
+                                </select>
+                            </div>
+                            <div class="col-md-8">
+                                <div class="small text-muted mt-md-4">
+                                    <strong>Off:</strong> Assignments are tracked but not enforced. All drivers can book any vehicle.<br>
+                                    <strong>Soft Warning:</strong> Drivers see a warning when booking an unassigned vehicle, but can proceed.<br>
+                                    <strong>Enforced:</strong> Drivers can only book their assigned vehicle(s) and pool vehicles.
                                 </div>
                             </div>
                         </div>

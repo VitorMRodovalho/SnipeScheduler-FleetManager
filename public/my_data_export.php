@@ -58,6 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
                         <li>Your user profile (name, email, training status, VIP status)</li>
                         <li>All your reservations (dates, vehicles, status)</li>
                         <li>Inspection responses submitted during checkout/checkin</li>
+                        <li>Vehicle assignments (if any)</li>
                         <li>Activity log entries for your actions</li>
                         <li>Notifications sent to you</li>
                     </ul>
@@ -172,7 +173,17 @@ $actStmt = $pdo->prepare("
 $actStmt->execute([':email' => $userEmail, ':uid' => $userId]);
 $activityLog = $actStmt->fetchAll(PDO::FETCH_ASSOC);
 
-// 5. Notifications sent to them
+// 5. Vehicle assignments
+$vehicleAssignments = [];
+try {
+    $vaStmt = $pdo->prepare("SELECT asset_name, assignment_label, is_primary, assigned_at, notes FROM vehicle_assignments WHERE user_id = ? OR user_email = ?");
+    $vaStmt->execute([$userId, $userEmail]);
+    $vehicleAssignments = $vaStmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (Throwable $e) {
+    // Table may not exist yet
+}
+
+// 6. Notifications sent to them
 $notifData = [];
 try {
     $notifStmt = $pdo->prepare("
@@ -224,6 +235,7 @@ $export = [
         return $r;
     }, $reservations),
     'inspections' => $inspections,
+    'vehicle_assignments' => $vehicleAssignments,
     'activity_log' => $activityLog,
     'notifications' => $notifData,
 ];

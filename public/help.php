@@ -420,6 +420,23 @@ if (!isset($tabs[$activeTab])) {
         <p>Example: <code>2024 Toyota Hilux — ABC-1234</code></p>
         <p>Consistent naming makes it easier for drivers to identify vehicles in the booking list.</p>
     '); ?>
+    <?php help_section('accVehicles', 'vh4', 'Vehicle Assignments', '
+        <p>Assign specific drivers to vehicles using the <strong>Assigned Driver</strong> column on the Vehicles page.</p>
+        <ul>
+            <li>Click the <strong>pencil icon</strong> next to any vehicle to open the assignment modal.</li>
+            <li>Search for a driver by name or email, then click <strong>Add</strong>.</li>
+            <li>Each vehicle can have one <strong>primary driver</strong> (shown in bold) and additional authorized drivers.</li>
+            <li>Vehicles with no assignments are <strong>pool vehicles</strong> — available to all drivers.</li>
+            <li>Use the optional <strong>Label</strong> field for descriptive tags (e.g., "Safety", "Quality").</li>
+        </ul>
+        <p><strong>Assignment Modes</strong> (configured in System Settings):</p>
+        <ul>
+            <li><strong>Off:</strong> Assignments are tracked but not enforced. All drivers can book any vehicle.</li>
+            <li><strong>Soft Warning:</strong> Drivers see a warning when booking a vehicle assigned to someone else, but can proceed.</li>
+            <li><strong>Enforced:</strong> Drivers can only book their assigned vehicle(s) and pool vehicles (no assignments).</li>
+        </ul>
+        <div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>When a driver is offboarded, their vehicle assignments are automatically removed.</div>
+    '); ?>
 </div>
 
 <?php elseif ($activeTab === 'users' && $isAdmin): ?>
