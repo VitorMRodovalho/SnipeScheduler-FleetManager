@@ -135,15 +135,24 @@ The download is generated on demand and includes all personal data the system ho
 
 ### A11. Understanding Vehicle Assignments
 
-When vehicle assignment mode is active (Soft Warning or Enforced), the catalogue shows vehicles filtered by your assignment:
+When vehicle assignment mode is active (Soft Warning or Enforced), the catalogue shows vehicles filtered by your assignment. Each vehicle card displays a badge indicating its assignment status:
 
-- **Assigned vehicle(s):** Your assigned vehicle appears prominently. Book it through the standard flow.
-- **Pool vehicles:** Vehicles with no driver assignment are available to all drivers.
-- **Other assigned vehicles:** In Enforced mode, vehicles assigned to other drivers are hidden. In Soft Warning mode, they are visible with a warning badge.
+| Badge | Meaning |
+|-------|---------|
+| Yellow badge with tag icon + name (e.g., "Quality · John Smith") | This vehicle is assigned to a specific team/person with a label |
+| Yellow badge with person icon + name (e.g., "John Smith") | This vehicle is assigned to a specific driver |
+| "+N" count badge (e.g., "+3") | N additional drivers also have access to this vehicle |
+| Gray "Pool" badge | This vehicle is available to any authorized driver |
+
+**How assignments affect your view:**
+
+- **Assigned vehicle(s):** Your assigned vehicle appears prominently with a yellow badge. Book it through the standard flow.
+- **Pool vehicles:** Vehicles with no driver assignment show a gray "Pool" badge and are available to all drivers.
+- **Other assigned vehicles:** In Enforced mode, vehicles assigned to other drivers are hidden from your catalogue. In Soft Warning mode, they are visible with a warning badge.
 
 If your assigned vehicle is unavailable (maintenance, already booked), a banner informs you to contact Fleet Staff, who can book a pool vehicle on your behalf.
 
-When assignment mode is Off (the default), all drivers see all vehicles — no filtering is applied.
+When assignment mode is Off (the default), all drivers see all vehicles — no filtering is applied. Badges still display for informational purposes.
 
 ---
 
@@ -257,11 +266,17 @@ On the **Staff Checkout page** (Today's Reservations), each approved reservation
 Access via **Admin > Vehicles**. The **Assigned Driver** column shows each vehicle's assignment status:
 
 1. Click the **pencil icon** next to any vehicle to open the assignment modal
-2. **Add drivers:** Search by name or email, click Add
-3. **Set primary driver:** Use the radio button to mark one driver as primary (shown in bold on the vehicle list)
-4. **Labels:** Optionally add a descriptive label (e.g., Safety, Quality) — these are display labels, not permission groups
+2. **Vehicle Label** (top of modal): Optionally set a label such as "Safety", "Quality", or "Operations". This label applies to all drivers assigned to this vehicle and appears on catalogue cards for quick identification. You can edit the label at any time without removing drivers.
+3. **Add drivers:** Search by name or email, add optional notes, click Add
+4. **Set primary driver:** Use the radio button to mark one driver as primary (shown on the vehicle badge in the catalogue)
 5. **Remove:** Click the X button to remove an assignment
 6. **Save:** Click Save Assignments — changes take effect immediately
+
+**Badge display on catalogue cards:**
+- Vehicles with a label show: tag icon + Label + Primary Name (e.g., "Quality · Mike Smith")
+- Vehicles without a label show: person icon + Primary Name (e.g., "John Doe")
+- If multiple drivers are assigned, a "+N" count badge appears after the main badge
+- Unassigned vehicles show a gray "Pool" badge
 
 **Book on Behalf:** When booking a pool vehicle for a driver whose assigned vehicle is in maintenance, use the standard Book on Behalf flow. Staff override bypasses assignment restrictions; a soft warning is shown and logged in the Activity Log.
 
@@ -478,14 +493,34 @@ Navigate to **Admin > Settings** and find the **Vehicle Assignment** card:
 
 | Mode | Behavior |
 |------|----------|
-| **Off** (default) | Assignments are tracked but not enforced. All drivers see all vehicles. |
-| **Soft Warning** | All vehicles visible. Assigned vehicles show a warning badge when another driver tries to book them. |
-| **Enforced** | Drivers see only their assigned vehicle(s) and pool vehicles. Assigned vehicles are hidden from other drivers. |
+| **Off** (default) | Assignments are tracked but not enforced. All drivers see all vehicles. Badge display is informational only. |
+| **Soft Warning** | All vehicles visible. Assigned vehicles show a warning badge when another driver tries to book them. Booking proceeds with a logged warning. |
+| **Enforced** | Drivers see only their assigned vehicle(s) and pool vehicles. Assigned vehicles are hidden from other drivers. Staff can still book on behalf. |
 
 **Recommended rollout:**
 1. Start with **Off** — load all vehicle assignments via the Vehicles admin page
 2. Switch to **Soft Warning** — validate assignments are correct by monitoring warnings
 3. Switch to **Enforced** — once assignments are verified, enable hard enforcement
+
+### C19. Add Vehicle — Asset Tag Format
+
+Asset tags are auto-generated from the `fleet_tag_config` table, which stores a configurable prefix per company:
+
+| Column | Purpose | Example |
+|--------|---------|---------|
+| `company_id` | Links to the Snipe-IT company | 1 |
+| `prefix` | Tag prefix string | "FDT-" |
+| `next_number` | Next sequential number | 17 |
+| `zero_pad` | Minimum digit width | 2 |
+
+**How it works:**
+- When adding a vehicle, the system reads the prefix and next number for the selected company
+- The tag is generated as: prefix + zero-padded number (e.g., FDT-17, FDT-18)
+- After successful creation, the counter increments automatically
+- Tags are sequential and never reused, even if a vehicle is deleted
+- If no config exists for the selected company, it falls back to "VEH-001"
+
+**Vehicle name format:** Auto-generated as `[Year] [Manufacturer] [Model]` (e.g., "2024 Ford Escape"). License plate is stored as a separate custom field, not part of the name.
 
 ---
 

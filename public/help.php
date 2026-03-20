@@ -229,7 +229,17 @@ if (!isset($tabs[$activeTab])) {
             <li>If your assigned vehicle is in maintenance, you will see a notification banner directing you to contact Fleet Staff for a pool vehicle.</li>
             <li>If you do <strong>not</strong> have an assigned vehicle, you can book any available pool vehicle.</li>
         </ul>
-        <p class="text-muted">Vehicle assignment enforcement depends on the mode set by your Fleet Admin (Off, Soft Warning, or Enforced).</p>
+        <p><strong>Reading the Catalogue Badges:</strong></p>
+        <table class="table table-sm table-bordered">
+            <thead><tr><th>Badge</th><th>Meaning</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge bg-warning text-dark"><i class="bi bi-tag-fill"></i> Quality &middot; John Smith</span></td><td>Vehicle assigned to a labeled team (e.g., Safety, Quality) with a primary driver</td></tr>
+                <tr><td><span class="badge bg-warning text-dark"><i class="bi bi-person-fill"></i> John Smith</span></td><td>Vehicle assigned to a specific driver (no team label)</td></tr>
+                <tr><td><span class="badge bg-dark bg-opacity-25">+3</span></td><td>3 additional authorized drivers also have access to this vehicle</td></tr>
+                <tr><td><span class="badge bg-secondary"><i class="bi bi-people"></i> Pool</span></td><td>Pool vehicle — available to all authorized drivers</td></tr>
+            </tbody>
+        </table>
+        <p class="text-muted">In <strong>Enforced</strong> mode, you will only see vehicles assigned to you and pool vehicles. Vehicle assignment enforcement depends on the mode set by your Fleet Admin (Off, Soft Warning, or Enforced).</p>
     '); ?>
 </div>
 
@@ -409,11 +419,12 @@ if (!isset($tabs[$activeTab])) {
         <ol>
             <li>Navigate to <strong>Admin &gt; Vehicles</strong> to see the <strong>Assigned Driver</strong> column.</li>
             <li>Click the <strong>pencil icon</strong> to open the assignment management modal.</li>
-            <li>Search for a driver by name or email, then click <strong>Add</strong>.</li>
+            <li>Set the <strong>Vehicle Label</strong> at the top of the modal (optional — e.g., Safety, Quality, Operations). This label applies to all drivers on this vehicle and appears on catalogue cards as a visual identifier.</li>
+            <li>Search for a driver by name or email, add optional notes, then click <strong>Add</strong>.</li>
             <li>Set one driver as <strong>Primary</strong> using the radio button.</li>
-            <li>Optionally add a <strong>label</strong> (e.g., Safety, Quality, Pool) and notes.</li>
             <li>Click <strong>Save Assignments</strong> to apply changes.</li>
         </ol>
+        <p>The <strong>Vehicle Label</strong> can be edited at any time without removing or re-adding drivers. Labels appear on catalogue cards as yellow badges (e.g., <span class="badge bg-warning text-dark"><i class="bi bi-tag-fill"></i> Quality &middot; Mike Smith</span>).</p>
         <p>When <strong>booking on behalf</strong>: if the selected vehicle is assigned to a different driver, you will see a confirmation warning. Staff override always proceeds.</p>
         <p>Assignment changes are logged in the <strong>Activity Log</strong> with event type <code>vehicle_assignment_changed</code>.</p>
     '); ?>
@@ -435,19 +446,33 @@ if (!isset($tabs[$activeTab])) {
     <?php help_section('accVehicles', 'vh2', 'Company Assignment for Multi-Entity', '
         <p>In a multi-entity fleet, each vehicle must be assigned to a company in Snipe-IT. This controls which users can see and book the vehicle. Admins can see all vehicles regardless of company assignment.</p>
     '); ?>
-    <?php help_section('accVehicles', 'vh3', 'Vehicle Naming Convention', '
-        <p>Recommended format: <code>[Year] [Make] [Model] — [Plate]</code></p>
-        <p>Example: <code>2024 Toyota Hilux — ABC-1234</code></p>
-        <p>Consistent naming makes it easier for drivers to identify vehicles in the booking list.</p>
+    <?php help_section('accVehicles', 'vh3', 'Vehicle Naming & Asset Tag Format', '
+        <p><strong>Vehicle Name:</strong> Auto-generated as <code>[Year] [Manufacturer] [Model]</code></p>
+        <p>Example: <code>2024 Ford Escape</code></p>
+        <p>License plate is stored as a separate custom field, not included in the vehicle name.</p>
+        <hr>
+        <p><strong>Asset Tags:</strong> Auto-generated from the <code>fleet_tag_config</code> table (configurable per company).</p>
+        <ul>
+            <li>Format: prefix + zero-padded sequential number (e.g., FDT-17, FDT-18)</li>
+            <li>Sequential and never reused, even if a vehicle is deleted</li>
+            <li>When the company selection changes on the Add Vehicle form, the tag preview updates automatically</li>
+        </ul>
     '); ?>
     <?php help_section('accVehicles', 'vh4', 'Vehicle Assignments', '
         <p>Assign specific drivers to vehicles using the <strong>Assigned Driver</strong> column on the Vehicles page.</p>
         <ul>
             <li>Click the <strong>pencil icon</strong> next to any vehicle to open the assignment modal.</li>
-            <li>Search for a driver by name or email, then click <strong>Add</strong>.</li>
-            <li>Each vehicle can have one <strong>primary driver</strong> (shown in bold) and additional authorized drivers.</li>
+            <li>Set the <strong>Vehicle Label</strong> at the top (optional — e.g., "Safety", "Quality"). This label applies to all drivers and appears on catalogue badges.</li>
+            <li>Search for a driver by name or email, add optional notes, then click <strong>Add</strong>.</li>
+            <li>Each vehicle can have one <strong>primary driver</strong> (shown on the badge) and additional authorized drivers.</li>
             <li>Vehicles with no assignments are <strong>pool vehicles</strong> — available to all drivers.</li>
-            <li>Use the optional <strong>Label</strong> field for descriptive tags (e.g., "Safety", "Quality").</li>
+        </ul>
+        <p><strong>Catalogue Badge Display:</strong></p>
+        <ul>
+            <li>With label: <span class="badge bg-warning text-dark"><i class="bi bi-tag-fill"></i> Quality &middot; Mike Smith</span></li>
+            <li>Without label: <span class="badge bg-warning text-dark"><i class="bi bi-person-fill"></i> John Doe</span></li>
+            <li>Multiple drivers: main badge + <span class="badge bg-dark bg-opacity-25">+N</span></li>
+            <li>Pool: <span class="badge bg-secondary"><i class="bi bi-people"></i> Pool</span></li>
         </ul>
         <p><strong>Assignment Modes</strong> (configured in System Settings):</p>
         <ul>

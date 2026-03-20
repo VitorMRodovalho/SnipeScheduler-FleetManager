@@ -36,7 +36,7 @@ This project was born from a real need in **large-scale infrastructure programs*
 * **Photo Upload** - Optional camera-first photo capture during checkout and checkin for vehicle condition documentation
 * **Digital Inspections** - Complete checkout/checkin forms on any device
 * **Email & Teams Notifications** - Confirmation, reminders, and approvals via email or Microsoft Teams
-* **Vehicle Assignments** - See your assigned vehicle prominently in the catalogue alongside available pool vehicles
+* **Vehicle Assignments** - See your assigned vehicle with clear badge indicators (label, primary driver, additional driver count) alongside pool vehicles
 
 ### For Fleet Staff
 
@@ -45,7 +45,7 @@ This project was born from a real need in **large-scale infrastructure programs*
 * **Maintenance Tracking** - Flag issues, track maintenance history
 * **Training Expiration Tracking** - Color-coded driver training status (green/yellow/red), date picker for completion dates, weekly expiration alerts via CRON
 * **Reports** - Utilization, compliance, and usage reports with Chart.js visualizations
-* **Vehicle Assignment Management** - Assign primary and secondary drivers per vehicle with configurable labels
+* **Vehicle Assignment Management** - Assign primary and secondary drivers per vehicle with configurable labels (Safety, Quality, etc.) that display as badges on catalogue cards
 
 ### For Administrators
 
@@ -60,7 +60,7 @@ This project was born from a real need in **large-scale infrastructure programs*
 * **Announcements** - Display system-wide notices to users
 * **Security Dashboard** - Monitor backup status, security checks, and CRON sync health
 * **Booking Rules** - Set booking rules (min notice, max duration, blackouts, training requirements)
-* **Vehicle Assignment Enforcement** - Configurable modes: Off (track only), Soft Warning (visible badges), Enforced (hard lock to assigned vehicle + pool)
+* **Vehicle Assignment Enforcement** - Restrictive vehicle assignment with configurable labels (Safety, Quality), primary/secondary drivers, pool vehicle fallback, and per-company enforcement modes (off/soft/enforced)
 * **Activity Log** - Full audit trail of all system actions
 * **API Resilience** - Exponential backoff retry on 429 (rate limit) and 5xx (server error) API responses
 
@@ -236,7 +236,7 @@ Group IDs, status IDs, custom field names, and location parent IDs are all confi
 
 ![Create Vehicle](docs/screenshots/vehicles_create.png)
 
-*Add new fleet vehicles with automatic asset tag generation, VIN/plate duplicate checking, and Snipe-IT custom field mapping.*
+*Add new fleet vehicles with automatic asset tag generation from per-company prefix (fleet_tag_config table), VIN/plate duplicate checking, and Snipe-IT custom field mapping. Vehicle names auto-generate as [Year] [Manufacturer] [Model].*
 
 **Access:** Fleet Admin
 
@@ -306,7 +306,7 @@ Group IDs, status IDs, custom field names, and location parent IDs are all confi
 
 ![Settings](docs/screenshots/settings.png)
 
-*Full system configuration including authentication providers, SMTP settings, Teams integration, reservation controls, asset tag prefix, corporate theme color, and multi-entity fleet configuration (Auto-detect / Always On / Always Off with detected company count).*
+*Full system configuration including authentication providers, SMTP settings, Teams integration, reservation controls, per-company asset tag prefix (via fleet_tag_config table), corporate theme color, and multi-entity fleet configuration (Auto-detect / Always On / Always Off with detected company count).*
 
 **Access:** Super Admin only
 
