@@ -289,7 +289,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_reservation'])
                 if ($stmt->fetch()) {
                     $error = 'This vehicle is already reserved for the selected time period.';
                 } else {
-                    $approvalStatus = $isVip ? 'auto_approved' : 'pending_approval';
+                    // Auto-approve: VIP users OR driver booking their own assigned vehicle
+                    $isOwnAssignedVehicle = false;
+                    $assignmentMode = get_assignment_mode($pdo);
+                    if ($assignmentMode !== 'off' && !$bookingForOther) {
+                        $isOwnAssignedVehicle = is_asset_assigned_to_driver($pdo, $assetId, $bookingUserId);
+                    }
+                    $autoApprove = $isVip || $isOwnAssignedVehicle;
+                    $approvalStatus = $autoApprove ? 'auto_approved' : 'pending_approval';
                     $status = 'pending';
 
                     // Get asset name and company data for cache
@@ -351,13 +358,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_reservation'])
                     $stmt = $pdo->prepare("INSERT INTO approval_history (reservation_id, action, actor_name, actor_email, notes) VALUES (?, 'submitted', ?, ?, ?)");
                     $stmt->execute([$reservationId, $actorName, $actorEmail, $submitNote]);
 
-                    if ($isVip) {
-                        $stmt = $pdo->prepare("INSERT INTO approval_history (reservation_id, action, actor_name, actor_email, notes) VALUES (?, 'auto_approved', 'System', '', 'VIP user - auto approved')");
-                        $stmt->execute([$reservationId]);
+                    if ($autoApprove) {
+                        $autoReason = $isOwnAssignedVehicle ? 'Assigned vehicle - auto-approved' : 'VIP user - auto approved';
+                        $stmt = $pdo->prepare("INSERT INTO approval_history (reservation_id, action, actor_name, actor_email, notes) VALUES (?, 'auto_approved', 'System', '', ?)");
+                        $stmt->execute([$reservationId, $autoReason]);
                         update_asset_status($assetId, STATUS_VEH_RESERVED);
                     }
 
-                    $successMsg = $isVip ? 'Reservation created and auto-approved!' : 'Reservation submitted for approval.';
+                    $successMsg = $autoApprove ? 'Reservation created and auto-approved!' : 'Reservation submitted for approval.';
 
                     // Send notifications (email and/or Teams per event channel settings)
                     $reservationData = [
@@ -369,8 +377,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_reservation'])
                         'end_datetime' => $endDatetime,
                     ];
 
-                    if ($isVip) {
-                        NotificationService::fire('reservation_approved', array_merge($reservationData, ['approver' => 'System (Auto-Approved)']), $pdo);
+                    if ($autoApprove) {
+                        $approverLabel = $isOwnAssignedVehicle ? 'System (Assigned Vehicle)' : 'System (Auto-Approved)';
+                        NotificationService::fire('reservation_approved', array_merge($reservationData, ['approver' => $approverLabel]), $pdo);
                     } else {
                         NotificationService::fire('reservation_submitted', $reservationData, $pdo);
                     }
