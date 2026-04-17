@@ -267,10 +267,11 @@ if (!empty($basket)) {
                             <td><?= $qty ?></td>
                             <td class="<?= $warnClass ?>"><?= htmlspecialchars($availText) ?></td>
                             <td>
-                                <a href="basket_remove?model_id=<?= (int)$model['id'] ?>"
-                                   class="btn btn-sm btn-outline-danger">
-                                    Remove
-                                </a>
+                                <form method="post" action="basket_remove" class="d-inline">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="model_id" value="<?= (int)$model['id'] ?>">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                                </form>
                             </td>
                         </tr>
                     <?php endforeach; ?>

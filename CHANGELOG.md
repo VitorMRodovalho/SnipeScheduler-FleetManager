@@ -1,5 +1,31 @@
 # Changelog
 
+## [2.1.1] - 2026-04-17
+
+### Security
+- image_proxy: now requires authentication (previously only loaded bootstrap, not auth.php)
+- image_proxy: disabled `CURLOPT_FOLLOWLOCATION` so a 3xx redirect cannot bypass the Snipe-IT host validation (SSRF hardening)
+- image_proxy: content-type is now verified as `image/*` before streaming, and `X-Content-Type-Options: nosniff` is set
+- Email SMTP envelope addresses are now validated and rejected if they contain CR/LF or fail `FILTER_VALIDATE_EMAIL` (prevents SMTP header injection)
+- Email EHLO hostname is now configurable (`smtp.ehlo_host`); no more hardcoded `reserveit.local`
+- `create_snipeit_user()` temp password now generated via `random_bytes()` with URL-safe base64 (was `rand()`-based, ~10k possibilities)
+- `basket_add` now enforces CSRF check
+- `basket_remove` now requires POST + CSRF check (was a GET endpoint that could be triggered by `<img>`/link prefetch)
+- Google OAuth login now resolves Snipe-IT permissions like the Microsoft flow; previously `$snipePerms`, `$snipeitId`, `$isVip` were undefined in that branch
+
+### Fixed
+- `update_asset_status` / `update_asset_location` now use the shared `snipeit_request()` wrapper, honoring retry, SSL verification, and cache invalidation (previously raw curl with no safety nets)
+- `get_maintenances` / `get_asset_maintenances` now hit the correct endpoint `GET /maintenances?asset_id=...` (previous `GET /hardware/{id}/maintenances` returned 404 on Snipe-IT)
+- `create_maintenance` now sends the `title` field that Snipe-IT expects (was sending `name`; maintenance records created without titles)
+- `snipeit_request()` retry now parses the `Retry-After` HTTP header (was hardcoded to 2 seconds regardless of server response)
+- `sync_checked_out_assets.php` uses `DELETE FROM` instead of `TRUNCATE`, keeping the transaction atomic (TRUNCATE implicitly commits in MySQL)
+- `bootstrap.php` timezone is now taken from `app.timezone` config (was hardcoded `America/New_York`)
+- Location parent IDs for pickup/destination lookups are now read from `snipeit_location_parents.{pickup,destination}` (were hardcoded `9` and `10`)
+
+### Added
+- `snipeit_invalidate_cache()` helper for write operations
+- `snipeit_generate_temp_password()` helper for cryptographically strong placeholder passwords
+
 ## [2.1.0] - 2026-03-20
 
 ### Added

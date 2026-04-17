@@ -60,6 +60,44 @@ function snipeit_cache_set(string $key, array $data): void
 }
 
 /**
+ * Invalidate all Snipe-IT GET cache entries. Call after write operations
+ * (status/location/custom field updates, checkout/checkin, maintenance, etc.)
+ * so subsequent reads see fresh data.
+ */
+function snipeit_invalidate_cache(): int
+{
+    global $cacheDir;
+    $count = 0;
+    if (is_dir($cacheDir)) {
+        foreach (glob(rtrim($cacheDir, '/\\') . '/*.json') ?: [] as $file) {
+            if (@unlink($file)) {
+                $count++;
+            }
+        }
+    }
+    return $count;
+}
+
+/**
+ * Generate a cryptographically strong placeholder password.
+ *
+ * Meets Snipe-IT's default password complexity (16+ chars, mixed case,
+ * digit, symbol) and uses random_bytes() so it cannot be predicted by
+ * an attacker who learns the generation time.
+ */
+function snipeit_generate_temp_password(int $length = 24): string
+{
+    $length = max(16, $length);
+    // URL-safe base64 of random bytes — guaranteed to include upper/lower/digit
+    $raw = base64_encode(random_bytes((int)ceil($length * 3 / 4)));
+    $raw = strtr($raw, ['+' => '-', '/' => '_', '=' => '']);
+    $body = substr($raw, 0, $length - 2);
+    // Pin a symbol + digit to satisfy the complexity validator even if the
+    // random bytes happen not to include one.
+    return $body . '!' . random_int(0, 9);
+}
+
+/**
  * Core HTTP wrapper for Snipe-IT API.
  *
  * @param string $method   HTTP method (GET, POST, etc.)
@@ -105,6 +143,8 @@ function snipeit_request(string $method, string $endpoint, array $params = []): 
         $headers[] = 'Content-Type: application/json';
     }
 
+    // Capture response headers so we can parse Retry-After on 429.
+    $responseHeaders = [];
     curl_setopt_array($ch, [
         CURLOPT_URL            => $url,
         CURLOPT_RETURNTRANSFER => true,
@@ -114,6 +154,18 @@ function snipeit_request(string $method, string $endpoint, array $params = []): 
         CURLOPT_SSL_VERIFYHOST => $snipeVerifySsl ? 2 : 0,
         CURLOPT_TIMEOUT        => 30,
         CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_HEADERFUNCTION => function ($curl, $header) use (&$responseHeaders) {
+            $len = strlen($header);
+            $sep = strpos($header, ':');
+            if ($sep !== false) {
+                $name = strtolower(trim(substr($header, 0, $sep)));
+                $value = trim(substr($header, $sep + 1));
+                if ($name !== '') {
+                    $responseHeaders[$name] = $value;
+                }
+            }
+            return $len;
+        },
     ]);
 
     $maxRetries = 3;
@@ -122,6 +174,7 @@ function snipeit_request(string $method, string $endpoint, array $params = []): 
     $lastErr = '';
 
     for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+        $responseHeaders = [];
         $raw = curl_exec($ch);
         if ($raw === false) {
             $lastErr = curl_error($ch);
@@ -141,10 +194,18 @@ function snipeit_request(string $method, string $endpoint, array $params = []): 
         if ($httpCode === 429 || $httpCode >= 500) {
             if ($attempt < $maxRetries) {
                 $retryAfter = 0;
-                if ($httpCode === 429) {
-                    // Check Retry-After header
-                    $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
-                    $retryAfter = 2;
+                if ($httpCode === 429 && isset($responseHeaders['retry-after'])) {
+                    $hdr = $responseHeaders['retry-after'];
+                    if (ctype_digit($hdr)) {
+                        $retryAfter = (int)$hdr;
+                    } else {
+                        // HTTP-date form: convert to seconds from now
+                        $ts = strtotime($hdr);
+                        if ($ts !== false) {
+                            $retryAfter = max(0, $ts - time());
+                        }
+                    }
+                    $retryAfter = min($retryAfter, 60); // cap at 60s to avoid long stalls
                 }
                 $wait = max($retryAfter, pow(2, $attempt));
                 error_log("Snipe-IT API HTTP {$httpCode} (attempt {$attempt}/{$maxRetries}). Retrying in {$wait}s...");
@@ -1391,24 +1452,31 @@ function checkin_asset_with_form_data(
  * Snipe-IT Status IDs for Fleet Vehicles
  */
 // Fleet vehicle status label IDs (from config.php)
-$_cfg = require CONFIG_PATH . '/config.php';
+$_cfg = load_config();
 $_groups = $_cfg['snipeit_groups'] ?? [];
 $_statuses = $_cfg['snipeit_statuses'] ?? [];
+$_parents = $_cfg['snipeit_location_parents'] ?? [];
 
 define('STATUS_VEH_AVAILABLE', $_statuses['available'] ?? 5);
 define('STATUS_VEH_IN_SERVICE', $_statuses['in_service'] ?? 6);
 define('STATUS_VEH_OUT_OF_SERVICE', $_statuses['out_of_service'] ?? 7);
 define('STATUS_VEH_RESERVED', $_statuses['reserved'] ?? 8);
 
+// Location parent IDs are environment-specific. Default to the legacy
+// values but allow overrides via snipeit_location_parents.{pickup,destination}
+// in config.php.
+define('LOC_PARENT_PICKUP',      (int)($_parents['pickup'] ?? 9));
+define('LOC_PARENT_DESTINATION', (int)($_parents['destination'] ?? 10));
+
 /**
- * Get pickup locations (parent_id = 9)
+ * Get pickup locations (children of the configured pickup parent).
  */
 function get_pickup_locations(): array
 {
     $locations = get_locations();
     $pickups = [];
     foreach ($locations as $loc) {
-        if (isset($loc['parent']['id']) && $loc['parent']['id'] == 9) {
+        if (isset($loc['parent']['id']) && (int)$loc['parent']['id'] === LOC_PARENT_PICKUP) {
             $pickups[] = $loc;
         }
     }
@@ -1416,14 +1484,14 @@ function get_pickup_locations(): array
 }
 
 /**
- * Get field destinations (parent_id = 10)
+ * Get field destinations (children of the configured destination parent).
  */
 function get_field_destinations(): array
 {
     $locations = get_locations();
     $destinations = [];
     foreach ($locations as $loc) {
-        if (isset($loc['parent']['id']) && $loc['parent']['id'] == 10) {
+        if (isset($loc['parent']['id']) && (int)$loc['parent']['id'] === LOC_PARENT_DESTINATION) {
             $destinations[] = $loc;
         }
     }
@@ -1431,71 +1499,57 @@ function get_field_destinations(): array
 }
 
 /**
- * Update asset status in Snipe-IT
+ * Update asset status in Snipe-IT.
+ * Uses the shared snipeit_request() wrapper so retry/SSL verification
+ * settings are honored. Clears asset cache on success to avoid stale reads.
  */
 function update_asset_status(int $assetId, int $statusId): bool
 {
-    $config = require CONFIG_PATH . '/config.php';
-    $baseUrl = rtrim($config['snipeit']['base_url'], '/');
-    $token = $config['snipeit']['api_token'];
+    try {
+        $response = snipeit_request('PATCH', '/hardware/' . $assetId, ['status_id' => $statusId]);
+    } catch (Throwable $e) {
+        error_log('Snipe-IT update_asset_status failed: ' . $e->getMessage());
+        return false;
+    }
 
-    $ch = curl_init($baseUrl . '/api/v1/hardware/' . $assetId);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
-    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['status_id' => $statusId]));
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Authorization: Bearer ' . $token,
-        'Accept: application/json',
-        'Content-Type: application/json'
-    ]);
-    $result = curl_exec($ch);
-    curl_close($ch);
-
-    $data = json_decode($result, true);
-    return isset($data['status']) && $data['status'] === 'success';
+    $ok = isset($response['status']) && $response['status'] === 'success';
+    if ($ok) {
+        snipeit_invalidate_cache();
+    }
+    return $ok;
 }
 
 /**
- * Update asset location in Snipe-IT
+ * Update asset location in Snipe-IT.
+ * Uses the shared snipeit_request() wrapper; see update_asset_status().
  */
 function update_asset_location(int $assetId, int $locationId): bool
 {
-    $config = require CONFIG_PATH . '/config.php';
-    $baseUrl = rtrim($config['snipeit']['base_url'], '/');
-    $token = $config['snipeit']['api_token'];
+    try {
+        $response = snipeit_request('PATCH', '/hardware/' . $assetId, ['rtd_location_id' => $locationId]);
+    } catch (Throwable $e) {
+        error_log('Snipe-IT update_asset_location failed: ' . $e->getMessage());
+        return false;
+    }
 
-    $ch = curl_init($baseUrl . '/api/v1/hardware/' . $assetId);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
-    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['rtd_location_id' => $locationId]));
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Authorization: Bearer ' . $token,
-        'Accept: application/json',
-        'Content-Type: application/json'
-    ]);
-    $result = curl_exec($ch);
-    curl_close($ch);
-
-    $data = json_decode($result, true);
-    return isset($data['status']) && $data['status'] === 'success';
+    $ok = isset($response['status']) && $response['status'] === 'success';
+    if ($ok) {
+        snipeit_invalidate_cache();
+    }
+    return $ok;
 }
 
 
 /**
- * Get all fleet-relevant locations (children of pickup or destination parents)
+ * Get all fleet-relevant locations (children of pickup or destination parents).
  */
 function get_fleet_locations(): array
 {
     $locations = get_locations();
     $fleet = [];
     foreach ($locations as $loc) {
-        $parentId = $loc['parent']['id'] ?? 0;
-        // Include children of pickup parent (9) and destination parent (10)
-        if ($parentId == 9 || $parentId == 10) {
+        $parentId = (int)($loc['parent']['id'] ?? 0);
+        if ($parentId === LOC_PARENT_PICKUP || $parentId === LOC_PARENT_DESTINATION) {
             $fleet[] = $loc;
         }
     }
@@ -1504,29 +1558,31 @@ function get_fleet_locations(): array
 }
 
 /**
- * Get all maintenance records from Snipe-IT
+ * Get maintenance records from Snipe-IT.
+ * Snipe-IT only exposes `GET /maintenances` — filter by asset_id via query param,
+ * not via `/hardware/{id}/maintenances` (which does not exist and returns 404).
  */
-function get_maintenances(int $limit = 100, int $assetId = null): array
+function get_maintenances(int $limit = 100, ?int $assetId = null): array
 {
-    $url = '/maintenances?limit=' . $limit;
+    $params = ['limit' => $limit];
     if ($assetId) {
-        $url = '/hardware/' . $assetId . '/maintenances?limit=' . $limit;
+        $params['asset_id'] = $assetId;
     }
-    $response = snipeit_request('GET', $url);
+    $response = snipeit_request('GET', '/maintenances', $params);
     return $response['rows'] ?? [];
 }
 
 /**
- * Get maintenance records for a specific asset
+ * Get maintenance records for a specific asset.
  */
 function get_asset_maintenances(int $assetId, int $limit = 50): array
 {
-    $response = snipeit_request('GET', '/hardware/' . $assetId . '/maintenances?limit=' . $limit);
-    return $response['rows'] ?? [];
+    return get_maintenances($limit, $assetId);
 }
 
 /**
- * Create a maintenance record in Snipe-IT
+ * Create a maintenance record in Snipe-IT.
+ * Snipe-IT expects the field name `title`, not `name` (the generic Model name field).
  */
 function create_maintenance(array $data): ?array
 {
@@ -1534,21 +1590,27 @@ function create_maintenance(array $data): ?array
         'asset_id' => $data['asset_id'],
         'supplier_id' => $data['supplier_id'] ?? null,
         'asset_maintenance_type' => $data['asset_maintenance_type'] ?? 'Maintenance',
-        'name' => $data['title'] ?? 'Scheduled Maintenance',
+        'title' => $data['title'] ?? 'Scheduled Maintenance',
         'start_date' => $data['start_date'] ?? date('Y-m-d'),
         'completion_date' => $data['completion_date'] ?? $data['start_date'] ?? date('Y-m-d'),
         'cost' => $data['cost'] ?? 0,
         'is_warranty' => $data['is_warranty'] ?? 0,
         'notes' => $data['notes'] ?? '',
     ];
-    
-    $response = snipeit_request('POST', '/maintenances', $payload);
-    
-    if (isset($response['status']) && $response['status'] === 'error') {
-        error_log('Snipe-IT create maintenance error: ' . json_encode($response));
+
+    try {
+        $response = snipeit_request('POST', '/maintenances', $payload);
+    } catch (Throwable $e) {
+        error_log('Snipe-IT create_maintenance failed: ' . $e->getMessage());
         return null;
     }
-    
+
+    if (isset($response['status']) && $response['status'] === 'error') {
+        error_log('Snipe-IT create_maintenance error: ' . json_encode($response));
+        return null;
+    }
+
+    snipeit_invalidate_cache();
     return $response['payload'] ?? $response;
 }
 
@@ -1603,7 +1665,10 @@ function get_snipeit_user(int $userId): ?array
  */
 function create_snipeit_user(array $data): ?array
 {
-    $password = $data['password'] ?? 'TempPass' . rand(1000, 9999) . '!';
+    // Snipe-IT requires a password on user create even when the user will never
+    // log in locally (we authenticate via OAuth SSO). Generate a cryptographically
+    // strong placeholder so this cannot be guessed or brute-forced.
+    $password = $data['password'] ?? snipeit_generate_temp_password();
     
     $payload = [
         'first_name' => $data['first_name'],

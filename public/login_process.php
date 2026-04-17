@@ -260,28 +260,53 @@ if ($provider === 'google') {
         $redirectWithError($debugOn ? 'Login system is currently unavailable (database error): ' . $e->getMessage() : 'Login system is currently unavailable (database error).');
     }
 
-    $isAdmin = in_array($email, $googleAdminEmails, true);
-    $isCheckout = in_array($email, $googleCheckoutEmails, true);
-    $isStaff = $isAdmin || $isCheckout;
+    // Resolve permissions from Snipe-IT (mirror of the Microsoft branch below).
+    // Without this the user lands with empty/default permissions even if their
+    // Snipe-IT group would have granted them Staff/Admin/VIP access, and the
+    // company filter used by multi-entity pages cannot be computed.
+    require_once SRC_PATH . '/snipeit_client.php';
+    $snipePerms = get_user_permissions_from_snipeit($email);
 
-   
-	session_regenerate_id(true); // Prevent session fixation
-	$_SESSION['user'] = [
+    if (!$snipePerms['exists']) {
+        $redirectWithError('Your account does not exist in Snipe-IT. Please contact the Fleet Administrator.');
+    }
+    if (empty($snipePerms['has_fleet_access'])) {
+        $redirectWithError('Your account does not have fleet access. Please contact the Fleet Administrator.');
+    }
+
+    $snipeIsAdmin    = (bool)($snipePerms['is_admin'] ?? false);
+    $snipeIsStaff    = (bool)($snipePerms['is_staff'] ?? false);
+    $isVip           = (bool)($snipePerms['is_vip'] ?? false);
+    $snipeitId       = $snipePerms['snipeit_id'] ?? null;
+    $isSuperAdmin    = (bool)($snipePerms['is_super_admin'] ?? false);
+
+    // Keep the legacy email-list overrides so existing deployments that rely
+    // on googleAdminEmails / googleCheckoutEmails still work, but layer them
+    // on top of the Snipe-IT group decision instead of replacing it.
+    $isAdmin   = $snipeIsAdmin   || in_array($email, $googleAdminEmails, true);
+    $isStaff   = $snipeIsStaff   || $isAdmin || in_array($email, $googleCheckoutEmails, true);
+
+    if ($snipeitId && ($firstName || $lastName)) {
+        sync_user_name_to_snipeit($snipeitId, $firstName, $lastName);
+    }
+
+    session_regenerate_id(true); // Prevent session fixation
+    $_SESSION['user'] = [
         'id'           => $userId,
         'email'        => $email,
         'username'     => $email,
         'first_name'   => $firstName ?: $email,
         'last_name'    => $lastName ?? '',
         'display_name' => $fullName,
-        'is_super_admin' => $snipePerms['is_super_admin'] ?? false,
+        'is_super_admin' => $isSuperAdmin,
         'is_admin'     => $isAdmin,
         'is_staff'     => $isStaff,
-        'is_vip'       => $isVip ?? false,
-        'snipeit_id'   => $snipeitId ?? null,
+        'is_vip'       => $isVip,
+        'snipeit_id'   => $snipeitId,
         'company'      => $snipePerms['company'] ?? null,
         'company_id'   => $snipePerms['company']['id'] ?? null,
     ];
-
+    $_SESSION['group_revalidated_at'] = time();
 
     activity_log_event('user_login', 'User logged in', [
         'metadata' => [

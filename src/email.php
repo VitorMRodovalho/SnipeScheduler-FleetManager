@@ -28,9 +28,26 @@ function layout_send_mail(string $toEmail, string $toName, string $subject, stri
     $auth   = strtolower(trim($smtp['auth_method'] ?? 'login')); // login|plain|none
     $from   = $smtp['from_email'] ?? '';
     $fromNm = $smtp['from_name'] ?? 'SnipeScheduler';
+    $ehloHost = trim($smtp['ehlo_host'] ?? ($config['app']['smtp_ehlo_host'] ?? ''));
+    if ($ehloHost === '') {
+        $ehloHost = gethostname() ?: 'localhost';
+    }
 
     if ($host === '' || $from === '') {
         error_log('SnipeScheduler SMTP not configured (host/from missing).');
+        return false;
+    }
+
+    // Validate envelope addresses before letting them near the SMTP command
+    // stream. Any CR/LF smuggled in could otherwise inject arbitrary SMTP
+    // commands (envelope forgery, bcc recipients, etc.).
+    $isSafeEmail = static function (string $addr): bool {
+        if ($addr === '' || strlen($addr) > 254) return false;
+        if (preg_match('/[\r\n\x00]/', $addr)) return false;
+        return (bool)filter_var($addr, FILTER_VALIDATE_EMAIL);
+    };
+    if (!$isSafeEmail($from) || !$isSafeEmail($toEmail)) {
+        error_log('SnipeScheduler SMTP rejecting unsafe envelope address');
         return false;
     }
 
@@ -58,7 +75,7 @@ function layout_send_mail(string $toEmail, string $toName, string $subject, stri
 
     try {
         $expectOk('220', $read);
-        $write('EHLO reserveit.local');
+        $write('EHLO ' . $ehloHost);
         $ehloResp = '';
         do {
             $line = $read();
@@ -72,7 +89,7 @@ function layout_send_mail(string $toEmail, string $toName, string $subject, stri
                 throw new Exception('Could not start TLS encryption.');
             }
             // Re-EHLO after STARTTLS
-            $write('EHLO reserveit.local');
+            $write('EHLO ' . $ehloHost);
             do {
                 $line = $read();
                 $ehloResp .= $line;

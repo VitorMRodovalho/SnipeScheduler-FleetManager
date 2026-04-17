@@ -29,7 +29,9 @@ try {
     if (!$pdo->beginTransaction()) {
         throw new RuntimeException('Could not start database transaction.');
     }
-    $pdo->exec('TRUNCATE TABLE checked_out_asset_cache');
+    // DELETE keeps the transaction atomic; TRUNCATE implicitly commits in MySQL,
+    // which would break the rollback path below if an INSERT fails partway.
+    $pdo->exec('DELETE FROM checked_out_asset_cache');
 
     $stmt = $pdo->prepare("
         INSERT INTO checked_out_asset_cache (

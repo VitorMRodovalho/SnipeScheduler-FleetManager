@@ -9,6 +9,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+csrf_check();
+
 $modelId      = isset($_POST['model_id']) ? (int)$_POST['model_id'] : 0;
 $qtyRequested = isset($_POST['quantity']) ? (int)$_POST['quantity'] : 1;
 $startRaw     = trim($_POST['start_datetime'] ?? '');

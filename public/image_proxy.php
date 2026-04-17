@@ -1,16 +1,18 @@
 <?php
 // image_proxy.php
 //
-// Simple, locked-down proxy for Snipe-IT model images.
+// Authenticated proxy for Snipe-IT model images.
 // Accepts either:
 //   ?src=/uploads/models/...
 // or
 //   ?src=https://snipeit.example.com/uploads/models/...
 //
-// It will validate that the final URL points at the configured Snipe-IT host,
-// then fetch the image and stream it back.
+// Validates that the final URL points at the configured Snipe-IT host AND
+// that the response is an image. Redirects are NOT followed — a 3xx from
+// the upstream server is rejected outright so it cannot escape the host check.
 
 require_once __DIR__ . '/../src/bootstrap.php';
+require_once SRC_PATH . '/auth.php';
 
 $config   = load_config();
 $snipeCfg = $config['snipeit'] ?? [];
@@ -33,10 +35,8 @@ $src = urldecode($srcParam);
 
 // Build full URL
 if (preg_match('#^https?://#i', $src)) {
-    // Already a full URL
     $url = $src;
 } else {
-    // Treat as relative path under Snipe-IT base URL
     if ($baseUrl === '') {
         http_response_code(500);
         echo 'Snipe-IT base URL not configured.';
@@ -46,32 +46,51 @@ if (preg_match('#^https?://#i', $src)) {
 }
 
 // ---------------------------------------------------------------------
-// Basic host validation (avoid proxying arbitrary sites)
+// Host validation (anti-SSRF).
+// parse_url must succeed, scheme must be http/https, and host must match
+// the configured Snipe-IT host exactly.
 // ---------------------------------------------------------------------
-$baseHost = parse_url($baseUrl, PHP_URL_HOST);
-$srcHost  = parse_url($url, PHP_URL_HOST);
+$parts = parse_url($url);
+if (!$parts || empty($parts['host']) || empty($parts['scheme'])) {
+    http_response_code(400);
+    echo 'Invalid src parameter';
+    exit;
+}
+if (!in_array(strtolower($parts['scheme']), ['http', 'https'], true)) {
+    http_response_code(400);
+    echo 'Invalid src scheme';
+    exit;
+}
 
-if (!$baseHost || !$srcHost || strcasecmp($baseHost, $srcHost) !== 0) {
+$baseHost = parse_url($baseUrl, PHP_URL_HOST);
+if (!$baseHost || strcasecmp($baseHost, $parts['host']) !== 0) {
     http_response_code(400);
     echo 'Invalid src parameter (host mismatch)';
     exit;
 }
 
 // ---------------------------------------------------------------------
-// Fetch image from Snipe-IT
+// Fetch image from Snipe-IT.
+// FOLLOWLOCATION is disabled so a 302 cannot redirect us off-host and
+// bypass the validation above.
 // ---------------------------------------------------------------------
 $ch = curl_init($url);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-curl_setopt($ch, CURLOPT_HEADER, true);
-curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $verifySsl);
-curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, $verifySsl ? 2 : 0);
+curl_setopt_array($ch, [
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_FOLLOWLOCATION => false,
+    CURLOPT_HEADER         => true,
+    CURLOPT_SSL_VERIFYPEER => $verifySsl,
+    CURLOPT_SSL_VERIFYHOST => $verifySsl ? 2 : 0,
+    CURLOPT_TIMEOUT        => 15,
+    CURLOPT_CONNECTTIMEOUT => 5,
+    CURLOPT_PROTOCOLS      => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+]);
 
 $response = curl_exec($ch);
 
 if ($response === false) {
     http_response_code(502);
-    echo 'Error fetching image: ' . curl_error($ch);
+    echo 'Error fetching image';
     curl_close($ch);
     exit;
 }
@@ -79,25 +98,36 @@ if ($response === false) {
 $headerSize  = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
 $httpCode    = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
-
-$body = substr($response, $headerSize);
+$body        = substr($response, $headerSize);
 curl_close($ch);
+
+// Reject redirects outright — we do not follow them and will not silently
+// serve a non-image payload. A 3xx likely means the upstream moved the file.
+if ($httpCode >= 300 && $httpCode < 400) {
+    http_response_code(502);
+    echo 'Upstream redirect not allowed';
+    exit;
+}
 
 if ($httpCode >= 400) {
     http_response_code($httpCode);
-    echo 'Error fetching image (HTTP ' . $httpCode . ')';
+    echo 'Error fetching image (HTTP ' . (int)$httpCode . ')';
+    exit;
+}
+
+// Only serve image content.
+$ct = strtolower(trim((string)$contentType));
+if ($ct === '' || strpos($ct, 'image/') !== 0) {
+    http_response_code(415);
+    echo 'Upstream response is not an image';
     exit;
 }
 
 // ---------------------------------------------------------------------
-// Output image
+// Stream the image back to the user.
 // ---------------------------------------------------------------------
-if (!empty($contentType)) {
-    header('Content-Type: ' . $contentType);
-} else {
-    header('Content-Type: image/jpeg');
-}
-
-header('Cache-Control: public, max-age=86400');
+header('Content-Type: ' . $contentType);
+header('Cache-Control: private, max-age=3600');
+header('X-Content-Type-Options: nosniff');
 
 echo $body;

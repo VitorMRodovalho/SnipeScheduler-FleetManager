@@ -169,6 +169,17 @@ return [
         'reserved'       => 8,   // Vehicle has approved reservation
     ],
 
+    // ---------------------------------------------------------------
+    // Snipe-IT Location parent IDs
+    // FleetManager treats children of these two locations as pickup points
+    // and field destinations respectively. Set to the IDs of the two
+    // parent locations you use for this in Snipe-IT.
+    // ---------------------------------------------------------------
+    'snipeit_location_parents' => [
+        'pickup'      => 9,
+        'destination' => 10,
+    ],
+
 
     // ---------------------------------------------------------------
     // Snipe-IT Custom Field DB Column Names
@@ -195,5 +206,8 @@ return [
         'auth_method'=> 'login', // login|plain|none
         'from_email' => '',
         'from_name'  => 'SnipeScheduler',
+        // EHLO hostname advertised to the SMTP relay. If empty, falls back to
+        // the OS hostname. Some relays reject unknown or non-FQDN values.
+        'ehlo_host'  => '',
     ],
 ];
