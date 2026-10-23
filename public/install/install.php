@@ -67,9 +67,9 @@ $serverSoftware = $_SERVER['SERVER_SOFTWARE'] ?? '';
 
 $requirements = [
     [
-        'label'   => 'PHP version (>= 8.0)',
+        'label'   => 'PHP version (>= 8.3)',
         'detail'  => 'Detected: ' . PHP_VERSION,
-        'passing' => version_compare(PHP_VERSION, '8.0.0', '>='),
+        'passing' => version_compare(PHP_VERSION, '8.3.0', '>='),
     ],
     [
         'label'   => 'Web server (Apache or Nginx)',

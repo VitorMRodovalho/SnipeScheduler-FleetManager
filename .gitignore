@@ -32,7 +32,6 @@ archive/
 
 # Node modules
 node_modules/
-scripts/package-lock.json
 
 # Project context (contains sensitive internal data)
 docs/PROJECT_CONTEXT.md

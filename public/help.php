@@ -863,7 +863,7 @@ sudo freshclam</code></pre>
 <div class="accordion" id="accDeploy">
     <?php help_section('accDeploy', 'dep1', 'Architecture Overview', '
         <ul>
-            <li><strong>Web server:</strong> Apache with PHP (mod_php or PHP-FPM)</li>
+            <li><strong>Web server:</strong> Apache with PHP 8.3+ (mod_php or PHP-FPM)</li>
             <li><strong>Database:</strong> MySQL 5.7+ or MariaDB 10.3+</li>
             <li><strong>External dependency:</strong> Snipe-IT instance (API connectivity required)</li>
             <li><strong>Authentication:</strong> Microsoft OAuth / Google OAuth / LDAP</li>

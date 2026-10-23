@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "description": "Automated screenshot generator",
   "main": "take-screenshots.js",
+  "engines": {
+    "node": ">=24"
+  },
   "dependencies": {
-    "puppeteer": "^21.11.0"
+    "puppeteer": "^25.16.0"
   }
 }
