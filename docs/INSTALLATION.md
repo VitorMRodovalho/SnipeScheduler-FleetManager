@@ -19,8 +19,11 @@ The application does **not** encrypt data at rest at the application level. Disk
 
 ## Software Prerequisites
 
-- Ubuntu 22.04/24.04 LTS
-- PHP 8.1+ with extensions: pdo, pdo_mysql, curl, json, mbstring
+- Ubuntu 24.04 LTS or later (22.04 ships PHP 8.1, which is below the minimum)
+- PHP 8.3+ with extensions: pdo, pdo_mysql, curl, json, mbstring
+  - Run a build that carries the 2026-10-21 PHP security fixes (CVE-2026-109618, CVE-2026-109619): upstream 8.3.36, 8.4.27, 8.5.12 or later.
+  - Distribution packages (for example Ubuntu's `php8.3`) backport security fixes without changing the upstream version number, so check your distribution's security tracker rather than relying on `php -v`.
+  - PHP 8.1 is end of life and no longer receives security fixes.
 - MySQL 8.0+ or MariaDB 10.6+
 - Apache 2.4+ with mod_rewrite, mod_headers
 - Snipe-IT v6.x or v7.x installed and configured

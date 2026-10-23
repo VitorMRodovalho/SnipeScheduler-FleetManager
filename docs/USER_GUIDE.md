@@ -8,7 +8,7 @@ Step-by-step procedures for each user role. All procedures assume the system is 
 
 | Component | Minimum Version | Notes |
 |-----------|----------------|-------|
-| PHP | 8.1+ | With cURL, PDO, LDAP, GD extensions |
+| PHP | 8.3+ | With cURL, PDO, LDAP, GD extensions; 8.3.36 / 8.4.27 / 8.5.12 or later (or a distro build with the 2026-10-21 security fixes) |
 | MySQL | 5.7+ | Or MariaDB 10.3+ |
 | Apache | 2.4+ | With mod_rewrite enabled |
 | Snipe-IT | v6+ | With API access and valid API token |

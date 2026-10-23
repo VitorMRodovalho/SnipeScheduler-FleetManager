@@ -1,5 +1,20 @@
 # Changelog
 
+## [Unreleased]
+
+### Security
+- Minimum PHP raised to 8.3: `composer.json` now requires `php ^8.3` and the installer requirement check moved from 8.0 to 8.3. PHP 8.1 is end of life and no longer receives security fixes.
+- Documentation now asks for a PHP build that carries the 2026-10-21 security fixes for CVE-2026-109618 and CVE-2026-109619 (critical, remote code execution): upstream 8.3.36, 8.4.27, 8.5.12 or later, or a distribution package with those fixes backported.
+- PHPMailer updated from 7.0.2 to 7.1.1.
+- Screenshot tool (`scripts/`): Puppeteer updated from 21.x to 25.16.0, which clears the high-severity advisories in its dependency tree (ws, tar-fs, extract-zip, basic-ftp and the proxy-agent chain). It now requires Node.js 24 or later, and `scripts/package-lock.json` is committed.
+
+### Added
+- CI workflow on pull requests and `main`: PHP lint on 8.3, 8.4 and 8.5; `composer validate` and `composer audit`; `npm ci` and `npm audit --audit-level=high` for `scripts/`.
+- Dependabot configuration (weekly, minor and patch grouped) for Composer, npm (`scripts/`) and GitHub Actions.
+
+### Changed
+- GitHub Actions pinned by commit SHA: `actions/checkout` v7.0.1, `softprops/action-gh-release` v3.0.3. The release workflow checkout no longer persists credentials.
+
 ## [2.1.1] - 2026-04-17
 
 ### Security
