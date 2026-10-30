@@ -36,7 +36,7 @@ return [
     'snipeit' => [
         'base_url'  => '',
         'api_token' => '',     // keep your existing token
-        'verify_ssl' => false,
+        'verify_ssl' => true,
     ],
 
     'ldap' => [
@@ -44,7 +44,7 @@ return [
         'base_dn'       => '',
         'bind_dn'       => '',
         'bind_password' => '', // keep your existing password
-        'ignore_cert'   => true,
+        'ignore_cert'   => false,
     ],
 
     'auth' => [

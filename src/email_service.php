@@ -43,7 +43,7 @@ class FleetEmailService
         $mail->setFrom($fromEmail, $fromName);
         $mail->isHTML(true);
         $mail->Timeout = 3;
-        $mail->SMTPOptions = ["socket" => ["bindto" => "0:0"], "ssl" => ["verify_peer" => false, "verify_peer_name" => false, "allow_self_signed" => true]];
+        $mail->SMTPOptions = ["socket" => ["bindto" => "0:0"]];
         $mail->SMTPKeepAlive = false; // 10 second timeout
         $mail->SMTPDebug = 0;
         
