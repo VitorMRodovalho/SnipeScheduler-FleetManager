@@ -24,9 +24,10 @@ The application does **not** encrypt data at rest at the application level. Disk
   - Run a build that carries the 2026-10-21 PHP security fixes (CVE-2026-109618, CVE-2026-109619): upstream 8.3.36, 8.4.27, 8.5.12 or later.
   - Distribution packages (for example Ubuntu's `php8.3`) backport security fixes without changing the upstream version number, so check your distribution's security tracker rather than relying on `php -v`.
   - PHP 8.1 is end of life and no longer receives security fixes.
-- MySQL 8.0+ or MariaDB 10.6+
+- MySQL 8.4 LTS or later, or MariaDB 10.11 LTS or later
+  - MySQL 8.0 (April 2026) and MariaDB 10.6 (July 2026) have reached upstream end of life. The schema still loads on them, but they no longer receive upstream fixes.
 - Apache 2.4+ with mod_rewrite, mod_headers
-- Snipe-IT v6.x or v7.x installed and configured
+- Snipe-IT v6.0 or later, installed and configured (see `docs/SNIPEIT_COMPATIBILITY.md` for the tested range)
 - Composer
 
 ## Step 1: Clone Repository
