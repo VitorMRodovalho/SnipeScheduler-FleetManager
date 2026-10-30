@@ -117,11 +117,9 @@ function layout_test_snipe_api(array $snipe): string
     $raw = curl_exec($ch);
     if ($raw === false) {
         $err = curl_error($ch);
-        curl_close($ch);
         throw new Exception('cURL error: ' . $err);
     }
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
 
     $decoded = json_decode($raw, true);
     if ($code >= 400) {
@@ -163,11 +161,9 @@ function layout_test_google_oauth(array $google, array $auth): string
     $raw = curl_exec($ch);
     if ($raw === false) {
         $err = curl_error($ch);
-        curl_close($ch);
         throw new Exception('Network check failed: ' . $err);
     }
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
 
     if ($code >= 400) {
         throw new Exception('Google OAuth endpoints unavailable (HTTP ' . $code . ').');
@@ -213,11 +209,9 @@ function layout_test_microsoft_oauth(array $ms, array $auth): string
     $raw = curl_exec($ch);
     if ($raw === false) {
         $err = curl_error($ch);
-        curl_close($ch);
         throw new Exception('Network check failed: ' . $err);
     }
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
 
     if ($code >= 400) {
         throw new Exception('Microsoft OAuth endpoints unavailable (HTTP ' . $code . ').');
@@ -737,7 +731,6 @@ $allowedCategoryIds = array_map('intval', $allowedCategoryIds);
                             curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . ($config['snipeit']['api_token'] ?? ''), 'Accept: application/json']);
                             $resp = curl_exec($ch);
                             $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-                            curl_close($ch);
                             $snipeOk = ($code >= 200 && $code < 300);
                         } catch (Throwable $e) {}
                         $configChecks[] = ['label' => 'Snipe-IT API', 'ok' => $snipeOk, 'icon' => $snipeOk ? 'check-circle-fill' : 'x-circle-fill', 'color' => $snipeOk ? 'success' : 'danger', 'hint' => $snipeOk ? 'Connected' : 'Not connected'];

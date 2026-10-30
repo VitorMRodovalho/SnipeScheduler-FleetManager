@@ -82,7 +82,6 @@ class TeamsService
         $response  = curl_exec($ch);
         $http_code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $error     = curl_error($ch);
-        curl_close($ch);
 
         $success = in_array($http_code, [200, 202], true) && $error === '';
 
@@ -185,7 +184,6 @@ class TeamsService
         $response  = curl_exec($ch);
         $http_code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $error     = curl_error($ch);
-        curl_close($ch);
 
         if ($error !== '') {
             error_log("[TeamsService] cURL error: {$error}");

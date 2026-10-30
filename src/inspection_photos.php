@@ -170,9 +170,6 @@ function strip_and_resize_photo(string $path, string $mimeType, int $maxWidth): 
     } else {
         imagejpeg($dst, $path, 85);
     }
-
-    imagedestroy($src);
-    imagedestroy($dst);
 }
 
 /**
