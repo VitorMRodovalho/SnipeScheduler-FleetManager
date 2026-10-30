@@ -206,7 +206,7 @@ if ($format === 'csv') {
     header('Content-Type: text/csv; charset=utf-8');
     header("Content-Disposition: attachment; filename=\"my_fleet_data_{$dateStr}.csv\"");
     $out = fopen('php://output', 'w');
-    fputcsv($out, ['ID', 'Vehicle', 'Company', 'Status', 'Approval', 'Start', 'End', 'Purpose', 'Created']);
+    fputcsv($out, ['ID', 'Vehicle', 'Company', 'Status', 'Approval', 'Start', 'End', 'Purpose', 'Created'], escape: '');
     foreach ($reservations as $r) {
         fputcsv($out, [
             $r['id'],
@@ -218,7 +218,7 @@ if ($format === 'csv') {
             $r['end_datetime'] ?? '',
             $r['notes'] ?? '',
             $r['created_at'] ?? '',
-        ]);
+        ], escape: '');
     }
     fclose($out);
     exit;

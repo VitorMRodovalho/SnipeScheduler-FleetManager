@@ -91,7 +91,6 @@ $response = curl_exec($ch);
 if ($response === false) {
     http_response_code(502);
     echo 'Error fetching image';
-    curl_close($ch);
     exit;
 }
 
@@ -99,7 +98,6 @@ $headerSize  = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
 $httpCode    = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
 $body        = substr($response, $headerSize);
-curl_close($ch);
 
 // Reject redirects outright — we do not follow them and will not silently
 // serve a non-image payload. A 3xx likely means the upstream moved the file.

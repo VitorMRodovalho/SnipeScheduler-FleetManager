@@ -98,7 +98,7 @@ function exportReportCSV($pdo, $report, $queryDateFrom, $queryDateTo, $assetFilt
     $output = fopen('php://output', 'w');
 
     if ($report === 'usage') {
-        fputcsv($output, ['Date', 'Vehicle', 'Tag', 'User', 'Status', 'Checkout Time', 'Checkin Time', 'Mi Out', 'Mi In', 'Trip Miles', 'Duration (hrs)']);
+        fputcsv($output, ['Date', 'Vehicle', 'Tag', 'User', 'Status', 'Checkout Time', 'Checkin Time', 'Mi Out', 'Mi In', 'Trip Miles', 'Duration (hrs)'], escape: '');
 
         $sql = "SELECT r.*, TIMESTAMPDIFF(HOUR, r.start_datetime, COALESCE(r.end_datetime, NOW())) as duration_hours
                 FROM reservations r WHERE DATE(r.start_datetime) BETWEEN ? AND ?";
@@ -124,11 +124,11 @@ function exportReportCSV($pdo, $report, $queryDateFrom, $queryDateTo, $assetFilt
                 $mi['checkin'] !== null ? $mi['checkin'] : '',
                 $mi['trip'] !== null ? $mi['trip'] : '',
                 $row['duration_hours']
-            ]);
+            ], escape: '');
         }
 
     } elseif ($report === 'maintenance') {
-        fputcsv($output, ['Date', 'Vehicle', 'Tag', 'Type', 'Title', 'Mileage', 'Provider', 'Cost', 'Logged By']);
+        fputcsv($output, ['Date', 'Vehicle', 'Tag', 'Type', 'Title', 'Mileage', 'Provider', 'Cost', 'Logged By'], escape: '');
         $allMaintenances = get_maintenances(500);
         foreach ($allMaintenances as $m) {
             $completionDate = $m['completion_date']['date'] ?? $m['start_date']['date'] ?? null;
@@ -150,11 +150,11 @@ function exportReportCSV($pdo, $report, $queryDateFrom, $queryDateTo, $assetFilt
                 $m['supplier']['name'] ?? '',
                 ($m['cost'] ?? 0) > 0 ? '$' . number_format($m['cost'], 2) : '',
                 $m['user_id']['name'] ?? $m['created_by']['name'] ?? ''
-            ]);
+            ], escape: '');
         }
 
     } elseif ($report === 'compliance') {
-        fputcsv($output, ['Vehicle', 'Tag', 'Insurance Expiry', 'Insurance Status', 'Insurance Days', 'Registration Expiry', 'Registration Status', 'Registration Days', 'Miles Since Service', 'Maintenance Status']);
+        fputcsv($output, ['Vehicle', 'Tag', 'Insurance Expiry', 'Insurance Status', 'Insurance Days', 'Registration Expiry', 'Registration Status', 'Registration Days', 'Miles Since Service', 'Maintenance Status'], escape: '');
         foreach ($assetList as $asset) {
             $cf = $asset['custom_fields'] ?? [];
             $insExp = $cf['Insurance Expiry']['value'] ?? null;
@@ -172,11 +172,11 @@ function exportReportCSV($pdo, $report, $queryDateFrom, $queryDateTo, $assetFilt
                 $insExp ?: 'N/A', $insStatus, $insDays !== null ? $insDays : 'N/A',
                 $regExp ?: 'N/A', $regStatus, $regDays !== null ? $regDays : 'N/A',
                 number_format($milesSince), $mntStatus
-            ]);
+            ], escape: '');
         }
 
     } elseif ($report === 'utilization') {
-        fputcsv($output, ['Vehicle', 'Tag', 'Total Reservations', 'Completed', 'Completion Rate', 'Hours Used', 'Utilization Rate (%)']);
+        fputcsv($output, ['Vehicle', 'Tag', 'Total Reservations', 'Completed', 'Completion Rate', 'Hours Used', 'Utilization Rate (%)'], escape: '');
         $totalDays = max(1, (strtotime($queryDateTo) - strtotime($queryDateFrom)) / 86400);
         foreach ($assetList as $asset) {
             $stmt = $pdo->prepare("SELECT COUNT(*) as total, SUM(CASE WHEN status='completed' THEN 1 ELSE 0 END) as completed, SUM(TIMESTAMPDIFF(HOUR, start_datetime, LEAST(end_datetime, NOW()))) as hours FROM reservations WHERE asset_id=? AND DATE(start_datetime) BETWEEN ? AND ?");
@@ -185,7 +185,7 @@ function exportReportCSV($pdo, $report, $queryDateFrom, $queryDateTo, $assetFilt
             $hours = (int)($s['hours'] ?? 0);
             $util = ($totalDays * 10) > 0 ? min(100, round(($hours / ($totalDays * 10)) * 100)) : 0;
             $cr = ($s['total'] ?? 0) > 0 ? round((($s['completed'] ?? 0) / $s['total']) * 100) : 0;
-            fputcsv($output, [$asset['name'], $asset['asset_tag'], (int)($s['total'] ?? 0), (int)($s['completed'] ?? 0), $cr . '%', $hours, $util]);
+            fputcsv($output, [$asset['name'], $asset['asset_tag'], (int)($s['total'] ?? 0), (int)($s['completed'] ?? 0), $cr . '%', $hours, $util], escape: '');
         }
 
     } elseif ($report === 'driver') {
@@ -194,7 +194,7 @@ function exportReportCSV($pdo, $report, $queryDateFrom, $queryDateTo, $assetFilt
         $trainStmt->execute();
         $trainValidityMonths = (int)($trainStmt->fetchColumn() ?: 12);
 
-        fputcsv($output, ['Driver', 'Email', 'Total Trips', 'Completed', 'Cancelled', 'Missed', 'Completion Rate', 'Total Miles', 'Avg Miles/Trip', 'Total Hours', 'Maintenance Flags', 'Training Completed', 'Training Date', 'Training Expiry', 'Training Status']);
+        fputcsv($output, ['Driver', 'Email', 'Total Trips', 'Completed', 'Cancelled', 'Missed', 'Completion Rate', 'Total Miles', 'Avg Miles/Trip', 'Total Hours', 'Maintenance Flags', 'Training Completed', 'Training Date', 'Training Expiry', 'Training Status'], escape: '');
         $stmt = $pdo->prepare("SELECT user_name, user_email, COUNT(*) as total_trips, SUM(CASE WHEN status='completed' THEN 1 ELSE 0 END) as completed, SUM(CASE WHEN status='cancelled' THEN 1 ELSE 0 END) as cancelled, SUM(CASE WHEN status='missed' THEN 1 ELSE 0 END) as missed, SUM(CASE WHEN maintenance_flag=1 THEN 1 ELSE 0 END) as maint_flags, SUM(TIMESTAMPDIFF(HOUR, start_datetime, COALESCE(end_datetime, NOW()))) as total_hours FROM reservations WHERE DATE(created_at) BETWEEN ? AND ? GROUP BY user_email, user_name ORDER BY total_trips DESC");
         $stmt->execute([$queryDateFrom, $queryDateTo]);
         $drivers = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -233,7 +233,7 @@ function exportReportCSV($pdo, $report, $queryDateFrom, $queryDateTo, $assetFilt
             $tDays = $tExpiry ? (int)((strtotime($tExpiry) - time()) / 86400) : null;
             $tStatus = !$tCompleted ? 'Not completed' : ($tExpiry === null ? 'No date' : ($tDays < 0 ? 'EXPIRED' : ($tDays <= 30 ? 'Expiring' : 'Valid')));
 
-            fputcsv($output, [$d['user_name'], $d['user_email'], $d['total_trips'], $d['completed'], $d['cancelled'], $d['missed'], $cr . '%', number_format($totalMiles), $tripCount > 0 ? number_format(round($totalMiles / $tripCount)) : 0, (int)($d['total_hours'] ?? 0), $d['maint_flags'], $tCompleted ? 'Yes' : 'No', $tDate ? date('Y-m-d', strtotime($tDate)) : '', $tExpiry ?: '', $tStatus]);
+            fputcsv($output, [$d['user_name'], $d['user_email'], $d['total_trips'], $d['completed'], $d['cancelled'], $d['missed'], $cr . '%', number_format($totalMiles), $tripCount > 0 ? number_format(round($totalMiles / $tripCount)) : 0, (int)($d['total_hours'] ?? 0), $d['maint_flags'], $tCompleted ? 'Yes' : 'No', $tDate ? date('Y-m-d', strtotime($tDate)) : '', $tExpiry ?: '', $tStatus], escape: '');
         }
     }
     fclose($output);

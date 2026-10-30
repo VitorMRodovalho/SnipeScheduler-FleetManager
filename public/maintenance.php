@@ -480,7 +480,7 @@ if ($tab === 'history' && isset($_GET['export']) && $_GET['export'] === 'csv') {
     header('Content-Type: text/csv');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
     $output = fopen('php://output', 'w');
-    fputcsv($output, ['Date', 'Vehicle', 'Tag', 'Type', 'Title', 'Mileage', 'Provider', 'Cost', 'Warranty', 'Logged By', 'Notes']);
+    fputcsv($output, ['Date', 'Vehicle', 'Tag', 'Type', 'Title', 'Mileage', 'Provider', 'Cost', 'Warranty', 'Logged By', 'Notes'], escape: '');
     foreach ($historyRecords as $r) {
         fputcsv($output, [
             $r['date'], $r['vehicle_name'], $r['vehicle_tag'],
@@ -490,7 +490,7 @@ if ($tab === 'history' && isset($_GET['export']) && $_GET['export'] === 'csv') {
             $r['cost'] > 0 ? '$' . number_format($r['cost'], 2) : '',
             $r['is_warranty'] ? 'Yes' : 'No',
             $r['logged_by'], $r['notes'],
-        ]);
+        ], escape: '');
     }
     fclose($output);
     exit;

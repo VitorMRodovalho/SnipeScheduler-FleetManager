@@ -159,11 +159,9 @@ function installer_test_snipe(array $snipe): string
     $raw = curl_exec($ch);
     if ($raw === false) {
         $err = curl_error($ch);
-        curl_close($ch);
         throw new Exception('cURL error: ' . $err);
     }
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
 
     $decoded = json_decode($raw, true);
     if ($code >= 400) {
@@ -204,11 +202,9 @@ function installer_test_google(array $google, array $auth): string
     $raw = curl_exec($ch);
     if ($raw === false) {
         $err = curl_error($ch);
-        curl_close($ch);
         throw new Exception('Network check failed: ' . $err);
     }
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
 
     if ($code >= 400) {
         throw new Exception('Google OAuth endpoints unavailable (HTTP ' . $code . ').');
@@ -254,11 +250,9 @@ function installer_test_microsoft(array $ms, array $auth): string
     $raw = curl_exec($ch);
     if ($raw === false) {
         $err = curl_error($ch);
-        curl_close($ch);
         throw new Exception('Network check failed: ' . $err);
     }
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
 
     if ($code >= 400) {
         throw new Exception('Microsoft OAuth endpoints unavailable (HTTP ' . $code . ').');

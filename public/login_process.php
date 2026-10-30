@@ -197,11 +197,9 @@ if ($provider === 'google') {
     $tokenRaw = curl_exec($tokenCh);
     if ($tokenRaw === false) {
         $err = curl_error($tokenCh);
-        curl_close($tokenCh);
         $redirectWithError($debugOn ? 'Google token request failed: ' . $err : 'Google sign-in failed.');
     }
     $tokenCode = curl_getinfo($tokenCh, CURLINFO_HTTP_CODE);
-    curl_close($tokenCh);
 
     $tokenData = json_decode($tokenRaw, true);
     if ($tokenCode >= 400 || !$tokenData || !empty($tokenData['error'])) {
@@ -224,11 +222,9 @@ if ($provider === 'google') {
     $infoRaw = curl_exec($infoCh);
     if ($infoRaw === false) {
         $err = curl_error($infoCh);
-        curl_close($infoCh);
         $redirectWithError($debugOn ? 'Google profile request failed: ' . $err : 'Google sign-in failed.');
     }
     $infoCode = curl_getinfo($infoCh, CURLINFO_HTTP_CODE);
-    curl_close($infoCh);
 
     $info = json_decode($infoRaw, true);
     if ($infoCode >= 400 || !$info || empty($info['email'])) {
@@ -427,11 +423,9 @@ if ($provider === 'microsoft') {
     $tokenRaw = curl_exec($tokenCh);
     if ($tokenRaw === false) {
         $err = curl_error($tokenCh);
-        curl_close($tokenCh);
         $redirectWithError($debugOn ? 'Microsoft token request failed: ' . $err : 'Microsoft sign-in failed.');
     }
     $tokenCode = curl_getinfo($tokenCh, CURLINFO_HTTP_CODE);
-    curl_close($tokenCh);
 
     $tokenData = json_decode($tokenRaw, true);
     if ($tokenCode >= 400 || !$tokenData || !empty($tokenData['error'])) {
@@ -459,11 +453,9 @@ if ($provider === 'microsoft') {
     $infoRaw = curl_exec($infoCh);
     if ($infoRaw === false) {
         $err = curl_error($infoCh);
-        curl_close($infoCh);
         $redirectWithError($debugOn ? 'Microsoft profile request failed: ' . $err : 'Microsoft sign-in failed.');
     }
     $infoCode = curl_getinfo($infoCh, CURLINFO_HTTP_CODE);
-    curl_close($infoCh);
 
     $info = json_decode($infoRaw, true);
     $email = '';

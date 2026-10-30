@@ -166,11 +166,9 @@ function http_post_form_json(string $url, array $fields, array $headers = []): a
     $raw = curl_exec($ch);
     if ($raw === false) {
         $err = curl_error($ch);
-        curl_close($ch);
         throw new Exception('HTTP request failed: ' . $err);
     }
     $status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
     if ($status >= 400) {
         throw new Exception('HTTP request failed with status ' . $status . ': ' . $raw);
     }
@@ -191,11 +189,9 @@ function http_get_json(string $url, array $headers = []): array
     $raw = curl_exec($ch);
     if ($raw === false) {
         $err = curl_error($ch);
-        curl_close($ch);
         throw new Exception('HTTP request failed: ' . $err);
     }
     $status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
     if ($status >= 400) {
         throw new Exception('HTTP request failed with status ' . $status . ': ' . $raw);
     }

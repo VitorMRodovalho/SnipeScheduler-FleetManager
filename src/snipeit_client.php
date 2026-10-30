@@ -184,7 +184,6 @@ function snipeit_request(string $method, string $endpoint, array $params = []): 
                 sleep($wait);
                 continue;
             }
-            curl_close($ch);
             throw new Exception('Error talking to Snipe-IT API after ' . $maxRetries . ' attempts: ' . $lastErr);
         }
 
@@ -215,7 +214,6 @@ function snipeit_request(string $method, string $endpoint, array $params = []): 
         }
         break;
     }
-    curl_close($ch);
 
     $decoded = json_decode($raw, true);
     if ($httpCode >= 400) {
