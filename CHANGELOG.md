@@ -21,7 +21,7 @@
 
 ### Changed
 - GitHub Actions pinned by commit SHA: `actions/checkout` v7.0.1, `softprops/action-gh-release` v3.0.3. The release workflow checkout no longer persists credentials.
-- CI runs the `scripts/` npm job on Node.js 26 (Active LTS since 2026-10-28) instead of 24.
+- CI `scripts/` npm job stays on the newest Node.js 24 LTS image and now prints the Node.js and npm versions it ran with. Node.js 26 (Active LTS since 2026-10-28) was tested green and is deferred to a separate change.
 - Documentation: database requirement is now MySQL 8.4 LTS+ or MariaDB 10.11 LTS+ (MySQL 8.0 and MariaDB 10.6 are past upstream end of life). The schema was loaded without errors on MySQL 8.0.46, 8.4.13 and 9.7.4 and on MariaDB 10.11.19 and 12.3.3. The Snipe-IT requirement in `INSTALLATION.md` now matches `SNIPEIT_COMPATIBILITY.md` (v6.0+), and the in-app help no longer lists MySQL 5.7 / MariaDB 10.3.
 
 ## [2.1.1] - 2026-04-17
