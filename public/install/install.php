@@ -759,7 +759,7 @@ $msRedirectDefault = $host
                             </div>
                             <div class="col-md-4 d-flex align-items-end">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="snipe_verify_ssl" id="snipe_verify_ssl" <?= $pref(['snipeit', 'verify_ssl'], false) ? 'checked' : '' ?>>
+                                    <input class="form-check-input" type="checkbox" name="snipe_verify_ssl" id="snipe_verify_ssl" <?= $pref(['snipeit', 'verify_ssl'], true) ? 'checked' : '' ?>>
                                     <label class="form-check-label" for="snipe_verify_ssl">Verify SSL certificate</label>
                                 </div>
                             </div>
@@ -806,7 +806,7 @@ $msRedirectDefault = $host
                             </div>
                             <div class="col-md-4 d-flex align-items-end">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="ldap_ignore_cert" id="ldap_ignore_cert" <?= $pref(['ldap', 'ignore_cert'], true) ? 'checked' : '' ?>>
+                                    <input class="form-check-input" type="checkbox" name="ldap_ignore_cert" id="ldap_ignore_cert" <?= $pref(['ldap', 'ignore_cert'], false) ? 'checked' : '' ?>>
                                     <label class="form-check-label" for="ldap_ignore_cert">Ignore SSL certificate errors</label>
                                 </div>
                             </div>
