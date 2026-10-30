@@ -34,8 +34,9 @@ jobs:
             }
             found { print }
           ' CHANGELOG.md)
-          # If no notes found, use a default message
+          # If no notes found, use a default message, and say so in the run summary
           if [ -z "$NOTES" ]; then
+            echo "::warning title=Release notes::No CHANGELOG.md section found for ${GITHUB_REF_NAME}; using the default text."
             NOTES="Release ${GITHUB_REF_NAME} - See CHANGELOG.md for details."
           fi
           # Multiline output with a random delimiter, so a line in the notes cannot end the value early
