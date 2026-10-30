@@ -18,27 +18,37 @@ jobs:
         
       - name: Get version from tag
         id: get_version
-        run: echo "VERSION=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
-        
+        run: echo "VERSION=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+
       - name: Extract release notes from CHANGELOG
         id: changelog
         run: |
-          # Extract the section for this version from CHANGELOG.md
-          VERSION="${GITHUB_REF_NAME}"
-          # Get content between this version header and the next version header
-          NOTES=$(awk "/^## $VERSION/,/^## v[0-9]/" CHANGELOG.md | head -n -1 | tail -n +2)
+          # Extract the section for this version from CHANGELOG.md.
+          # Headers are "## [2.1.1] - <date>" (current) or "## v1.5.1 (<date>)" (older);
+          # the tag is "v2.1.1". The section ends at the next "## " header.
+          VERSION="${GITHUB_REF_NAME#v}"
+          NOTES=$(awk -v ver="$VERSION" '
+            /^## / {
+              if (found) exit
+              if (index($0, "## [" ver "]") == 1 || index($0, "## v" ver " ") == 1 || $0 == "## v" ver) { found = 1; next }
+            }
+            found { print }
+          ' CHANGELOG.md)
           # If no notes found, use a default message
           if [ -z "$NOTES" ]; then
-            NOTES="Release $VERSION - See CHANGELOG.md for details."
+            NOTES="Release ${GITHUB_REF_NAME} - See CHANGELOG.md for details."
           fi
-          # Handle multiline output
-          echo "NOTES<<EOF" >> $GITHUB_OUTPUT
-          echo "$NOTES" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-          
+          # Multiline output with a random delimiter, so a line in the notes cannot end the value early
+          delimiter="EOF_$(openssl rand -hex 8)"
+          {
+            echo "NOTES<<${delimiter}"
+            echo "$NOTES"
+            echo "${delimiter}"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Zip the application
         run: |
-          zip -r SnipeScheduler-FleetManager-${{ steps.get_version.outputs.VERSION }}.zip . \
+          zip -r "SnipeScheduler-FleetManager-${GITHUB_REF_NAME}.zip" . \
             -x "*.git*" \
             -x ".github*" \
             -x "archive/*" \
