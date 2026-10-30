@@ -1,7 +1,7 @@
 # SnipeScheduler Security Checklist
 
 ## Regular Maintenance (Monthly)
-- [ ] Check PHP version: `php -v`
+- [ ] Check PHP version: `php -v`; with distribution packages, also compare the package version against the distribution's security notices (see `docs/INSTALLATION.md`)
 - [ ] Update composer packages: `composer update`
 - [ ] Review Apache error logs: `sudo tail -100 /var/log/apache2/error.log`
 - [ ] Check for failed login attempts in activity_log

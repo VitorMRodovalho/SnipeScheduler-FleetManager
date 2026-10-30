@@ -7,6 +7,13 @@
 - Documentation now asks for a PHP build that carries the 2026-10-21 security fixes for CVE-2026-109618 and CVE-2026-109619 (critical, remote code execution): upstream 8.3.36, 8.4.27, 8.5.12 or later, or a distribution package with those fixes backported.
 - PHPMailer updated from 7.0.2 to 7.1.1.
 - Screenshot tool (`scripts/`): Puppeteer updated from 21.x to 25.16.0, which clears the high-severity advisories in its dependency tree (ws, tar-fs, extract-zip, basic-ftp and the proxy-agent chain). It now requires Node.js 24 or later, and `scripts/package-lock.json` is committed.
+- The SMTP test email (Settings) no longer disables TLS certificate verification. It now verifies the server certificate like the queued delivery in `cron/process_email_queue.php` already did, so a passing test means real delivery will pass too.
+- New installs default to verifying the Snipe-IT TLS certificate (`snipeit.verify_ssl = true`) and to not ignoring LDAP certificate errors (`ldap.ignore_cert = false`), in `config/config.example.php` and the installer form. Existing `config/config.php` files are not changed.
+
+### Fixed
+- CSV exports (reports, maintenance history, personal data export) pass `escape: ''` to `fputcsv()`. PHP 8.4 deprecates relying on the default, and the empty escape is the php.net recommendation: output is RFC 4180 compliant, and a field containing `\"` now has its quote doubled instead of being emitted as `\"`.
+- Removed `curl_close()` (31 calls) and `imagedestroy()` (2 calls). Both have been no-ops since PHP 8.0 and are deprecated in PHP 8.5; the handles are freed automatically.
+- Release workflow: release notes are now taken from the matching `CHANGELOG.md` section. The old pattern looked for `## v2.1.1` while the headers are `## [2.1.1]`, so every release fell back to the default text. The multiline output now uses a random delimiter, and shell variables are quoted (actionlint/shellcheck clean).
 
 ### Added
 - CI workflow on pull requests and `main`: PHP lint on 8.3, 8.4 and 8.5; `composer validate` and `composer audit`; `npm ci` and `npm audit --audit-level=high` for `scripts/`.
@@ -14,6 +21,8 @@
 
 ### Changed
 - GitHub Actions pinned by commit SHA: `actions/checkout` v7.0.1, `softprops/action-gh-release` v3.0.3. The release workflow checkout no longer persists credentials.
+- CI runs the `scripts/` npm job on Node.js 26 (Active LTS since 2026-10-28) instead of 24.
+- Documentation: database requirement is now MySQL 8.4 LTS+ or MariaDB 10.11 LTS+ (MySQL 8.0 and MariaDB 10.6 are past upstream end of life). The schema was loaded without errors on MySQL 8.0.46, 8.4.13 and 9.7.4 and on MariaDB 10.11.19 and 12.3.3. The Snipe-IT requirement in `INSTALLATION.md` now matches `SNIPEIT_COMPATIBILITY.md` (v6.0+), and the in-app help no longer lists MySQL 5.7 / MariaDB 10.3.
 
 ## [2.1.1] - 2026-04-17
 
