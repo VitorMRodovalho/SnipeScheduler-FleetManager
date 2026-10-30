@@ -55,7 +55,7 @@ jobs:
   npm-audit:
     name: npm audit (scripts/)
     runs-on: ubuntu-latest
-    container: node:26-slim
+    container: node:24-slim
     defaults:
       run:
         working-directory: scripts
@@ -66,7 +66,9 @@ jobs:
           persist-credentials: false
 
       - name: Install from the lockfile
-        run: npm ci --ignore-scripts --no-audit --no-fund
+        run: |
+          echo "node $(node --version), npm $(npm --version)"
+          npm ci --ignore-scripts --no-audit --no-fund
 
       - name: Fail on high or critical advisories
         run: npm audit --audit-level=high
