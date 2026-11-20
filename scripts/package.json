@@ -7,6 +7,6 @@
     "node": ">=24"
   },
   "dependencies": {
-    "puppeteer": "^25.16.0"
+    "puppeteer": "^25.17.0"
   }
 }
